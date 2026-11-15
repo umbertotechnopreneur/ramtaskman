@@ -359,13 +359,16 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tes
 ./run.sh --json
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python tools/capture_screenshots.py
 UV_CACHE_DIR="$PWD/.uv-cache" uv build
+UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python tools/verify_distribution.py
 ```
 
 Le schermate SVG in `captures/` usano dati **sintetici**, non misure del PC. Sono escluse
 da Git. Il JSON live contiene nomi, UID e percorsi degli eseguibili: controllarlo prima
 di condividerlo. Non vengono salvate rilevazioni automaticamente.
 
-Verificati localmente **149 test** con Python 3.14.4, build wheel/sdist e rilevazione Linux.
+Verificati localmente **171 test** con Python 3.14.4: 170 passati e un test nativo
+Windows saltato su Linux. Build wheel/sdist, verifica della distribuzione installata
+e rilevazione Linux sono riuscite.
 Su Windows/macOS sono stati verificati contratti con API simulate, non misure hardware.
 La UI è stata catturata e controllata con fixture sintetiche, inclusi filtri, dettaglio RAM e regioni.
 La suite include contabilità delle barre, parser e limiti smaps, identità PID, filtri,
@@ -375,6 +378,10 @@ escludendo cache e catture locali.
 
 ## Provenienza e prosecuzione
 
+- [Verifiche da eseguire su Windows](docs/verifica-windows.md)
+- [Verifiche da eseguire su macOS](docs/verifica-macos.md)
+- [Audit dei contatori delle piattaforme](docs/audit-contatori-piattaforma.md)
+- [Benchmark locale e limiti delle misure](docs/benchmark.md)
 - [Piano dettagliato: confronto, acquisizioni, piattaforme, prestazioni e distribuzione](docs/piano-sviluppo.md)
 - [Provenienza, licenza e cosa è stato copiato](docs/upstream.md)
 - [Architettura e invarianti](docs/architecture.md)

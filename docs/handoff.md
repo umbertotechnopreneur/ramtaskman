@@ -10,7 +10,7 @@ Il documento contiene criteri di accettazione, verifiche e registro. L'utente ha
 autorizzato l'esecuzione del piano: controllare il registro e i test prima di ripartire.
 Confronto e acquisizioni offline sono implementati; la validazione hardware Windows/macOS
 e la mappa macOS rimangono aperte. Il budget generale è opzionale e la UI conserva il
-risultato del confronto immutabile; le prestazioni della tabella restano da ottimizzare.
+risultato del confronto immutabile; la tabella è paginata, con verifiche prestazionali in corso.
 
 ## Obiettivo dell'utente
 
@@ -21,12 +21,10 @@ possa proseguire un agente meno potente. Nessun cambio di framework, nessuna pub
 
 ## Stato Git alla consegna
 
-La base RAM è salvata nel working tree e nell'area di staging; gli incrementi successivi
-(raggruppamento, ricerca/filtri, dettaglio e regioni) sono nel working tree sul branch
-`codex/ramtaskman-foundation`. L'identità Git locale è stata configurata con i dati
-forniti dall'utente; verificare lo stato corrente prima di creare commit. Le cancellazioni sono
-la rimozione intenzionale dei moduli GPU dalla copia, non lavoro dell'utente da scartare.
-Non fare reset o checkout di altri branch prima di aver preservato queste modifiche.
+La base RAM e i primi incrementi sono nei commit locali del branch
+`codex/ramtaskman-foundation`. L'identità Git locale è configurata con i dati forniti
+dall'utente; verificare lo stato corrente prima di modificare il repository. La rimozione
+dei moduli GPU è intenzionale e la provenienza resta nella cronologia upstream.
 
 ## Come ripartire
 
@@ -150,8 +148,8 @@ originali, perciò font, terminale e tema possono cambiare la resa.
 - Riconosce gli helper nella stessa istanza applicativa systemd esplicita; il fallback
   non identifica tutte le app desktop. Cgroup mancanti o non convenzionali restano fallback.
 - I contatori generali Windows/macOS sono implementati ma non verificati su hardware;
-  la mappa delle regioni non è implementata su questi sistemi. In WSL misura solo la VM
-  Linux, non l’host Windows.
+  il provider Windows delle regioni virtuali è sperimentale, quello macOS non è ancora
+  implementato. In WSL si misura solo la VM Linux, non l’host Windows.
 - Non equiparare somme PSS/RSS alla RAM usata globale o somme swap alla swap globale.
 - Le scansioni non sono atomiche; niente stime presentate come misure.
 - Niente pubblicazione PyPI/GitHub, automazioni release, kill o elevazione automatica.
@@ -200,5 +198,12 @@ La tabella delle regioni è paginata a 250 righe con Ctrl+U/D o Ctrl+frecce, man
 la mappa e i totali sulle regioni filtrate. Nel budget sono disponibili priorità e
 backoff opzionali; il comportamento predefinito rimane senza budget.
 
-Vedi README per i comandi di test, build e cattura. Non ampliare il lavoro a tutti gli
-incrementi senza una richiesta: chiedi quale completare quando la base è stata consegnata.
+Incremento successivo: 171 test eseguiti su Linux, 170 passati e uno Windows nativo
+saltato; verifica distribuzione, screenshot sintetici e confronto del processo di prova
+riusciti. Il confronto e la copia immutabile vengono preparati in worker cancellabili.
+Prove native preparate in [verifica Windows](verifica-windows.md) e
+[verifica macOS](verifica-macos.md), non eseguite sui sistemi rispettivi. Il
+[rapporto benchmark](benchmark.md) riporta anche la parte di elaborazione ancora
+sincrona e i limiti delle misure. Audit psutil in [audit contatori](audit-contatori-piattaforma.md).
+
+Vedi README per i comandi di test, build e cattura e il piano per gli incrementi ancora aperti.

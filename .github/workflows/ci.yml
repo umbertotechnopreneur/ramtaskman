@@ -19,3 +19,4 @@ jobs:
       - run: uv run --locked --python ${{ matrix.python }} ramtaskman --once
       - run: uv run --locked --python ${{ matrix.python }} ramtaskman --json
       - run: uv build
+      - run: uv run --locked --python ${{ matrix.python }} python tools/verify_distribution.py

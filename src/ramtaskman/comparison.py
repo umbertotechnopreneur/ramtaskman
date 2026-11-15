@@ -2,15 +2,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 from types import MappingProxyType
 from typing import Mapping
 
 from .capture_models import CaptureSnapshot, FrozenRegion, METRICS
 
 
-def _validate(regions: tuple[FrozenRegion, ...]) -> None:
+class ComparisonCancelled(Exception):
+    """The owner abandoned a comparison; no partial result is publishable."""
+
+
+def _validate(regions: tuple[FrozenRegion, ...], cancelled: Callable[[], bool] | None = None) -> None:
     end = -1
-    for r in regions:
+    for index, r in enumerate(regions):
+        if index % 256 == 0 and cancelled is not None and cancelled():
+            raise ComparisonCancelled()
         if r.start < 0 or r.end <= r.start or r.start < end:
             raise ValueError('Regioni non ordinate, sovrapposte o non valide')
         end = r.end
@@ -100,10 +107,11 @@ def _incompatibility(a: CaptureSnapshot, b: CaptureSnapshot) -> str | None:
     return None
 
 
-def compare_captures(a: CaptureSnapshot, b: CaptureSnapshot) -> Comparison:
+def compare_captures(a: CaptureSnapshot, b: CaptureSnapshot,
+                     cancelled: Callable[[], bool] | None = None) -> Comparison:
     """Compare A→B. Mappings are observations, not proof of allocation identity."""
-    _validate(a.regions)
-    _validate(b.regions)
+    _validate(a.regions, cancelled)
+    _validate(b.regions, cancelled)
     error = _incompatibility(a, b)
     metrics = frozenset(m for m in METRICS if a.metric_definitions.get(m) and
                         a.metric_definitions.get(m) == b.metric_definitions.get(m))
@@ -117,12 +125,16 @@ def compare_captures(a: CaptureSnapshot, b: CaptureSnapshot) -> Comparison:
                     key=lambda item: (item[0], item[1]))
     pos = 0
     while pos < len(events):
+        if pos % 256 == 0 and cancelled is not None and cancelled():
+            raise ComparisonCancelled()
         _, side, first = events[pos]
         old = [first] if side == 0 else []
         new = [first] if side == 1 else []
         end = first.end
         pos += 1
         while pos < len(events) and events[pos][0] < end:
+            if pos % 256 == 0 and cancelled is not None and cancelled():
+                raise ComparisonCancelled()
             _, side, r = events[pos]
             (old if side == 0 else new).append(r)
             end = max(end, r.end)
@@ -149,6 +161,8 @@ def compare_captures(a: CaptureSnapshot, b: CaptureSnapshot) -> Comparison:
         rows.append(RegionComparison(old, new, status, changes, metrics))
     totals = {}
     for m in METRICS:
+        if cancelled is not None and cancelled():
+            raise ComparisonCancelled()
         x, y = a.total(m), b.total(m)
         totals[m] = y - x if m in metrics and x is not None and y is not None else None
     return Comparison(a, b, True, None, reverse, tuple(rows), MappingProxyType(totals), metrics)

@@ -1026,17 +1026,17 @@ Tutte le caselle seguenti sono inizialmente aperte. Le prime tre fasi precedenti
 - [x] F2.3 — importazione limitata, CLI e replay senza collector.
 - [x] F2.4 — round-trip A/B, documentazione e fixture.
 - [x] F3.1 — protocollo/factory provider e capacità native.
-- [ ] F3.2-W1 — prova tecnica Windows reale.
+- [ ] F3.2-W1 — prova tecnica Windows reale; probe e procedura preparati.
 - [ ] F3.2-W2 — enumerazione Windows.
 - [ ] F3.2-W3 — residenza Windows e copertura per pagina.
 - [ ] F3.2-W4 — integrazione e verifica Windows reale.
-- [ ] F3.3-M1 — prova tecnica macOS reale.
+- [ ] F3.3-M1 — prova tecnica macOS reale; probe e procedura preparati.
 - [ ] F3.3-M2 — enumerazione macOS/submap.
 - [ ] F3.3-M3 — contatori macOS verificati.
 - [ ] F3.3-M4 — integrazione e verifica macOS reale.
 - [ ] F3.4 — audit globale e raggruppamento per piattaforma.
 - [ ] F3.5 — matrice finale delle capacità e delle prove.
-- [ ] F4.1 — benchmark sintetici presenti; mancano misure separate di tutte le fasi e carichi reali.
+- [ ] F4.1 — benchmark sintetici e letture sul processo di prova; mancano misure su carichi reali estesi.
 - [x] F4.2 — budget opzionale, copertura, rotazione, cancellazione, priorità e backoff limitati.
 - [ ] F4.3 — cache diff, debounce e tabella paginata; restano misure sistematiche su carichi reali.
 - [ ] F4.4 — rapporto prestazioni e controllo risorse.
@@ -1057,9 +1057,10 @@ Aggiornare questa tabella dopo risultati verificati, senza inventare esecuzioni:
 |---|---|---|---|---|
 | Pianificazione | Completata | Questo documento | Collegamenti e coerenza documentale | Implementazione dei blocchi non iniziata |
 | F0–F2 | Completati | capture_models.py, comparison.py, capture_io.py, capture_dialog.py, replay.py, region_screen.py | Test sintetici; confronto Linux con mmap di prova: RSS +8.572.928 byte | Letture sequenziali non provano continuità dell'allocazione |
-| F3 | In corso | region_provider.py, backends/windows_regions.py | Enumerazione Windows simulata; nessuna prova Windows o macOS reale | Residenza Windows, provider macOS, raggruppamento nativo e hardware |
-| F4 | In corso | collector.py, models.py, tools/benchmark_memory.py | Budget, cancellazione, rotazione, priorità/backoff; cache diff, debounce e tabella paginata | Test su carichi reali/UI e obiettivi prestazionali non ancora completi |
-| F5 | In corso | README, schema-capture.md, workflow, Git | Commit locale 3a4613f; build, audit e installazione Linux isolata; --once, --json e replay sintetico | Matrice CI remota e installazioni native non ancora verificate |
+| F3 | In corso | region_provider.py, backends/windows_regions.py, tools/verify_windows_regions.py, tools/verify_macos_regions.py | Enumerazione Windows e probe simulati; sorgente psutil esaminato | Eseguire [prove Windows](verifica-windows.md) e [macOS](verifica-macos.md); residenza Windows e provider macOS restano aperti |
+| F4 | In corso | collector.py, models.py, tools/benchmark_memory.py, [rapporto benchmark](benchmark.md) | Budget e schedulazione; diff in worker, debounce, tabella paginata; misure sintetiche e sul processo di prova | Prove su carichi reali/UI e obiettivi prestazionali non ancora completi |
+| F5 | In corso | README, schema-capture.md, workflow, Git | Build, audit e installazione Linux isolata; console script, CLI e replay sintetico verificati; workflow configurato | Matrice CI remota e installazioni native non ancora verificate |
+| Verifiche preparate | Completate localmente | tools/verify_windows_regions.py, tools/verify_macos_regions.py, relative procedure | Test simulati, supporto non nativo esplicito e verifica distribuzione locale | Probe Windows/macOS da eseguire sui sistemi originali |
 
 Stati ammessi: da iniziare, in corso, completato, in attesa di verifica esterna.
 Distinguere sempre un impedimento esterno da un errore ancora da correggere nel codice.

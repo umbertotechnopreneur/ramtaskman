@@ -21,7 +21,7 @@ from .delta_bar import DeltaBar
 from .regions import LinuxRegionReader, MemoryRegion, RegionSnapshot
 from .report import size
 from .capture_models import CaptureSnapshot, freeze_snapshot
-from .comparison import compare_captures
+from .comparison import ComparisonCancelled, compare_captures
 from .region_provider import make_region_provider
 
 COMPARISON_LABELS = {
@@ -109,6 +109,9 @@ class RegionScreen(ModalScreen):
         self.page_keys: list[str] = []
         self._comparison_inputs = None
         self._comparison_result = None
+        self._comparison_pending = None
+        self._comparison_request = 0
+        self._comparison_error = None
         self._search_timer = None
         self.snapshot: RegionSnapshot | None = None
         self.rows: dict[str, MemoryRegion] = {}
@@ -181,13 +184,14 @@ class RegionScreen(ModalScreen):
     def on_unmount(self) -> None:
         self._cancel_search_timer()
         self.request_id += 1
+        self._comparison_request += 1
         self.workers.cancel_node(self)
 
     def action_refresh_regions(self) -> None:
-        self._comparison_inputs = self._comparison_result = None
         if self.offline:
             self.notify('Acquisizione salvata: nessun aggiornamento live.', severity='warning')
             return
+        self._invalidate_comparison()
         if not self.loading:
             self._restore_selected, self._restore_zoom = self.selected, self.zoom_key
             self._restore_page = self.page
@@ -196,37 +200,59 @@ class RegionScreen(ModalScreen):
         self.current_capture = None
         self.loading = True
         self.render_regions()
-        self.load_regions(self.request_id)
+        # Assign the sequence on the UI thread before dispatch. Cancelled or
+        # superseded reads may leave gaps, which do not alter ordering.
+        self.app._region_capture_sequence += 1
+        self.load_regions(self.request_id, self.app._region_capture_sequence)
 
     @work(thread=True, exclusive=True, group='region-read')
-    def load_regions(self, request_id: int) -> None:
+    def load_regions(self, request_id: int, sequence: int) -> None:
         worker = get_current_worker()
         try:
             result = self.provider.read(self.process, cancelled=lambda: worker.is_cancelled)
+            if (result.pid, result.started_at) != (self.process.pid, self.process.started_at):
+                result = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
+                                        reason='Identità del processo cambiata; campione scartato.', complete=False)
         except Exception as error:
             result = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
                                     reason=f'Lettura non disponibile: {type(error).__name__}: {error}', complete=False)
         if not worker.is_cancelled:
             try:
-                self.app.call_from_thread(self.accept_snapshot, request_id, result)
+                captured = self._freeze(result, sequence)
+            except Exception as error:
+                result = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
+                                        reason=f'Acquisizione non disponibile: {type(error).__name__}', complete=False)
+                captured = self._freeze(result, sequence)
+            if worker.is_cancelled:
+                return
+            try:
+                self.app.call_from_thread(self.accept_snapshot, request_id, result, captured)
             except RuntimeError:
                 # The app may have closed while procfs was returning the last read.
                 pass
 
-    def accept_snapshot(self, request_id: int, snapshot: RegionSnapshot) -> None:
+    def _freeze(self, snapshot: RegionSnapshot, sequence: int) -> CaptureSnapshot:
+        return freeze_snapshot(snapshot, collection_session_id=self.session_id,
+                               sequence=sequence, platform=self.platform,
+                               backend_id='linux-smaps' if self.platform == 'linux' else self.platform,
+                               executable_identity=snapshot.executable_identity,
+                               metric_definitions=None if self.platform == 'linux' else {'size': 'virtual.interval.bytes'})
+
+    def accept_snapshot(self, request_id: int, snapshot: RegionSnapshot,
+                        captured: CaptureSnapshot | None = None) -> None:
         if request_id != self.request_id or not self.is_mounted:
             return
         if (snapshot.pid, snapshot.started_at) != (self.process.pid, self.process.started_at):
             snapshot = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
                                       reason='Identità del processo cambiata; campione scartato.', complete=False)
+            captured = None
         self.loading = False
-        self.snapshot = snapshot
-        self.app._region_capture_sequence += 1
-        self.current_capture = freeze_snapshot(snapshot, collection_session_id=self.session_id,
-                                               sequence=self.app._region_capture_sequence, platform=self.platform,
-                                               backend_id='linux-smaps' if self.platform == 'linux' else self.platform,
-                                               executable_identity=snapshot.executable_identity,
-                                               metric_definitions=None if self.platform == 'linux' else {'size': 'virtual.interval.bytes'})
+        if captured is None:
+            # Compatibility for callers injecting a snapshot directly. Normal
+            # live reads supply a worker-created immutable capture.
+            self.app._region_capture_sequence += 1
+            captured = self._freeze(snapshot, self.app._region_capture_sequence)
+        self.snapshot = self.current_capture = captured
         self.selected, self.zoom_key = self._restore_selected, self._restore_zoom
         self.page = self._restore_page
         self.render_regions()
@@ -465,13 +491,14 @@ class RegionScreen(ModalScreen):
         if self.current_capture is None or not self.current_capture.complete:
             self.notify('Serve un campione completo per fissare A.', severity='warning')
             return
+        self._invalidate_comparison()
         self.baseline = self.current_capture
         self.render_regions()
         self.notify('Campione A fissato.')
 
     def action_clear_baseline(self) -> None:
         self.baseline = None
-        self._comparison_inputs = self._comparison_result = None
+        self._invalidate_comparison()
         if self.comparison_mode:
             self.comparison_mode = False
             self.page = 0
@@ -483,7 +510,13 @@ class RegionScreen(ModalScreen):
         if not self.baseline or not self.current_capture:
             self.notify('Fissa A e acquisisci B per confrontare.', severity='warning')
             return
+        if not self.comparison_mode and self._comparison_error:
+            # Only an explicit re-entry retries an error. Ordinary repaints
+            # must never create an uncontrolled retry loop.
+            self._invalidate_comparison()
         self.comparison_mode = not self.comparison_mode
+        if not self.comparison_mode and self._comparison_pending is not None:
+            self._invalidate_comparison()
         self.page = 0
         self.query_one('#comparison-state', Select).display = self.comparison_mode
         self.selected = None
@@ -510,14 +543,60 @@ class RegionScreen(ModalScreen):
                                           offline_baseline=loaded.baseline))
 
     def comparison_for_current(self):
-        """Reuse the pure comparison while the immutable A/B captures are unchanged."""
+        """Return cached result or start a worker for the immutable A/B captures.
+
+        All callbacks are guarded by a request generation *and* capture identity;
+        cancelling a thread is cooperative and never publishes partial results.
+        """
         if self.baseline is None or self.current_capture is None:
             return None
-        if (self._comparison_inputs is None or self._comparison_inputs[0] is not self.baseline or
-                self._comparison_inputs[1] is not self.current_capture):
-            self._comparison_result = compare_captures(self.baseline, self.current_capture)
-            self._comparison_inputs = (self.baseline, self.current_capture)
-        return self._comparison_result
+        current = (self.baseline, self.current_capture)
+        if (self._comparison_inputs is not None and self._comparison_inputs[0] is current[0]
+                and self._comparison_inputs[1] is current[1]):
+            return self._comparison_result
+        if (self._comparison_pending is None or self._comparison_pending[0] is not current[0]
+                or self._comparison_pending[1] is not current[1]):
+            self._invalidate_comparison()
+            self._comparison_pending = current
+            self.calculate_comparison(self._comparison_request, *current)
+        return None
+
+    def _invalidate_comparison(self) -> None:
+        self._comparison_request += 1
+        self._comparison_inputs = self._comparison_result = self._comparison_pending = None
+        self._comparison_error = None
+        if self.is_mounted:
+            self.workers.cancel_group(self, 'region-comparison')
+
+    @work(thread=True, exclusive=True, group='region-comparison', description='Confronto regioni A/B')
+    def calculate_comparison(self, request: int, baseline: CaptureSnapshot, current: CaptureSnapshot) -> None:
+        worker = get_current_worker()
+        try:
+            result = compare_captures(baseline, current, cancelled=lambda: worker.is_cancelled)
+        except ComparisonCancelled:
+            return
+        except Exception as error:
+            result = error
+        if not worker.is_cancelled:
+            try:
+                self.app.call_from_thread(self.accept_comparison, request, baseline, current, result)
+            except RuntimeError:
+                pass
+
+    def accept_comparison(self, request: int, baseline: CaptureSnapshot, current: CaptureSnapshot, result) -> None:
+        if (not self.is_mounted or request != self._comparison_request or not self.comparison_mode
+                or baseline is not self.baseline or current is not self.current_capture):
+            return
+        self._comparison_pending = None
+        if isinstance(result, Exception):
+            self._comparison_inputs = (baseline, current)
+            self._comparison_result = None
+            self._comparison_error = f'Confronto non disponibile: {type(result).__name__}'
+            self.render_comparison()
+            return
+        self._comparison_inputs = (baseline, current)
+        self._comparison_result = result
+        self.render_comparison()
 
     def render_comparison(self) -> None:
         self.query_one('#region-map', RegionMap).display = False
@@ -537,6 +616,11 @@ class RegionScreen(ModalScreen):
             self.render_comparison_inspector()
             return
         result = self.comparison_for_current()
+        if result is None:
+            self.query_one('#region-map-title', Static).update(self._comparison_error or 'Calcolo confronto A/B in corso…')
+            self.query_one('#region-count', Static).update('')
+            self.render_comparison_inspector()
+            return
         if not result.compatible:
             self.query_one('#region-map-title', Static).update(Text('Confronto n/a: ' + result.reason, style='yellow'))
             self.query_one('#region-count', Static).update('')
@@ -614,7 +698,10 @@ class RegionScreen(ModalScreen):
             self.render_regions()
         elif self.zoom_key:
             self.zoom_key = None
-            self.render_map()
+            if self.comparison_mode:
+                self.render_comparison()
+            else:
+                self.render_map()
         else:
             self.action_close()
 

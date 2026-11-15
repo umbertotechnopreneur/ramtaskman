@@ -62,6 +62,7 @@ async def main():
         await pilot.press('b', 'r')
         await app.workers.wait_for_complete()
         await pilot.press('c')
+        await app.workers.wait_for_complete()
         await pilot.pause()
         app.save_screenshot('regions-comparison.svg', path=str(output))
         await pilot.press('c')

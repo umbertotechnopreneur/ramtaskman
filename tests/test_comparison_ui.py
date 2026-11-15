@@ -179,24 +179,26 @@ class ComparisonUI(unittest.IsolatedAsyncioTestCase):
             await pilot.press('slash')
             search = screen.query_one('#region-search', Input)
             table = screen.query_one('#region-table', DataTable)
-            with patch.object(screen, 'render_regions', wraps=screen.render_regions) as render:
+            with patch.object(screen, 'render_regions', wraps=screen.render_regions) as render, \
+                    patch.object(screen, 'set_timer') as set_timer:
                 search.value = 'h'
-                await pilot.pause(.02)
+                await pilot.pause()
                 search.value = 'he'
-                await pilot.pause(.02)
+                await pilot.pause()
                 search.value = 'heap'
-                await pilot.pause(.02)
+                await pilot.pause()
                 self.assertEqual(render.call_count, 0)
-                await pilot.pause(.20)
+                self.assertEqual(set_timer.call_count, 3)
+                set_timer.return_value.stop.assert_called()
+                # Simulate the final timer firing; no wall-clock timing assumptions.
+                set_timer.call_args.args[1]()
                 self.assertEqual(render.call_count, 1)
                 self.assertEqual(table.row_count, 1)
                 search.value = 'browser'
-                await pilot.pause(.02)
+                await pilot.pause()
                 await pilot.press('enter')
                 self.assertEqual(table.row_count, 1)
                 self.assertEqual(next(iter(screen.rows.values())).category, 'executable')
-                self.assertEqual(render.call_count, 2)
-                await pilot.pause(.2)
                 self.assertEqual(render.call_count, 2)
 
     async def test_search_pending_selection_and_escape_cannot_apply_stale_row(self):
@@ -204,21 +206,25 @@ class ComparisonUI(unittest.IsolatedAsyncioTestCase):
         async with app.run_test(size=(160, 48)) as pilot:
             screen = await self.open_region(app, pilot)
             await pilot.press('slash')
-            screen.query_one('#region-search', Input).value = 'heap'
-            await pilot.pause(.02)
-            # Activating a row while a filter is pending refreshes first, not stale zoom.
-            table = screen.query_one('#region-table', DataTable)
-            table.focus()
-            await pilot.press('enter')
-            self.assertIsNone(screen.zoom_key)
-            self.assertEqual(next(iter(screen.rows.values())).category, 'heap')
-            await pilot.press('slash')
-            screen.query_one('#region-search', Input).value = 'nothing'
-            await pilot.pause(.02)
-            await pilot.press('escape')
-            await pilot.pause(.2)
-            self.assertEqual(table.row_count, 4)
-            self.assertIsNone(screen._search_timer)
+            with patch.object(screen, 'set_timer') as set_timer:
+                screen.query_one('#region-search', Input).value = 'heap'
+                await pilot.pause()
+                self.assertIsNotNone(screen._search_timer)
+                # Activating a row while a filter is pending refreshes first, not stale zoom.
+                table = screen.query_one('#region-table', DataTable)
+                table.focus()
+                await pilot.press('enter')
+                self.assertIsNone(screen.zoom_key)
+                self.assertEqual(next(iter(screen.rows.values())).category, 'heap')
+                set_timer.return_value.stop.assert_called()
+                await pilot.press('slash')
+                screen.query_one('#region-search', Input).value = 'nothing'
+                await pilot.pause()
+                self.assertIsNotNone(screen._search_timer)
+                await pilot.press('escape')
+                await pilot.pause()
+                self.assertEqual(table.row_count, 4)
+                self.assertIsNone(screen._search_timer)
 
 if __name__ == '__main__':
     unittest.main()

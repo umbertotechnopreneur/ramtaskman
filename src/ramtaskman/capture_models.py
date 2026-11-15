@@ -50,6 +50,11 @@ class FrozenRegion:
 
 
 def freeze_region(region: MemoryRegion | FrozenRegion) -> FrozenRegion:
+    # FrozenRegion recursively freezes nested fields at construction. Reusing
+    # an already frozen region is safe and avoids cloning the entire mapping
+    # twice when CaptureSnapshot validates its inputs.
+    if isinstance(region, FrozenRegion):
+        return region
     return FrozenRegion(start=region.start, end=region.end, permissions=region.permissions,
                         offset=region.offset, device=region.device, inode=region.inode,
                         path=region.path, category=region.category, rss=region.rss, pss=region.pss,

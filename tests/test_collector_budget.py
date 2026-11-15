@@ -104,6 +104,91 @@ class BudgetTests(unittest.TestCase):
              patch('sys.stderr'), self.assertRaises(SystemExit) as error:
             main()
         self.assertEqual(error.exception.code, 2)
+
+    def test_priority_one_slot_does_not_starve_other_processes(self):
+        backend = Backend()
+        collector = Collector(backend=backend, max_measurements=1, selected_priority=True)
+        collector.set_priority((5, 6.))
+        for _ in range(6):
+            self.sample(collector)
+        self.assertEqual(backend.attempts, [5, 1, 2, 5, 3, 4])
+        collector.set_priority(None)
+        self.sample(collector)
+        self.assertEqual(backend.attempts[-1], 5)
+
+    def test_priority_never_matches_reused_pid_with_different_start(self):
+        backend = Backend()
+        collector = Collector(backend=backend, max_measurements=1, selected_priority=True)
+        collector.set_priority((5, 999.))
+        self.sample(collector)
+        self.assertEqual(backend.attempts, [1])
+
+    def test_denied_backoff_retries_and_preserves_missing_values(self):
+        class Denied(Backend):
+            def read_metrics(self, proc, row):
+                if proc.pid == 1:
+                    self.attempts.append(proc.pid)
+                    raise psutil.AccessDenied(proc.pid)
+                return super().read_metrics(proc, row)
+        backend = Denied()
+        collector = Collector(backend=backend, max_measurements=5, measurement_backoff=True)
+        first = self.sample(collector)
+        second = self.sample(collector)
+        third = self.sample(collector)
+        fourth = self.sample(collector)
+        self.assertTrue(first.enumeration_complete)
+        self.assertEqual(first.processes[0].reason, 'Misura: accesso negato')
+        self.assertEqual(second.processes[0].reason, 'Misura: accesso negato')
+        self.assertIn('backoff', third.processes[0].reason)
+        self.assertIsNone(third.processes[0].rss)
+        self.assertEqual(third.measurement_attempted, 4)
+        self.assertEqual(fourth.processes[0].reason, 'Misura: accesso negato')
+        self.assertEqual(backend.attempts.count(1), 3)
+        self.assertEqual(backend.attempts.count(2), 4)
+
+    def test_slow_backoff_recovers_and_pid_reuse_resets_state(self):
+        class Clock:
+            now = 0.
+            def __call__(self): return self.now
+        clock = Clock()
+        class Slow(Backend):
+            def read_metrics(self, proc, row):
+                if proc.pid == 1:
+                    clock.now += .5
+                return super().read_metrics(proc, row)
+        backend = Slow()
+        collector = Collector(backend=backend, max_measurements=5, measurement_backoff=True)
+        with patch('ramtaskman.collector.time.monotonic', side_effect=clock):
+            self.sample(collector)
+            self.sample(collector)
+            third = self.sample(collector)
+            self.assertIn('lettura lenta', third.processes[0].reason)
+            # Change creation time: new PID instance must not inherit cooldown.
+            original = backend.read_identity
+            backend.read_identity = lambda p: ProcessMemory(p.pid, 999., 'test', 1000, '/synthetic/app') if p.pid == 1 else original(p)
+            fourth = self.sample(collector)
+        self.assertEqual(fourth.processes[0].rss, 1)
+        self.assertEqual(fourth.processes[0].started_at, 999.)
+
+    def test_backoff_never_exceeds_eight_wait_cycles_and_fast_read_resets(self):
+        collector = Collector(backend=Backend(), max_measurements=1, measurement_backoff=True)
+        key = (1, 2.)
+        for cycle in range(1, 30):
+            collector._cycle = cycle
+            collector._record_cost(key, 1., denied=True)
+            self.assertLessEqual(collector._backoff[key][1] - cycle - 1, 8)
+        collector._record_cost(key, .001, denied=False)
+        self.assertNotIn(key, collector._backoff)
+
+    def test_optional_policies_require_budget_and_replay_conflicts(self):
+        from ramtaskman.cli import main
+        for options in (['--selected-priority'], ['--measurement-backoff']):
+            with self.subTest(options=options), patch('sys.argv', ['ramtaskman', *options]), \
+                 patch('sys.stderr'), self.assertRaises(SystemExit) as error:
+                main()
+            self.assertEqual(error.exception.code, 2)
+        with self.assertRaises(ValueError):
+            Collector(backend=Backend(), selected_priority=True)
         with patch('sys.argv', ['ramtaskman', '--max-measurements', '0']), \
              patch('sys.stderr'), self.assertRaises(SystemExit) as error:
             main()
@@ -172,6 +257,30 @@ class BudgetTests(unittest.TestCase):
         self.assertFalse(snap.enumeration_complete)
         self.assertEqual(len(snap.processes), 1)
         self.assertIsNone(snap.applications[0].total('rss'))
+
+
+class PriorityUITests(unittest.IsolatedAsyncioTestCase):
+    async def test_only_selected_process_sets_priority_and_group_clears_it(self):
+        from ramtaskman.app import RamTaskManager
+        from test_memory import fixture
+        backend = Backend()
+        collector = Collector(backend=backend, max_measurements=2, selected_priority=True)
+        app = RamTaskManager(collector=collector, live=False)
+        async with app.run_test(size=(80, 24)) as pilot:
+            app.apply(fixture())
+            await pilot.pause()
+            self.assertIsNone(collector._priority_key)  # app group selected
+            await pilot.press('enter')
+            await pilot.pause()
+            selected = app.rows[app.selected_key]
+            self.assertEqual(collector._priority_key, (selected.pid, selected.started_at))
+            await pilot.press('down')
+            await pilot.pause()
+            selected = app.rows[app.selected_key]
+            self.assertEqual(collector._priority_key, (selected.pid, selected.started_at))
+            await pilot.press('escape')
+            await pilot.pause()
+            self.assertIsNone(collector._priority_key)
 
 
 if __name__ == '__main__':

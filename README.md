@@ -317,6 +317,14 @@ processi per ciclo e le ruota tra i processi. Le letture rinviate restano n/a; i
 di tentativi e rinvii è visibile. Il budget non è un limite di tempo sulle chiamate OS.
 Il default continua a raccogliere tutti i processi.
 
+Con un budget, `--measurement-backoff` rinvia temporaneamente letture ripetutamente negate
+o lente (almeno 250 ms): il rinvio dura al massimo otto cicli, poi rientrano nella rotazione
+e vengono riprovate quando il budget lo consente. Il motivo
+del rinvio è nella riga e i contatori restano n/a. Con `--selected-priority`, disponibile
+solo nella UI live, un PID selezionato ottiene al massimo uno slot per ciclo; con budget 1
+ottiene priorità solo un ciclo su tre, lasciando spazio alla rotazione. La selezione di un
+gruppo non privilegia alcun PID. Entrambe le opzioni sono disattivate per default.
+
 ## Struttura
 
 ```text
@@ -357,7 +365,7 @@ Le schermate SVG in `captures/` usano dati **sintetici**, non misure del PC. Son
 da Git. Il JSON live contiene nomi, UID e percorsi degli eseguibili: controllarlo prima
 di condividerlo. Non vengono salvate rilevazioni automaticamente.
 
-Verificati localmente **140 test** con Python 3.14.4, build wheel/sdist e rilevazione Linux.
+Verificati localmente **149 test** con Python 3.14.4, build wheel/sdist e rilevazione Linux.
 Su Windows/macOS sono stati verificati contratti con API simulate, non misure hardware.
 La UI è stata catturata e controllata con fixture sintetiche, inclusi filtri, dettaglio RAM e regioni.
 La suite include contabilità delle barre, parser e limiti smaps, identità PID, filtri,

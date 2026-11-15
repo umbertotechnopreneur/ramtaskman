@@ -68,8 +68,11 @@ class RegionScreen(ModalScreen):
         Binding('b', 'baseline', 'Fissa A'), Binding('ctrl+b', 'clear_baseline', 'Cancella A'),
         Binding('c', 'compare', 'Confronto'), Binding('ctrl+s', 'save_capture', 'Salva'),
         Binding('ctrl+o', 'open_capture', 'Apri'),
+        Binding('ctrl+left,ctrl+u', 'previous_page', 'Pagina prec.'),
+        Binding('ctrl+right,ctrl+d', 'next_page', 'Pagina succ.'),
     ]
     SORTS = ('rss', 'pss', 'size', 'start')
+    PAGE_SIZE = 250
     DEFAULT_CSS = """
     RegionScreen { layout: vertical; background: $background; }
     #region-dashboard { height: auto; max-height: 38%; }
@@ -102,6 +105,8 @@ class RegionScreen(ModalScreen):
         self.comparison_metric = 'rss'
         self.comparison_sort = 0
         self.comparison_rows = {}
+        self.page = 0
+        self.page_keys: list[str] = []
         self._comparison_inputs = None
         self._comparison_result = None
         self._search_timer = None
@@ -116,6 +121,7 @@ class RegionScreen(ModalScreen):
         self.loading = False
         self._restore_selected: str | None = None
         self._restore_zoom: str | None = None
+        self._restore_page = 0
 
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='region-dashboard'):
@@ -184,6 +190,7 @@ class RegionScreen(ModalScreen):
             return
         if not self.loading:
             self._restore_selected, self._restore_zoom = self.selected, self.zoom_key
+            self._restore_page = self.page
         self.request_id += 1
         self.snapshot = None
         self.current_capture = None
@@ -221,6 +228,7 @@ class RegionScreen(ModalScreen):
                                                executable_identity=snapshot.executable_identity,
                                                metric_definitions=None if self.platform == 'linux' else {'size': 'virtual.interval.bytes'})
         self.selected, self.zoom_key = self._restore_selected, self._restore_zoom
+        self.page = self._restore_page
         self.render_regions()
 
     def render_summary(self) -> None:
@@ -261,19 +269,23 @@ class RegionScreen(ModalScreen):
         ordered = sorted(filtered, key=lambda r: (r.start,) if sort == 'start' else
                          (getattr(r, sort) is None, -(getattr(r, sort) or 0), r.start))
         self.rows = {r.key: r for r in ordered}
-        if self.selected not in self.rows:
-            self.selected = next(iter(self.rows), None)
+        pages = max(1, (len(ordered) + self.PAGE_SIZE - 1) // self.PAGE_SIZE)
+        self.page = min(self.page, pages - 1)
+        page_rows = ordered[self.page * self.PAGE_SIZE:(self.page + 1) * self.PAGE_SIZE]
+        self.page_keys = [row.key for row in page_rows]
+        if self.selected not in self.page_keys:
+            self.selected = self.page_keys[0] if self.page_keys else None
         table = self.query_one('#region-table', DataTable)
         table.clear()
         self.generation += 1
-        for r in ordered:
+        for r in page_rows:
             table.add_row(f'{r.start:x}–{r.end:x}', Text(CATEGORIES.get(r.category, (r.category,))[0]),
                           size(r.size), size(r.rss), size(r.pss), size(r.uss), size(r.swap), Text(r.permissions),
                           Text(r.path or '[anonima]'), key=f'{self.generation}|{r.key}')
         if self.selected:
-            table.move_cursor(row=list(self.rows).index(self.selected), animate=False)
+            table.move_cursor(row=self.page_keys.index(self.selected), animate=False)
         partial = ' · lettura incompleta' if self.snapshot and not self.snapshot.complete else ''
-        self.query_one('#region-count', Static).update(f'{len(ordered)}/{len(regions)} regioni · ordine {sort.upper()}{partial}')
+        self.query_one('#region-count', Static).update(f'{len(ordered)}/{len(regions)} regioni · ordine {sort.upper()} · pagina {self.page + 1}/{pages} · Ctrl+U/D{partial}')
         self.render_map()
         self.render_inspector()
 
@@ -362,7 +374,11 @@ class RegionScreen(ModalScreen):
             return
         if event.key in self.rows:
             self.selected = event.key
-            self.query_one('#region-table', DataTable).move_cursor(row=list(self.rows).index(event.key), animate=False)
+            index = list(self.rows).index(event.key)
+            if event.key not in self.page_keys:
+                self.page = index // self.PAGE_SIZE
+                self.render_regions()
+            self.query_one('#region-table', DataTable).move_cursor(row=self.page_keys.index(event.key), animate=False)
             self.query_one('#region-table', DataTable).focus()
             self.render_map()
             self.render_inspector()
@@ -371,6 +387,7 @@ class RegionScreen(ModalScreen):
         event.stop()
         if self.is_mounted:
             self._cancel_search_timer()
+            self.page = 0
             self.render_regions()
 
     def _cancel_search_timer(self) -> None:
@@ -381,6 +398,7 @@ class RegionScreen(ModalScreen):
     def _apply_search(self) -> None:
         self._search_timer = None
         if self.is_mounted:
+            self.page = 0
             self.render_regions()
 
     def on_input_changed(self, event: Input.Changed) -> None:
@@ -393,6 +411,7 @@ class RegionScreen(ModalScreen):
     def on_input_submitted(self, event: Input.Submitted) -> None:
         event.stop()
         self._cancel_search_timer()
+        self.page = 0
         self.render_regions()
         self.query_one('#region-table', DataTable).focus()
 
@@ -406,11 +425,27 @@ class RegionScreen(ModalScreen):
         self.render_map()
 
     def action_sort(self) -> None:
+        self.page = 0
         if self.comparison_mode:
             self.comparison_sort = (self.comparison_sort + 1) % 4
         else:
             self.sort_index = (self.sort_index + 1) % len(self.SORTS)
         self.render_regions()
+
+    def _change_page(self, step: int) -> None:
+        count = len(self.comparison_rows) if self.comparison_mode else len(self.rows)
+        pages = max(1, (count + self.PAGE_SIZE - 1) // self.PAGE_SIZE)
+        new_page = max(0, min(pages - 1, self.page + step))
+        if new_page != self.page:
+            self.page = new_page
+            self.selected = None
+            self.render_regions()
+
+    def action_previous_page(self) -> None:
+        self._change_page(-1)
+
+    def action_next_page(self) -> None:
+        self._change_page(1)
 
     def action_zoom(self) -> None:
         if self.comparison_mode:
@@ -439,6 +474,7 @@ class RegionScreen(ModalScreen):
         self._comparison_inputs = self._comparison_result = None
         if self.comparison_mode:
             self.comparison_mode = False
+            self.page = 0
             self.set_columns(False)
             self.query_one('#comparison-state', Select).display = False
         self.render_regions()
@@ -448,6 +484,7 @@ class RegionScreen(ModalScreen):
             self.notify('Fissa A e acquisisci B per confrontare.', severity='warning')
             return
         self.comparison_mode = not self.comparison_mode
+        self.page = 0
         self.query_one('#comparison-state', Select).display = self.comparison_mode
         self.selected = None
         self.set_columns(self.comparison_mode)
@@ -531,17 +568,21 @@ class RegionScreen(ModalScreen):
             value = (-delta if self.comparison_sort == 0 else delta if self.comparison_sort == 1 else -abs(delta))
             return (False, value, row.start)
         visible.sort(key=sort_key)
-        for row in visible:
+        self.comparison_rows = {row.key: row for row in visible}
+        pages = max(1, (len(visible) + self.PAGE_SIZE - 1) // self.PAGE_SIZE)
+        self.page = min(self.page, pages - 1)
+        page_rows = visible[self.page * self.PAGE_SIZE:(self.page + 1) * self.PAGE_SIZE]
+        self.page_keys = [row.key for row in page_rows]
+        for row in page_rows:
             region = (row.after or row.before)[0]
-            self.comparison_rows[row.key] = row
             table.add_row(f'{row.start:x}–{row.end:x}', COMPARISON_LABELS.get(row.status, row.status), size(row.value_a(metric)),
                           size(row.value_b(metric)), signed(row.delta(metric)), Text(region.path or '[anonima]'),
                           key=f'{self.generation}|{row.key}')
-        self.query_one('#region-count', Static).update(f'{len(self.comparison_rows)}/{len(result.rows)} intervalli · {metric.upper()} · ordine {sort}')
-        if self.selected not in self.comparison_rows:
-            self.selected = next(iter(self.comparison_rows), None)
+        self.query_one('#region-count', Static).update(f'{len(self.comparison_rows)}/{len(result.rows)} intervalli · {metric.upper()} · {sort} · pagina {self.page+1}/{pages} · Ctrl+U/D')
+        if self.selected not in self.page_keys:
+            self.selected = self.page_keys[0] if self.page_keys else None
         if self.selected:
-            table.move_cursor(row=list(self.comparison_rows).index(self.selected), animate=False)
+            table.move_cursor(row=self.page_keys.index(self.selected), animate=False)
         self.render_comparison_inspector()
 
     def render_comparison_inspector(self) -> None:

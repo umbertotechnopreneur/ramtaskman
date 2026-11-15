@@ -376,6 +376,8 @@ class RamTaskManager(App):
 
     def render_inspector(self) -> None:
         row = self.rows.get(self.selected_key)
+        if isinstance(self.collector, Collector) and self.collector.selected_priority:
+            self.collector.set_priority((row.pid, row.started_at) if isinstance(row, ProcessMemory) else None)
         panel = self.query_one('#inspector', Static)
         if row is None:
             panel.border_title = 'Inspector'

@@ -40,7 +40,15 @@ def main() -> int:
     parser.add_argument('--processes', action='store_true', help='apri la UI sui singoli processi')
     parser.add_argument('--max-measurements', type=positive_integer, default=None,
                         help='budget opzionale: numero massimo di processi misurati per ciclo')
+    parser.add_argument('--selected-priority', action='store_true',
+                        help='con budget, favorisce in modo limitato il PID selezionato nella UI')
+    parser.add_argument('--measurement-backoff', action='store_true',
+                        help='con budget, rinvia temporaneamente letture ripetutamente lente o negate')
     args = parser.parse_args()
+    if (args.selected_priority or args.measurement_backoff) and args.max_measurements is None:
+        parser.error('--selected-priority e --measurement-backoff richiedono --max-measurements')
+    if args.selected_priority and (args.once or args.json or args.open or args.compare):
+        parser.error('--selected-priority richiede la UI live')
     if (args.open or args.compare) and args.max_measurements is not None:
         parser.error('--max-measurements è utilizzabile solo nel monitoraggio live')
     try:
@@ -61,7 +69,9 @@ def main() -> int:
             from .replay import ReplayApp
             ReplayApp(current, baseline).run()
             return 0
-        collector = Collector(max_measurements=args.max_measurements)
+        collector = Collector(max_measurements=args.max_measurements,
+                              selected_priority=args.selected_priority,
+                              measurement_backoff=args.measurement_backoff)
         if args.once or args.json:
             snap = collector.sample()
             if args.json:

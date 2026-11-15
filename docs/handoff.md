@@ -190,12 +190,15 @@ La prova Linux sul processo della verifica ha letto 63 regioni, campione complet
 non garanzie di prestazioni. Le simulazioni non costituiscono verifica dei backend
 nativi Windows/macOS.
 
-Per l'incremento A/B e replay sono passati 140 test locali su Linux (Python 3.14.4).
+Per l'incremento A/B, replay e prestazioni sono passati 149 test locali su Linux (Python 3.14.4).
 Un processo di prova ha allocato e toccato 8 MiB: delta RSS complessivo osservato
 +8.572.928 byte, con campioni completi. Wheel/sdist ricostruiti e installati in
 ambiente isolato locale; verificate CLI e apertura offline di un file sintetico.
 Confronto e salvataggio usano metadati, non contenuti della memoria. Windows resta
 simulato, macOS per regione non implementato; CI remota non eseguita.
+La tabella delle regioni è paginata a 250 righe con Ctrl+U/D o Ctrl+frecce, mantenendo
+la mappa e i totali sulle regioni filtrate. Nel budget sono disponibili priorità e
+backoff opzionali; il comportamento predefinito rimane senza budget.
 
 Vedi README per i comandi di test, build e cattura. Non ampliare il lavoro a tutti gli
 incrementi senza una richiesta: chiedi quale completare quando la base è stata consegnata.

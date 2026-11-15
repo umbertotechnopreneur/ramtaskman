@@ -1040,7 +1040,7 @@ Tutte le caselle seguenti sono inizialmente aperte. Le prime tre fasi precedenti
 - [ ] F4.2 — budget opzionale, copertura, rotazione e cancellazione; restano priorità/backoff.
 - [ ] F4.3 — cache diff e debounce; resta da ottimizzare e misurare la tabella a carichi grandi.
 - [ ] F4.4 — rapporto prestazioni e controllo risorse.
-- [ ] F5.1 — identità locale configurata; consolidamento Git da completare.
+- [x] F5.1 — identità locale configurata e base consolidata nel commit locale 3a4613f.
 - [ ] F5.2 — CI e smoke nativi con esiti verificati.
 - [ ] F5.3 — wheel/sdist e installazione Linux verificate; verifiche native e launcher restanti aperti.
 - [ ] F5.4 — documentazione e versione candidata locale.
@@ -1059,7 +1059,7 @@ Aggiornare questa tabella dopo risultati verificati, senza inventare esecuzioni:
 | F0–F2 | Completati | capture_models.py, comparison.py, capture_io.py, capture_dialog.py, replay.py, region_screen.py | Test sintetici; confronto Linux con mmap di prova: RSS +8.572.928 byte | Letture sequenziali non provano continuità dell'allocazione |
 | F3 | In corso | region_provider.py, backends/windows_regions.py | Enumerazione Windows simulata; nessuna prova Windows o macOS reale | Residenza Windows, provider macOS, raggruppamento nativo e hardware |
 | F4 | In corso | collector.py, models.py, tools/benchmark_memory.py | Budget, cancellazione, rotazione; cache diff e debounce sintetici | Priorità/backoff, test carichi reali/UI e obiettivi prestazionali non ancora completi |
-| F5 | In corso | README, schema-capture.md, workflow, Git | Build, audit e installazione Linux isolata; --once, --json e replay sintetico | Matrice CI remota e installazioni native non ancora verificate |
+| F5 | In corso | README, schema-capture.md, workflow, Git | Commit locale 3a4613f; build, audit e installazione Linux isolata; --once, --json e replay sintetico | Matrice CI remota e installazioni native non ancora verificate |
 
 Stati ammessi: da iniziare, in corso, completato, in attesa di verifica esterna.
 Distinguere sempre un impedimento esterno da un errore ancora da correggere nel codice.

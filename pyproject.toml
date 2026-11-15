@@ -1,40 +1,26 @@
 [project]
-name = "gputaskman"
-version = "0.4.1"
-description = "An htop for what's inside your GPU: per-process VRAM, engine load, and LLM weights / KV cache breakdown"
+name = "ramtaskman"
+version = "0.1.0"
+description = "Cross-platform RAM task manager: application memory, PSS, USS and swap, with the gputaskman terminal UI"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [
-    { name = "Scott Hanselman" }
-]
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
-    "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
     "Topic :: System :: Monitoring",
 ]
-dependencies = [
-    "nvidia-ml-py>=13.615.71",
-    "psutil>=7.2.2",
-    "textual>=8.2.8",
-]
+dependencies = ["psutil>=7.2.2,<8", "textual>=8.2.8,<9"]
 
 [project.scripts]
-gputaskman = "gputaskman.cli:main"
-gtm = "gputaskman.cli:main"
-
-[project.urls]
-Repository = "https://github.com/shanselman/gputaskman"
-Issues = "https://github.com/shanselman/gputaskman/issues"
-
-[dependency-groups]
-release = ["pyinstaller==6.22.3"]
+ramtaskman = "ramtaskman.cli:main"
+rtm = "ramtaskman.cli:main"
 
 [build-system]
-requires = ["uv_build>=0.9.26,<0.10.0"]
+requires = ["uv_build>=0.9.26,<0.14.0"]
 build-backend = "uv_build"

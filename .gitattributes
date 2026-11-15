@@ -6,3 +6,6 @@
 *.yml text eol=lf
 *.svg text eol=lf
 *.png binary
+
+*.sh text eol=lf
+*.cmd text eol=crlf

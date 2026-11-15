@@ -1,161 +1,55 @@
-# AGENTS.md
+# Istruzioni per ramtaskman
 
-Guide for coding agents and contributors changing gputaskman. The [README](README.md) explains
-what users see and why each number can or cannot be trusted. This file covers the rules the code
-must keep, where things live, and how to verify and ship changes.
+Scrivi in italiano. Leggi README.md, lessons.md e docs/handoff.md prima di modificare.
+Controlla `git status` e preserva il lavoro esistente. Non pubblicare, creare remote di
+pubblicazione o inviare contenuti senza richiesta dell'utente.
 
-## The one rule: provenance
+## Obiettivo e confini
 
-gputaskman shows what is in GPU memory without overstating it. Every number is **measured**,
-**inferred**, **estimated**, or **reported by a runtime**, and the UI and JSON must say which.
-Never present an inference as a measurement. Most review findings so far came from breaking one of
-these rules:
+UI terminale Python/Textual con la stessa struttura visiva di gputaskman di Scott Hanselman,
+dedicata a RAM, PSS, USS e swap su Linux, Windows e macOS. Conserva LICENSE e docs/upstream.md. Non reintrodurre
+backend GPU, dipendenze NVIDIA o pubblicazione PyPI ereditati. I backend RAM Windows/macOS
+sono invece parte dell’obiettivo richiesto.
+Non riscrivere la UI in un altro framework. Scomponi le estensioni in cambiamenti piccoli.
 
-1. **Only measured bytes are summed.** `Snapshot.attributed` (`collector.py`) adds
-   `ProcGpu.dedicated` only. `ProcGpu.shown_vram` (`pdh.py`: measured, else inferred, else `None`)
-   is for display, sorting, model selection, and scan priority, never for totals. Inferred WSL rows
-   sit *under* the `vmwp.exe` VM total and are never added to it again.
-2. **Unknown is not zero.** Unavailable counters are `null` in JSON and `n/a` or blank in the UI.
-   A measured zero stays `0`. Engine availability is independent of VRAM availability.
-3. **Windows per-process memory uses `Local Usage` / `Non Local Usage`**, not `Dedicated Usage`,
-   which counts shared surfaces against `dwm.exe`, `csrss.exe`, and the owning app. The adapter
-   counter is the reference total. On Linux amdgpu (`drm.py`), a process gets bytes only when all its
-   DRM clients are provably private (one holder, render node, every `drm-shared-*` is 0); never
-   compute resident minus shared, since the two count by different placements.
-4. **Model evidence has a ladder:** `api` > `mapped` > `cmdline` > `path-arg` > `installed`. App settings mean
-   *selected*. Log events are *timestamped history*, not current residency. Model-store folders only
-   supply friendly names. Name-based hints (`kind_hint`, the `decision?` category) never change the
-   evidence or the KV-cache math. A `path-arg` alone is informational: no process classification,
-   API probing, full GGUF-header reads or weights/KV estimates. It never counts toward *confirmed*;
-   only `api`, `mapped` and `cmdline` can corroborate each other. Keep fallback discovery bounded
-   and exclude the same secret-flag values the inspector redacts.
-5. **Markers mean what they say.** `*` means only one explanation fits, or every explanation gives
-   exactly the same bytes (near-equal is not enough). `?` is a heuristic owner. Caches, such as WSL
-   foreign-context sizes in `~/.cache/gputaskman/`, only rank candidates and never prove ownership.
-6. **Look, don't touch.** Never read another process's memory, dump weights, launch runtimes, send
-   inference requests, or send telemetry. Local API probes are `GET` requests to ports the process
-   already listens on.
-7. **Stay cheap.** Never call `psutil.open_files()` (it takes seconds per process). Memory-map scans
-   are bounded by `Collector.SCAN_BUDGET` (150 ms per refresh) and cached per process; GGUF headers
-   and store manifests are cached. If you add a probe, measure its cost and add it to the README's
-   cost table.
-8. **Never bundle driver libraries.** Vendor libraries come from the installed driver. The
-   `FORBIDDEN` list in `tools/build_portable.py` enforces this for NVIDIA libraries; extend it for
-   any new vendor.
-9. **Degrade with a reason.** A missing vendor library, a protected process, WSL interop being off,
-   or an unpaired adapter reduces what is shown and says why. It must not crash or guess.
-10. **Hardware claims need hardware.** Say which machine, driver, and workload validated a
-    behavior, or label it as not validated. The README's live checks follow this pattern.
+## Regole dei dati
 
-## Map
+1. Non disponibile = None nel modello, null nel JSON, n/a nella UI. Mai zero inventato.
+2. Linux: PSS/USS da smaps_rollup. Windows/macOS: USS da psutil, PSS non disponibile.
+   Non stimarle da RSS. Totali incompleti = None. Commit/pagefile non è USS né swap per processo.
+3. RSS può duplicare pagine condivise. PSS dei processi non equivale a RAM totale usata.
+4. SwapPSS e Swap sono metriche diverse. Non forzare uguaglianze con la swap globale.
+5. Cache e memoria disponibile si sovrappongono: non sommarle come partizioni indipendenti.
+6. Le identità dei processi includono PID e create_time. Verifica l'identità dopo la lettura.
+7. L'aggregazione per eseguibile è un'euristica applicativa esplicitata. Non chiamarla
+   riconoscimento certo di browser, Electron, container o programmi Python.
+8. Nessuna lettura di memoria, cmdline, environ, file privati o rete. Non terminare processi.
+9. Campionamento fuori dal thread UI; misura sample_ms. Non mostrare dati vecchi come attuali
+   dopo un errore. Degrada con una ragione e recupera al campione successivo.
 
-```
-cli.py ──► Collector.sample()  (collector.py)
-            ├─ adapters        dxgi.py (Windows; tcc.py adds NVIDIA TCC GPUs that DXGI omits) / linux.enumerate_adapters / macos.enumerate_adapters
-            ├─ counters        pdh.py GpuCounters (Windows PDH) / tcc.py TccCounters (NVML, TCC GPUs on Windows) /
-            │                  linux.py LinuxCounters (NVML, + drm.py for amdgpu and Intel) /
-            │                  macos.py MacCounters (IOKit Metal clients + footprint poller)
-            ├─ device metrics  nvml.py; drm.py read_device (AMD and Intel, Linux) (macOS: MacCounters.device from IOKit)
-            ├─ WSL host        wslhost.py: HostStream (powershell PDH via interop), ContextTracker
-            ├─ processes       procinfo.py: runtime DLLs, mapped files, cmdline, classify()
-            ├─ model naming    stores.py (Ollama, LM Studio, Hugging Face), gguf.py (header, kind, sizes)
-            ├─ LLM detail      llm.py: buffer logs, ServerProber (local APIs), build_view()
-            └─ app adapters    handy.py (settings + bounded log tail)
-         ──► Snapshot ──► app.py (Textual TUI) / report.py (text and JSON)
-cli.py ──► HostSampler.sample()  (host.py: system RAM/CPU, OS-reported; sampled beside the Collector, not in Snapshot)
-cli.py diff ──► diff.py: compares two saved --json snapshots (no collection)
-cli.py record ──► record.py: appends one --json snapshot per interval (Collector, or LiveCollectors on Windows, sampled as the TUI does)
-cli.py summary ──► summary.py: averages and peaks of a saved record file, per run (no collection)
-cli.py replay ──► replay.py: plays a record JSONL file offline (no collection)
+## Verifiche
+
+```bash
+UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tests -v
+./run.sh --once
+./run.sh --json
+UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python tools/capture_screenshots.py
+UV_CACHE_DIR="$PWD/.uv-cache" uv build
 ```
 
-The backend is chosen at import time in `collector.py`: `BACKEND` is `wddm` on Windows, `nvml` on
-native Linux, `wsl` under WSL, and `metal` on macOS. On native Linux, `Collector.backend` becomes `drm`
-when the selected GPU is an amdgpu or Intel i915 card (device readings from sysfs, processes from DRM
-fdinfo). An Intel card has no device-wide memory counter: its VRAM used is a sum over visible clients and
-its total is a PCI window size, so both carry `report.INTEL_MEMORY_NOTE`, and a total of 0 is unknown. One-shot
-output (`--once`, `--json`) uses `scan_budget=None` to
-identify everything immediately; the TUI spreads scans across refreshes.
+Per modifiche UI usa Textual run_test, `await pilot.pause()` prima delle asserzioni,
+verifica 160x48 e 80x24. Esegui solo controlli pertinenti; non aggiungere test per semplici note.
+Non salvare nomi e percorsi dei processi reali nelle fixture o nelle schermate pubblicate.
+CI configurata su Linux/Windows/macOS; qui è stata eseguita solo la suite locale Linux.
+I test mock non sostituiscono le verifiche hardware: documenta cosa è stato davvero eseguito.
 
-## Where to change things
+## Ambiente portatile
 
-| Change | Start in | Notes |
-|---|---|---|
-| Detect a new runtime | `procinfo.py` | DLL or shared-object names; detection is not proof of GPU work |
-| Name models from a new store | `stores.py` | Friendly names only, never evidence |
-| Probe a new local server API | `llm.py` `ServerProber` | GET only, short timeouts, the process's own ports |
-| Support an app that reads and closes its model | `handy.py` as the template | Read-only settings plus a bounded, mtime-cached log tail; never read transcription content. Generalize into data-driven adapters once a second app needs one |
-| Add a GPU vendor or backend | `dxgi.py`, `collector.py`, a new module | Pair devices by LUID or PCI bus ID, never by name or index; load vendor DLLs by absolute system path |
-| Add a column or JSON field | `report.py` and `app.py` | Follow the null rules above; update the README tables. If it is a measured byte count, consider adding it to `diff.py` `MEASURED` |
-| Change snapshot comparison | `diff.py` | Works only on saved `--json` files, never live state. Compare measured fields directly; keep runtime-reported and estimated values in their own sections; an absent row is `not listed`, not zero. Refuse only when both snapshots name conflicting adapters (vendor, PCI address, a non-Windows key); when they cannot be compared, warn (`name-only`) instead, because a Windows LUID changes at boot and `diff` has no override flag. A PID whose two `started_at` values are both valid and more than `SAME_PROCESS_SECS` apart is a different process: no pairing rule may join it (unknown or malformed start times never conflict, so older snapshots pair as before) |
-| Change system RAM/CPU | `host.py` | Machine memory and load as the OS reports them: never GPU bytes, never added to `Snapshot.attributed`, and `diff` ignores it. Unknown is `None`/`null` and a failure carries a reason, never zeros. The JSON key is `system` because `host` already means the WSL Windows host. Windows uses the NT process list (psutil per process takes about 6 s per pass for 1,000 processes), checked against psutil at startup; CPU rates are keyed by `(pid, create_time)` so a reused PID never inherits another process's history (on the psutil path, `is_running()` is what makes psutil drop its cached object for a reused PID; keep that call) |
-| Change WSL matching | `wslhost.py` `ContextTracker` | Keep `tests/test_wslhost.py` replays passing; they are measured sequences |
-| Change TCC support | `tcc.py`, the win32 `enumerate_adapters` wrapper in `collector.py` | NVML only, never a PDH query (Windows publishes no counters for a TCC GPU). NVML is asked once per process; TCC GPUs are paired to DXGI only when the domainless address is unambiguous (PCI domain 0), while the full domain stays in TCC identity and its synthetic LUID. Append after listed adapters so no existing GPU index moves. A process whose memory NVML hides is `n/a` with `attributed` unknown, never 0. No model breakdown (it needs the shared counter). `--list-gpus` distinguishes a successful empty probe from a failed/incomplete probe. Keep `tests/test_tcc.py` passing; mocks do not validate TCC hardware |
-| Change recording | `record.py`, `cli.py` `record_main` | Every line must equal the `--json` object (`report.to_json_dict`, which `dump()` also uses), so unknown stays `null` and nothing is added or summed. Append only, one compact line per sample, flushed as it is written: Ctrl+C or a kill keeps every finished sample, and an interrupted sample writes nothing. Sample the way the TUI does (budgeted scanning, `LiveCollectors` on Windows so a GPU disable/re-enable is recorded as unavailable with a reason); never add a probe, `scan_budget=None`, or `psutil.open_files()` |
-| Change record summaries | `summary.py` | Reads a saved record file only. Readings are shown as recorded (never capped); `null` is skipped, never 0, and a metric with no readings is omitted. Process VRAM peaks use measured `vram_bytes` only (same `(host, name)` summed within a sample). Unparseable lines are skipped and counted. Runs split at a GPU/backend change, a backwards `taken`, or a gap longer than `RUN_GAP_FACTOR` times the median interval or `RUN_GAP_MIN` seconds, whichever is longer |
-| Change replay | `replay.py`, `cli.py` `replay_main` | Offline: read a `record` file only, never sample the GPU. `Playback` is tested without a terminal. Use `taken` when it is strictly increasing; otherwise 1s per snapshot, labeled as not recorded time. A trailing incomplete line is skipped; any other malformed line is skipped and reported |
+Linux avviato da USB e usato su PC differenti. Prima di cambiare accelerazione o storage,
+rileva RAM, GPU e dischi. La cartella del progetto è autorizzata; non spostare cache o dati
+su altri dischi interni senza accordo. Non inserire percorsi assoluti del PC nei file del
+progetto. Usa run.sh per tenere .venv e .uv-cache locali. Ricrea .venv se il percorso cambia.
+L'utente privilegia agenti di coding e API cloud per sviluppo AI; questo monitor non ne richiede.
 
-## Verify
-
-```powershell
-uv sync --locked
-uv run --locked python -m unittest discover -s tests -q
-uv run --locked gputaskman --once
-uv run --locked gputaskman --json
-```
-
-- Tests are hardware-independent (mocks and replayed measurements). CI runs them on Windows, Ubuntu,
-  and macOS with Python 3.11 and 3.13. UI tests that render NVIDIA snapshots pin
-  `gputaskman.app.BACKEND`, so they behave the same on a Mac.
-- A running `.venv\Scripts\gputaskman.exe` locks the script, so `uv run` fails with
-  `Access is denied`. Quit the monitor first.
-- Textual UI tests must `await pilot.pause()` before querying widgets.
-- WSL: test in a fresh copy on the Linux filesystem with `uv run --locked`; do not reuse the
-  Windows `.venv`. The project needs Python 3.11+, which uv downloads if the distro's is older.
-- Live checks: run a bounded, known workload (for example a llama-server with a model you have, or
-  a fixed-size CUDA allocation), then compare `--json` against Task Manager or `nvidia-smi`.
-  `gputaskman diff before.json after.json` shows exactly which measured bucket moved.
-  Record hardware, driver, and results in the PR.
-- Screenshots: `tools/capture_screenshots.py` strips command lines and full paths, but review model
-  and process names before publishing.
-
-## Release
-
-1. Bump `project.version` in `pyproject.toml`, run `uv lock`, then confirm with `uv lock --check`.
-2. Run the tests, commit `Release vX.Y.Z`, and push `main`.
-3. `git tag -a vX.Y.Z -m "GPU Task Manager vX.Y.Z"` and `git push origin refs/tags/vX.Y.Z`.
-
-`.github/workflows/release.yml` builds Windows x64/ARM64 and Linux x64/ARM64 archives, smoke-tests
-each extracted executable without Python, and publishes them together with checksums and generated
-notes. The build fails if the tag does not match `project.version`. A manual `workflow_dispatch`
-run builds artifacts without publishing.
-
-The same workflow builds a wheel and source distribution, then publishes them to PyPI after all
-builds succeed on a tag. Trusted Publishing uses GitHub OIDC in the `pypi` environment; no API
-token is stored. The PyPI publisher must match owner `shanselman`, repository `gputaskman`,
-workflow `release.yml`, and environment `pypi`. Only the isolated publishing job has
-`id-token: write`; build jobs must not receive it.
-
-## Contributor pull requests
-
-- CI for fork PRs waits for approval:
-  `gh api -X POST repos/shanselman/gputaskman/actions/runs/<run-id>/approve`.
-- Maintainer fixes can be pushed to the contributor's branch when the PR allows maintainer edits.
-  Merge with a merge commit (`gh pr merge <n> --merge --match-head-commit <sha>`) so the
-  contributor's commits and credit are preserved.
-- Review against the rules above, and ask for hardware evidence (or a "not validated" label) for
-  new hardware claims.
-
-## Known limits
-
-Validated live: Windows 11 with an RTX 4080 SUPER (WDDM, plus WSL2), a Linux container with an
-RTX 3060 Ti, macOS 26.3.1 on an M4 Mac mini (Metal; own-user processes, not run as root),
-bare-metal Linux with an amdgpu Radeon RX 9070-series card plus a Radeon 610M (DRM path), and
-bare-metal Linux on a laptop with an RTX 4050 Laptop GPU plus an AMD Phoenix iGPU (NVML and DRM side by side).
-Intel i915 (an Arc A770 with resizable BAR plus a UHD 730) was validated by a contributor, not repeated by
-the maintainer.
-Not yet validated on hardware: systems with two discrete GPUs, multi-GPU on Windows, NVIDIA TCC-mode GPUs
-(run `gputaskman --list-gpus` and `gputaskman --once --gpu N`, then compare device and per-process VRAM
-with `nvidia-smi`; the code path was exercised against a WDDM GPU only), Intel `xe` and Arc cards
-without resizable BAR, and GPU-backed WinML on Copilot+ PCs. Planned work is listed under **Next** in the
-README.
+Non eseguire o programmare logout, reboot, spegnimento, riavvio desktop o arresto del gestore
+grafico. Lascia sempre aperta la sessione dell'utente.

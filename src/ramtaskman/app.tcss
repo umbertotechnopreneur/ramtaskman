@@ -1,0 +1,26 @@
+/* Adapted from gputaskman, Copyright (c) 2026 Scott Hanselman, MIT. */
+
+    Screen { layout: vertical; }
+    #dashboard { height: auto; max-height: 50%; }
+    #system { height: auto; border: round $success; padding: 0 1; }
+    #device { height: auto; border: round $accent; padding: 0 1; }
+    #history { height: auto; border: round $secondary; padding: 0 1; }
+    #chart-controls { height: 1; }
+    #chart-label { width: 8; text-style: bold; }
+    #chart-mode { width: 24; }
+    #chart-mode SelectOverlay { border: solid $accent; padding: 0 1; }
+    #chart-hint { width: 1fr; color: $text-muted; }
+    #charts { height: auto; }
+    #chart-note { height: auto; color: $text-muted; }
+    #procs { height: 1fr; min-height: 4; }
+    #inspector { height: auto; max-height: 30%; overflow-y: auto; border: round $secondary; padding: 0 1; }
+
+    #filters { display: none; height: auto; }
+    #search { height: 1; border: none; padding: 0 1; }
+    #filter-controls { height: 1; }
+    #user-filter { width: 1fr; }
+    #memory-filter { width: 1fr; }
+    #reset-filters { width: 10; min-width: 8; height: 1; border: none; padding: 0 1; }
+    #filter-status { height: 1; color: $text-muted; padding: 0 1; }
+    Screen.filtering #dashboard { max-height: 35%; }
+    Screen.filtering #inspector { max-height: 25%; }

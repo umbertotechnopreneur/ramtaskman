@@ -1,99 +1,85 @@
-"""Capture real local measurements through Textual, without publishing command lines or full paths."""
-
-from __future__ import annotations
-
-import argparse
+"""Capture deterministic SYNTHETIC fixtures; no local process names or paths."""
 import asyncio
-import copy
 import os
-import time
+
+# CI/tool shells may disable color; captures intentionally show the terminal palette.
+os.environ.pop("NO_COLOR", None)
+os.environ["FORCE_COLOR"] = "1"
+import sys
 from pathlib import Path
-from unittest.mock import patch
 
-from gputaskman.app import GpuTaskManager
-from gputaskman.collector import Collector, Snapshot
+from ramtaskman.app import RamTaskManager
 
-
-def for_publication(snapshot: Snapshot) -> Snapshot:
-    snapshot = copy.deepcopy(snapshot)
-    for row in snapshot.procs:
-        row.detail.cmdline = []
-        row.detail.exe = ""
-        for model in row.detail.models + row.detail.candidates:
-            model.path = os.path.basename(model.path)
-        if row.llm:
-            for model in row.llm.models:
-                model.path = os.path.basename(model.path)
-            for model in row.llm.files + row.llm.other_files:
-                model.path = os.path.basename(model.path)
-            if row.llm.server and row.llm.server.model_path:
-                row.llm.server.model_path = os.path.basename(row.llm.server.model_path)
-            for server in (row.llm.server, row.llm.host):
-                for m in server.models if server else []:
-                    if m.get("path"):
-                        m["path"] = os.path.basename(m["path"])
-            if row.llm.log_source:
-                row.llm.log_source = os.path.basename(row.llm.log_source)
-    return snapshot
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tests'))
+from test_memory import fixture
+from test_region_ui import FakeReader
 
 
-async def capture(snapshots: list[Snapshot], output: Path) -> None:
-    output.mkdir(parents=True, exist_ok=True)
-    app = GpuTaskManager()
-    # Freeze a real sample for each view rather than inventing demonstration metrics.
-    with patch.object(GpuTaskManager, "poll"):
-        async with app.run_test(size=(160, 48)) as pilot:
-            for snapshot in snapshots:
-                app.apply(snapshot)
-            await pilot.pause()
-            final = snapshots[-1]
-            llm = next((row for row in final.procs if row.llm and row.llm.models), None)
-            if llm:
-                app.selected_pid = llm.pid
-            else:
-                print("No loaded LLM found; overview will show the available GPU processes.")
-            app.render_table(final)
-            app.render_inspector()
-            await pilot.pause()
-            app.save_screenshot("overview.svg", path=str(output))
-
-            dwm = next((row for row in final.procs if row.kind == "compositor"), None)
-            if dwm:
-                app.selected_pid = dwm.pid
-                app.render_table(final)
-                app.render_inspector()
-                await pilot.pause()
-                app.save_screenshot("compositor.svg", path=str(output))
-            else:
-                print("No compositor row available; compositor capture skipped.")
-
-            app.sort_idx = next(i for i, (name, _) in enumerate(app.SORTS) if name == "spill")
-            app.selected_pid = max(final.procs, key=lambda row: row.gpu.shared).pid if final.procs else None
-            app.render_table(final)
-            app.render_inspector()
-            await pilot.pause()
-            app.save_screenshot("system-memory.svg", path=str(output))
-
-            await pilot.press("question_mark")
-            await pilot.pause()
-            app.save_screenshot("help.svg", path=str(output))
-    print(f"Captured local measurements to {output}. Review all images before publishing.")
+class DemoReader(FakeReader):
+    def read(self, process, cancelled=None):
+        snap = super().read(process, cancelled)
+        if self.calls > 1:
+            snap.regions[1].rss += 30 << 20
+        return snap
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=Path("docs") / "screenshots")
-    args = parser.parse_args()
-    collector = Collector()
-    try:
-        snapshots = []
-        for _ in range(8):
-            time.sleep(1)
-            snapshots.append(for_publication(collector.sample()))
-    finally:
-        collector.close()
-    asyncio.run(capture(snapshots, args.output))
+def demo_snapshot():
+    snap = fixture()
+    for proc in snap.processes[:2]:
+        proc.app_id = '/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.example.Browser-42.scope'
+        proc.app_name = 'org.example.Browser'
+        proc.app_source = 'systemd-cgroup'
+        proc.breakdown = dict(pss_anon=proc.pss * 3 // 4, pss_file=proc.pss // 4,
+                              pss_shmem=0, private_clean=proc.uss // 4,
+                              private_dirty=proc.uss * 3 // 4, shared_clean=proc.rss-proc.uss,
+                              shared_dirty=0, anonymous=proc.uss, lazy_free=0, anon_huge_pages=0)
+    snap.processes[1].executable = '/demo/renderer'
+    return snap
 
 
-if __name__ == "__main__":
-    main()
+async def main():
+    output = Path('captures')
+    output.mkdir(exist_ok=True)
+    app = RamTaskManager(live=False, region_reader=DemoReader())
+    async with app.run_test(size=(160, 48)) as pilot:
+        for _ in range(30):
+            app.apply(demo_snapshot())
+        await pilot.pause()
+        app.save_screenshot('overview.svg', path=str(output))
+        await pilot.press('enter')
+        await pilot.pause()
+        app.save_screenshot('processes.svg', path=str(output))
+        await pilot.press('d')
+        await pilot.pause()
+        app.save_screenshot('detail.svg', path=str(output))
+        await pilot.press('escape', 'r')
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+        app.save_screenshot('regions-resident.svg', path=str(output))
+        await pilot.press('v')
+        await pilot.pause()
+        app.save_screenshot('regions-virtual.svg', path=str(output))
+        await pilot.press('b', 'r')
+        await app.workers.wait_for_complete()
+        await pilot.press('c')
+        await pilot.pause()
+        app.save_screenshot('regions-comparison.svg', path=str(output))
+        await pilot.press('c')
+        await pilot.resize_terminal(80, 24)
+        await pilot.pause()
+        app.save_screenshot('regions-narrow.svg', path=str(output))
+        await pilot.resize_terminal(160, 48)
+        await pilot.press('escape', 'escape', 'slash')
+        from textual.widgets import Input, Select
+        app.query_one('#search', Input).value = 'renderer'
+        app.query_one('#memory-filter', Select).value = 'swap'
+        await pilot.pause()
+        app.save_screenshot('filters.svg', path=str(output))
+        await pilot.press('escape', 'question_mark')
+        await pilot.pause()
+        app.save_screenshot('help.svg', path=str(output))
+    print('Synthetic screenshots: captures/ (not live measurements).')
+
+
+if __name__ == '__main__':
+    asyncio.run(main())

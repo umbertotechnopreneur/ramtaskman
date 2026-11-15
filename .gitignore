@@ -27,3 +27,7 @@ htmlcov/
 result
 result-*
 captures/
+recordings/
+
+# Local dependency cache and terminal captures
+.uv-cache/

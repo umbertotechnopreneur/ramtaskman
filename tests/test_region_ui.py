@@ -12,6 +12,7 @@ from ramtaskman.region_map import RegionMap, region_cells
 from ramtaskman.region_screen import RegionScreen, filter_regions
 from ramtaskman.regions import MemoryRegion, RegionSnapshot
 from test_memory import fixture
+from ui_helpers import open_selected_process_regions
 
 
 def region_fixture(process=None):
@@ -85,9 +86,7 @@ class RegionUITests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(widget.render().cell_len, widget.content_size.width)
 
     async def open_regions(self, app, pilot):
-        app.apply(fixture())
-        await pilot.pause()
-        await pilot.press('enter', 'enter')
+        await open_selected_process_regions(app, pilot, fixture())
         await app.workers.wait_for_complete()
         await pilot.pause()
         self.assertIsInstance(app.screen, RegionScreen)
@@ -200,9 +199,7 @@ class RegionUITests(unittest.IsolatedAsyncioTestCase):
         app = RamTaskManager(live=False, region_reader=SlowReader())
         async with app.run_test(size=(80, 24)) as pilot:
             keep_running = app.run_worker(asyncio.sleep(30), group='main-test')
-            app.apply(fixture())
-            await pilot.press('enter', 'enter')
-            await pilot.pause()
+            await open_selected_process_regions(app, pilot, fixture())
             self.assertTrue(started.is_set())
             await pilot.press('escape')
             await pilot.pause()
@@ -218,7 +215,10 @@ class RegionUITests(unittest.IsolatedAsyncioTestCase):
             snap = fixture()
             snap.platform = 'macos'
             app.apply(snap)
-            await pilot.press('enter', 'r')
+            await pilot.pause()
+            await pilot.press('enter')
+            await pilot.pause()
+            await pilot.press('r')
             await app.workers.wait_for_complete()
             await pilot.pause()
             self.assertIsInstance(app.screen, RegionScreen)

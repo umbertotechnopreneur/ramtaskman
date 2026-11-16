@@ -10,6 +10,7 @@ from ramtaskman.capture_dialog import CaptureOpenScreen, CaptureSaveScreen
 from ramtaskman.capture_io import load_capture
 from ramtaskman.replay import ReplayApp
 from test_capture_io import fixture
+from ui_helpers import open_selected_process_regions
 
 
 class DialogApp(App):
@@ -106,8 +107,7 @@ class CaptureDialogTests(unittest.IsolatedAsyncioTestCase):
             path = Path(td) / 'misura.rtm.json'
             app = RamTaskManager(live=False, region_reader=FakeReader())
             async with app.run_test(size=(160, 48)) as pilot:
-                app.apply(main_fixture())
-                await pilot.press('enter', 'enter')
+                await open_selected_process_regions(app, pilot, main_fixture())
                 await app.workers.wait_for_complete()
                 await pilot.pause()
                 self.assertIsInstance(app.screen, RegionScreen)

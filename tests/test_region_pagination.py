@@ -7,6 +7,7 @@ from ramtaskman.region_map import RegionMap, region_cells
 from ramtaskman.regions import MemoryRegion, RegionSnapshot
 from ramtaskman.report import size
 from test_memory import fixture
+from ui_helpers import open_selected_process_regions
 
 class Reader:
     def read(self, process, cancelled=None):
@@ -19,8 +20,7 @@ class PaginationTests(unittest.IsolatedAsyncioTestCase):
     async def test_navigation_refresh_filters_and_map_click_keep_full_map(self):
         app=RamTaskManager(live=False, region_reader=Reader())
         async with app.run_test(size=(160,48)) as pilot:
-            app.apply(fixture())
-            await pilot.press('enter','enter')
+            await open_selected_process_regions(app, pilot, fixture())
             await app.workers.wait_for_complete()
             await pilot.pause()
             screen=app.screen
@@ -76,8 +76,7 @@ class PaginationTests(unittest.IsolatedAsyncioTestCase):
     async def test_comparison_pages_preserve_overall_delta(self):
         app=RamTaskManager(live=False, region_reader=Reader())
         async with app.run_test(size=(80,24)) as pilot:
-            app.apply(fixture())
-            await pilot.press('enter','enter')
+            await open_selected_process_regions(app, pilot, fixture())
             await app.workers.wait_for_complete()
             await pilot.press('b','r')
             await app.workers.wait_for_complete()

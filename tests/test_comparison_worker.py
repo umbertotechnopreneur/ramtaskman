@@ -10,6 +10,7 @@ from ramtaskman.regions import MemoryRegion, RegionSnapshot
 from ramtaskman.region_screen import RegionScreen
 from test_memory import fixture
 from test_region_ui import region_fixture
+from ui_helpers import open_selected_process_regions
 
 
 class ComparisonCancellationTests(unittest.TestCase):
@@ -52,8 +53,7 @@ class ComparisonWorkerTests(unittest.IsolatedAsyncioTestCase):
         app = RamTaskManager(live=False, region_reader=FakeReader())
         with patch.object(module, 'freeze_snapshot', side_effect=instrumented):
             async with app.run_test(size=(80, 24)) as pilot:
-                app.apply(fixture())
-                await pilot.press('enter', 'enter')
+                await open_selected_process_regions(app, pilot, fixture())
                 await app.workers.wait_for_complete()
                 await pilot.pause()
                 self.assertEqual(len(freeze_threads), 1)
@@ -156,6 +156,7 @@ class ComparisonWorkerTests(unittest.IsolatedAsyncioTestCase):
                 app.apply(fixture())
                 screen = RegionScreen(proc, 'linux', offline_capture=b, offline_baseline=a)
                 app.push_screen(screen)
+                await pilot.pause()
                 await app.workers.wait_for_complete()
                 await pilot.pause()
                 self.assertIn('non disponibile', str(screen.query_one('#region-map-title').content))
@@ -175,8 +176,7 @@ class ComparisonWorkerTests(unittest.IsolatedAsyncioTestCase):
         from test_comparison_ui import Reader
         app = RamTaskManager(live=False, region_reader=Reader())
         async with app.run_test(size=(80, 24)) as pilot:
-            app.apply(fixture())
-            await pilot.press('enter', 'enter')
+            await open_selected_process_regions(app, pilot, fixture())
             await app.workers.wait_for_complete()
             await pilot.pause()
             screen = app.screen

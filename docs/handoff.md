@@ -337,3 +337,11 @@ La suite completa con l'adapter nativo ha eseguito **226 test in 251,858 secondi
 223 passati e 3 prove Windows saltate**, senza errori o fallimenti. Sono passati
 anche Ruff `F,E9`, build e verifica della distribuzione installata. Il test del
 dialogo con la sincronizzazione corretta è stato inoltre ripetuto cinque volte.
+
+Windows/Python 3.11 ha poi rilevato la stessa classe di race nei setup che
+inviavano due Invio consecutivi dopo `apply()`: la rigenerazione delle righe non
+era ancora conclusa e l'app scartava correttamente gli eventi della generazione
+precedente. `tests/ui_helpers.py` attende ora il rendering dopo `apply()` e fra
+app, processi e regioni. Non attende i worker, così i test di annullamento possono
+continuare a usare lettori bloccati. Aggiornati i cinque moduli interessati e
+verificati tutti i loro 30 test locali. Il comportamento applicativo resta invariato.

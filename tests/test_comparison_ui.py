@@ -10,6 +10,7 @@ from ramtaskman.region_screen import RegionScreen
 from ramtaskman.regions import RegionSnapshot
 from test_memory import fixture
 from test_region_ui import region_fixture
+from ui_helpers import open_selected_process_regions
 
 
 class Reader:
@@ -32,8 +33,7 @@ class Reader:
 
 class ComparisonUI(unittest.IsolatedAsyncioTestCase):
     async def open_region(self, app, pilot):
-        app.apply(fixture())
-        await pilot.press('enter', 'enter')
+        await open_selected_process_regions(app, pilot, fixture())
         await app.workers.wait_for_complete()
         await pilot.pause()
         return app.screen

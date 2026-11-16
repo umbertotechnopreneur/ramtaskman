@@ -1,5 +1,7 @@
 # ramtaskman · como interpretar os números
 
+Desenvolvemos e testamos no Linux e no Windows. O backend do macOS é experimental e não foi testado nem validado pelo projeto, pois não temos um Mac disponível. Eventuais verificações do macOS dependem de contribuições externas; a CI do projeto não inclui o macOS.
+
 A estrutura visual do gputaskman, adaptada à memória no Linux, Windows e macOS.
 
 | Campo | Significado |

@@ -4,7 +4,9 @@
 
 ### Comprendre où va la RAM, directement dans le terminal.
 
-ramtaskman est un moniteur de mémoire expérimental pour Linux, Windows et macOS. Né de la curiosité et de la recherche, il aide à comprendre la mémoire sur plusieurs systèmes sans recourir à des outils compliqués. C’est un projet Vibeware.
+ramtaskman est un moniteur de mémoire expérimental développé et testé sous Linux et Windows. Né de la curiosité et de la recherche, il aide à comprendre la mémoire sur plusieurs systèmes sans recourir à des outils compliqués. C’est un projet Vibeware.
+
+Le backend macOS est présent à titre expérimental. Nous ne disposons d’aucun Mac : macOS est donc hors du périmètre de vérification du projet et n’est ni testé ni validé par celui-ci. Des essais externes ne constituent pas une validation officielle ; aucune parité de fonctionnalités avec Linux et Windows n’est promise.
 
 ![ramtaskman](../images/overview.png)
 
@@ -50,13 +52,13 @@ Utilisez --once ou --json pour une mesure unique ou une sortie JSON. Ne partagez
 
 Touches utiles : m change de mode, g alterne applications/processus, / recherche, f filtre, d affiche les détails, r ouvre les régions, ? explique les métriques et q quitte. Le guide technique complet est actuellement en italien.
 
-Lancez le tableau de bord avec `./run.sh --language fr` (Windows : `.\run.cmd --language fr`). Les textes de l’application sont disponibles en dix langues : `--language` choisit la langue de l’interface, du pied de page, de l’aide, de la CLI et du rapport textuel `--once`. Les messages techniques produits par l’application sont également traduits. Les identifiants et le schéma JSON restent stables ; les détails du système d’exploitation et les textes des captures enregistrées conservent leur langue d’origine. La vérification locale porte sur Linux avec Python 3.14.4 : interface synthétique en 160×48 et 80×24, CLI, construction des paquets, installation isolée et replay. Aucune nouvelle vérification sur matériel Windows/macOS n’a été effectuée. Les traductions attendent encore une relecture par des locuteurs natifs.
+Lancez le tableau de bord avec `./run.sh --language fr` (Windows : `.\run.cmd --language fr`). Les textes de l’application sont disponibles en dix langues : `--language` choisit la langue de l’interface, du pied de page, de l’aide, de la CLI et du rapport textuel `--once`. Les messages techniques produits par l’application sont également traduits. Les identifiants et le schéma JSON restent stables ; les détails du système d’exploitation et les textes des captures enregistrées conservent leur langue d’origine. La vérification locale porte sur Linux avec Python 3.14.4 : interface synthétique en 160×48 et 80×24, CLI, construction des paquets, installation isolée et replay. Les vérifications Windows sont effectuées en CI ; macOS est exclu des vérifications du projet. Les traductions attendent encore une relecture par des locuteurs natifs.
 
 ## Expérimental : interpréter les chiffres avec prudence
 
 Les lectures sont séquentielles, les permissions peuvent limiter la visibilité et le regroupement des applications est heuristique. Une donnée absente vaut n/a, pas zéro. RSS peut compter deux fois les pages partagées ; la PSS des processus n’est pas la RAM totale. Le cache chevauche la mémoire disponible. Le swap par processus n’est pas déduit du commit.
 
-Linux fournit PSS et swap par processus lorsque les données sont lisibles. Ils ne sont pas exposés ici sous Windows et macOS. Les régions Linux utilisent smaps ; celles de Windows sont des plages virtuelles expérimentales ; la carte macOS n’est pas encore disponible. La vérification matérielle locale concerne Linux ; Windows et macOS restent à valider.
+Linux fournit PSS et swap par processus lorsque les données sont lisibles. Ils ne sont pas exposés ici sous Windows ni dans le backend macOS expérimental. Les régions Linux utilisent smaps ; celles de Windows sont des plages virtuelles expérimentales ; la carte macOS n’est pas encore disponible. Les vérifications du projet couvrent Linux en local et Windows en CI native ; macOS reste hors de ce périmètre.
 
 ## Inspiration et remerciements
 

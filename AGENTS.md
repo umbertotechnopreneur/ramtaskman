@@ -4,12 +4,23 @@ Scrivi in italiano. Leggi README.md, lessons.md e docs/handoff.md prima di modif
 Controlla `git status` e preserva il lavoro esistente. Non pubblicare, creare remote di
 pubblicazione o inviare contenuti senza richiesta dell'utente.
 
+## Piattaforme verificate
+
+Sviluppo e verifiche del progetto riguardano Linux e Windows. Non abbiamo un Mac
+a disposizione: macOS è sperimentale, non testato né validato dal progetto.
+Non avviare, pianificare o inseguire verifiche native macOS e non includerlo nella
+CI. Il backend e le procedure indicative possono restare per contributori esterni;
+i contratti simulati eseguiti su altri sistemi non attestano il funzionamento su Mac.
+Mantieni questa politica esplicita in tutti i README, nelle pagine di documentazione
+e nell'aiuto dell'app. Cambiala solo su nuova istruzione dell'utente.
+
 ## Obiettivo e confini
 
 UI terminale Python/Textual con la stessa struttura visiva di gputaskman di Scott Hanselman,
-dedicata a RAM, PSS, USS e swap su Linux, Windows e macOS. Conserva LICENSE e docs/upstream.md. Non reintrodurre
-backend GPU, dipendenze NVIDIA o pubblicazione PyPI ereditati. I backend RAM Windows/macOS
-sono invece parte dell’obiettivo richiesto.
+dedicata a RAM, PSS, USS e swap su Linux e Windows, con backend macOS sperimentale
+fuori dal perimetro di verifica interno. Conserva LICENSE e docs/upstream.md. Non reintrodurre
+backend GPU, dipendenze NVIDIA o pubblicazione PyPI ereditati. Il backend RAM
+Windows è parte dell'obiettivo; quello macOS resta sperimentale e non validato.
 Non riscrivere la UI in un altro framework. Scomponi le estensioni in cambiamenti piccoli.
 
 ## Regole dei dati
@@ -40,8 +51,10 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv build
 Per modifiche UI usa Textual run_test, `await pilot.pause()` prima delle asserzioni,
 verifica 160x48 e 80x24. Esegui solo controlli pertinenti; non aggiungere test per semplici note.
 Non salvare nomi e percorsi dei processi reali nelle fixture o nelle schermate pubblicate.
-CI configurata su Linux/Windows/macOS; qui è stata eseguita solo la suite locale Linux.
-I test mock non sostituiscono le verifiche hardware: documenta cosa è stato davvero eseguito.
+CI configurata su Linux e Windows, con Python 3.11, 3.13 e 3.14. Su questo PC è
+stata eseguita solo la suite locale Linux; le prove native Windows sono eseguite
+anche sui runner CI. I test mock non sostituiscono le verifiche hardware:
+documenta cosa è stato davvero eseguito. macOS resta non testato dal progetto.
 
 ## Ambiente portatile
 

@@ -1,5 +1,9 @@
 # Revisione del codice — 16 novembre 2026
 
+> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
+> validato dal progetto perché non abbiamo un Mac a disposizione. I tentativi
+> macOS storici non cambiano questa politica.
+
 Revisione locale dei collector, modelli, aggregazione, contatori di piattaforma,
 lettore regioni, confronto, acquisizioni e replay, interfaccia Textual, launcher,
 verifiche di distribuzione e CI. Le prove native eseguite sono Linux; la lettura del
@@ -48,10 +52,10 @@ codice e i mock non sostituiscono prove hardware Windows/macOS.
    filtri, paginazione, confronto, rendering e salvataggio. Conviene separare in
    incrementi piccoli le funzioni pure di presentazione e le operazioni asincrone,
    preservando i test su selezione, generazioni e chiusura dei worker.
-4. **Validazione multipiattaforma.** La prima esecuzione GitHub Actions è fallita
-   nella verifica della distribuzione Linux e aveva annullato gli altri job. La
-   correzione è stata riprodotta localmente; serviranno risultati CI nuovi. I mock
-   non dimostrano la correttezza delle API native su un PC Windows o un Mac.
+4. **Validazione sui sistemi seguiti.** Sono passati tutti i sei job Linux e Windows
+   con Python 3.11, 3.13 e 3.14, incluse le prove native Windows sui runner.
+   Le prove manuali su PC Windows restano distinte dalla CI. macOS è escluso
+   dalle verifiche interne per scelta dell'utente e assenza di hardware disponibile.
 
 La verifica Ruff isolata per errori di sintassi e nomi/import (`F,E9`) è passata.
 Una scansione con la configurazione Ruff dell'host segnala anche numerose regole

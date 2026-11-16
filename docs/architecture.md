@@ -1,5 +1,9 @@
 # Architettura
 
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
 ## Flusso
 
 ```text
@@ -157,7 +161,8 @@ Nessun uso di pagemap/PFN, mem, cmdline, environ o contenuti dei file mappati.
 `RegionScreen` apre un worker cancellabile all'ingresso e con `r`, senza cambiare il
 normale Collector. A ogni richiesta svuota i dati precedenti; `request_id` scarta risposte
 superate e l'identità del risultato è verificata anche in UI. Chiudere la vista annulla
-il worker e invalida le risposte. Windows/macOS mostrano un motivo senza avviare letture Linux.
+il worker e invalida le risposte. Windows usa il provider virtuale sperimentale;
+macOS mostra un motivo di indisponibilità senza avviare letture Linux.
 Timestamp, età, durata e stato completo/parziale restano visibili; non c'è refresh periodico
 dei dati delle regioni. L'età mostrata si aggiorna ogni secondo.
 
@@ -187,7 +192,9 @@ collector o un provider; refresh live disabilitato. La sessione di acquisizione 
 condivisa tra viste dello stesso avvio, non tra avvii distinti.
 
 `region_provider.py` sceglie il provider: Linux smaps, Windows VirtualQueryEx
-sperimentale (solo virtuale, test simulati), oppure un motivo esplicito su macOS.
+sperimentale (solo virtuale, test simulati e verifiche native in CI Windows), oppure
+un motivo esplicito su macOS. Le prove manuali sul PC Windows personale restano da
+eseguire; il backend macOS non è validato.
 L'immagine dell'eseguibile viene verificata prima e dopo la raccolta; se non è
 disponibile il confronto dell'identità non è verificabile.
 

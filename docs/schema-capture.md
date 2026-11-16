@@ -1,5 +1,9 @@
 # Formato acquisizioni ramtaskman v1
 
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
 Il formato `.rtm.json` salva **metadati** delle regioni di un processo per la
 consultazione locale offline. È indipendente da `--json`, che mantiene il suo contratto
 precedente. Il file non contiene i byte della memoria delle applicazioni, ma può

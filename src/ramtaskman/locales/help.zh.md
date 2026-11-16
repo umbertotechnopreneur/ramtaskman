@@ -1,5 +1,7 @@
 # ramtaskman · 如何理解这些数值
 
+本项目在 Linux 和 Windows 上开发和测试。由于我们没有可用的 Mac，macOS 后端属于实验性功能，未经本项目测试或验证。macOS 的任何验证均需依靠外部贡献者；项目 CI 不包含 macOS。
+
 沿用 gputaskman 的界面结构，面向 Linux、Windows 和 macOS 的内存监测。
 
 | 字段 | 含义 |

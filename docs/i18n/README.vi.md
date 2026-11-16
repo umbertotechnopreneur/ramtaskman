@@ -4,7 +4,9 @@
 
 ### Hiểu RAM đang được dùng vào đâu, ngay trong terminal.
 
-ramtaskman là trình theo dõi bộ nhớ thử nghiệm cho Linux, Windows và macOS. Dự án xuất phát từ sự tò mò và nghiên cứu: hiểu bộ nhớ trên nhiều hệ thống mà không cần những công cụ quá phức tạp. Đây là một dự án Vibeware.
+ramtaskman là trình theo dõi bộ nhớ thử nghiệm, được phát triển và kiểm thử trên Linux và Windows. Dự án xuất phát từ sự tò mò và nghiên cứu: hiểu bộ nhớ trên nhiều hệ thống mà không cần những công cụ quá phức tạp. Đây là một dự án Vibeware.
+
+Backend macOS vẫn có trong mã nguồn ở trạng thái thử nghiệm. Chúng tôi không có máy Mac, nên macOS nằm ngoài phạm vi xác minh của dự án và chưa được dự án kiểm thử hay xác nhận. Các thử nghiệm từ bên ngoài không phải là xác nhận chính thức; dự án không cam kết tính năng ngang bằng với Linux và Windows.
 
 ![ramtaskman](../images/overview.png)
 
@@ -50,13 +52,13 @@ Dùng --once để lấy một mẫu hoặc --json để xuất JSON. Không dù
 
 Phím hữu ích: m đổi chế độ, g đổi ứng dụng/tiến trình, / tìm kiếm, f lọc, d xem chi tiết, r mở vùng nhớ, ? giải thích chỉ số và q thoát. Hướng dẫn kỹ thuật đầy đủ hiện bằng tiếng Ý.
 
-Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Văn bản của ứng dụng hiện có bằng mười ngôn ngữ: `--language` chọn ngôn ngữ cho giao diện, chân trang, trợ giúp, CLI và báo cáo văn bản `--once`. Các thông báo kỹ thuật do ứng dụng tạo ra cũng đã được dịch. Định danh và cấu trúc JSON được giữ ổn định; chi tiết từ hệ điều hành và văn bản trong các bản ghi đã lưu vẫn giữ ngôn ngữ gốc. Phạm vi xác minh cục bộ là Linux với Python 3.14.4: giao diện dữ liệu tổng hợp ở 160×48 và 80×24, CLI, dựng gói, cài đặt biệt lập và phát lại. Không có xác minh mới trên phần cứng Windows/macOS. Các bản dịch vẫn cần người bản ngữ rà soát.
+Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Văn bản của ứng dụng hiện có bằng mười ngôn ngữ: `--language` chọn ngôn ngữ cho giao diện, chân trang, trợ giúp, CLI và báo cáo văn bản `--once`. Các thông báo kỹ thuật do ứng dụng tạo ra cũng đã được dịch. Định danh và cấu trúc JSON được giữ ổn định; chi tiết từ hệ điều hành và văn bản trong các bản ghi đã lưu vẫn giữ ngôn ngữ gốc. Phạm vi xác minh cục bộ là Linux với Python 3.14.4: giao diện dữ liệu tổng hợp ở 160×48 và 80×24, CLI, dựng gói, cài đặt biệt lập và phát lại. Windows được kiểm tra qua CI; macOS không thuộc phạm vi xác minh của dự án. Các bản dịch vẫn cần người bản ngữ rà soát.
 
 ## Dự án thử nghiệm: hãy đọc số liệu cẩn thận
 
 Các phép đọc diễn ra tuần tự, quyền truy cập có thể hạn chế khả năng quan sát và việc nhóm ứng dụng chỉ là phương pháp phỏng đoán. Dữ liệu thiếu là n/a, không phải số không. RSS có thể đếm trùng trang chia sẻ; PSS của tiến trình không phải tổng RAM. Bộ nhớ đệm chồng lấp với bộ nhớ khả dụng. Swap của tiến trình không được suy ra từ commit.
 
-Linux cung cấp PSS và swap theo tiến trình khi có thể đọc. Ở đây Windows và macOS không cung cấp các chỉ số này. Vùng nhớ Linux dùng smaps; Windows chỉ có khoảng địa chỉ ảo thử nghiệm; macOS chưa có bản đồ. Đã kiểm tra phần cứng thực trên Linux; Windows và macOS vẫn cần xác thực gốc.
+Linux cung cấp PSS và swap theo tiến trình khi có thể đọc. Ở đây Windows và backend macOS thử nghiệm không cung cấp các chỉ số này. Vùng nhớ Linux dùng smaps; Windows chỉ có khoảng địa chỉ ảo thử nghiệm; macOS chưa có bản đồ. Việc xác minh của dự án gồm kiểm tra Linux cục bộ và kiểm tra Windows gốc qua CI; macOS vẫn nằm ngoài phạm vi đó.
 
 ## Cảm hứng và lời cảm ơn
 

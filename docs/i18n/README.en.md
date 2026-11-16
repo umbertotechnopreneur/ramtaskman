@@ -4,7 +4,9 @@
 
 ### See where your RAM goes, right from the terminal.
 
-ramtaskman is an experimental RAM monitor for Linux, Windows and macOS. It grew from curiosity and research into a practical way to understand memory across different systems without reaching for complicated tools. It is a Vibeware project.
+ramtaskman is an experimental RAM monitor developed and tested on Linux and Windows. It grew from curiosity and research into a practical way to understand memory across different systems without reaching for complicated tools. It is a Vibeware project.
+
+The macOS backend is present as experimental code. We have no Mac available, so macOS is outside the project's verification scope and is neither tested nor validated by the project. External test results do not constitute official validation; feature parity with Linux and Windows is not promised.
 
 ![ramtaskman](../images/overview.png)
 
@@ -50,13 +52,13 @@ Use --once or --json for a single reading or JSON output. Do not share a .venv b
 
 Useful keys: m switches modes, g toggles apps/processes, / searches, f filters, d opens details, r opens regions, ? explains metrics and q quits. The complete technical guide is currently in Italian.
 
-Start the dashboard with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). App text is available in ten languages: `--language` selects the language of the interface, footer, help, CLI and human-readable `--once` report. App-owned technical messages are translated too. Identifiers and the JSON schema remain stable; operating-system details and text from saved captures retain their original language. Local verification covers Linux with Python 3.14.4: synthetic UI at 160×48 and 80×24, CLI, builds, isolated installation and replay. No new hardware verification on Windows or macOS was performed. The translations still need native-speaker review.
+Start the dashboard with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). App text is available in ten languages: `--language` selects the language of the interface, footer, help, CLI and human-readable `--once` report. App-owned technical messages are translated too. Identifiers and the JSON schema remain stable; operating-system details and text from saved captures retain their original language. Local verification covers Linux with Python 3.14.4: synthetic UI at 160×48 and 80×24, CLI, builds, isolated installation and replay. Windows checks run in CI; macOS is excluded from project verification. The translations still need native-speaker review.
 
 ## Experimental: read the numbers carefully
 
 Readings are sequential, permissions may restrict visibility, and application grouping is heuristic. Missing data is n/a, not zero. RSS may double-count shared pages; process PSS is not total system RAM. Cache overlaps available memory. Process swap is not inferred from commit.
 
-Linux provides PSS and per-process swap when readable. Windows and macOS do not expose them here. Linux regions use smaps; Windows regions are experimental virtual ranges; macOS region maps are not implemented. Local hardware verification has been performed on Linux; Windows and macOS still need native validation.
+Linux provides PSS and per-process swap when readable. Windows and the experimental macOS backend do not expose them here. Linux regions use smaps; Windows regions are experimental virtual ranges; macOS region maps are not implemented. Project verification covers local Linux checks and native Windows CI checks; macOS remains outside that scope.
 
 ## Inspiration and thanks
 

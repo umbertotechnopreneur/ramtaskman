@@ -1,5 +1,7 @@
 # ramtaskman · 数値の読み方
 
+本プロジェクトはLinuxとWindowsで開発・テストしています。利用できるMacがないため、macOSバックエンドは実験的な機能であり、プロジェクトによるテスト・検証は行っていません。macOSでの検証は外部の貢献者に依存し、プロジェクトのCIにmacOSは含まれません。
+
 gputaskmanの画面構成を、Linux、Windows、macOSのメモリ向けに調整しています。
 
 | 項目 | 意味 |

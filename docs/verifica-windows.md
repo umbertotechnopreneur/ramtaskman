@@ -1,6 +1,12 @@
 # Verifica nativa Windows delle regioni
 
-Questa procedura è **preparata ma non ancora eseguita su Windows reale**. Il provider
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
+Le verifiche automatiche native Windows sono passate in CI; l'ultima matrice
+Ubuntu/Windows con Python 3.11, 3.13 e 3.14 ha sei job verdi. Questa procedura
+manuale sul PC Windows personale è invece **ancora da eseguire**. Il provider
 `VirtualQueryEx` è sperimentale: visualizza intervalli virtuali, non RSS per regione.
 La prova usa soltanto un'allocazione controllata creata dal proprio processo Python.
 Non richiede privilegi elevati, non legge i byte di altri processi e non cambia le
@@ -102,11 +108,12 @@ set con working set e memoria privata residente con una misura equivalente. Il
 private commit/PagefileUsage non è swap su disco né USS. Annotare differenze di orario:
 le letture dei due programmi non sono atomiche.
 
-## Esito da registrare
+## Esito delle prove manuali da registrare
 
 Usare **passato / fallito / non eseguito**, separando ciascuna voce. Non pubblicare
 l'output raw, che contiene indirizzi virtuali e potrebbe contenere altre informazioni
-locali; condividere solo un riepilogo controllato.
+locali; condividere solo un riepilogo controllato. Il registro seguente riguarda il
+PC Windows personale e non sostituisce né riassume gli esiti automatici della CI.
 
 | Voce | Esito | Dettaglio |
 |---|---|---|

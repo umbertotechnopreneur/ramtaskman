@@ -1,5 +1,9 @@
 # Passaggio al prossimo agente
 
+> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
+> validato dal progetto perché non abbiamo un Mac a disposizione. Le prove macOS
+> citate nella cronologia sotto non costituiscono una validazione della piattaforma.
+
 ## Piano di prosecuzione
 
 Il riferimento per il lavoro successivo è il [piano di sviluppo dettagliato](piano-sviluppo.md),
@@ -8,15 +12,17 @@ F2 acquisizioni/replay, F3 piattaforme, F4 prestazioni e F5 consolidamento/distr
 preceduti da F0 per i contratti comuni. La sequenza iniziale prevista è F0 → F1 → F2.
 Il documento contiene criteri di accettazione, verifiche e registro. L'utente ha poi
 autorizzato l'esecuzione del piano: controllare il registro e i test prima di ripartire.
-Confronto e acquisizioni offline sono implementati; la validazione hardware Windows/macOS
-e la mappa macOS rimangono aperte. Il budget generale è opzionale e la UI conserva il
+Confronto e acquisizioni offline sono implementati; restano le prove manuali su PC
+Windows, distinte dalla CI. macOS e la sua eventuale mappa sono fuori dal perimetro
+di verifica interno. Il budget generale è opzionale e la UI conserva il
 risultato del confronto immutabile; la tabella è paginata, con verifiche prestazionali in corso.
 
 ## Obiettivo dell'utente
 
 Un ramtaskman Python/Textual con la stessa UI terminale di gputaskman di Scott Hanselman,
 ma dedicato a RAM per applicazione, PSS, USS e swap. L’utente ha poi richiesto
-esplicitamente il supporto multipiattaforma: Linux, Windows e macOS. Preparare una base chiara sulla quale
+inizialmente il supporto multipiattaforma, poi limitato sviluppo e verifiche a Linux
+e Windows: macOS resta sperimentale e non validato. Preparare una base chiara sulla quale
 possa proseguire un agente meno potente. Nessun cambio di framework; l'utente ha poi
 richiesto esplicitamente la pubblicazione del repository GitHub.
 
@@ -33,13 +39,14 @@ dei moduli GPU è intenzionale e la provenienza resta nella cronologia upstream.
    e [lessons](../lessons.md).
 2. Controlla `git status`, branch corrente e ultimo commit. Il branch di lavoro è
    `codex/ramtaskman-foundation`; l'upstream GPU resta nella cronologia.
-3. Avvia `./run.sh` (Linux/macOS) o `.\run.cmd` (Windows) dalla radice. Per una verifica rapida usa `./run.sh --once`.
+3. Avvia `./run.sh` (Linux) o `.\run.cmd` (Windows) dalla radice. Per una verifica rapida usa `./run.sh --once`.
 4. Esegui i test indicati nel README prima e dopo una modifica funzionale.
 5. Segui i blocchi del piano autorizzati dall'utente, in incrementi piccoli; non riscrivere tutto insieme.
 
 ## Già implementato
 
-- Selettore backend: Linux con meminfo/smaps_rollup/PSI; Windows e macOS con psutil RSS/USS.
+- Selettore backend: Linux con meminfo/smaps_rollup/PSI; Windows con psutil RSS/USS;
+  backend macOS presente come esperimento non validato.
 - PSS/swap per processo dichiarate non disponibili su Windows/macOS; nessuna stima sostitutiva.
 - Modelli con None per dati sconosciuti, aggregati completi o null e copertura PSS.
 - Raggruppamento Linux per istanza applicativa cgroup systemd esplicita con UID coerente,
@@ -63,13 +70,13 @@ dei moduli GPU è intenzionale e la provenienza resta nella cronologia upstream.
 - UI derivata dall'originale: CSS e helper copiati; struttura dei pannelli e grafici adattata.
 - Sort, tutti/top 30, slim/full, pausa, aiuto, ridimensionamento e recupero dopo errori.
 - CLI, output JSON con backend/capacità/copertura, lockfile, launcher Unix e Windows,
-  CI configurata Linux/Windows/macOS e suite di test locale.
+  CI configurata Linux/Windows e suite di test locale.
 - Catture SVG sintetiche riproducibili, escluse da Git.
 
 ## Verifica Windows reale da programmare con F3
 
-La parte Windows/macOS è implementata e coperta da simulazioni; non è stata eseguita su
-questi sistemi. Su un PC Windows con Python e uv:
+La parte Windows è coperta da simulazioni e prove native sui runner CI; manca il
+confronto manuale su un PC Windows personale. Su quel PC con Python e uv:
 
 ```powershell
 .\run.cmd --once
@@ -80,8 +87,8 @@ questi sistemi. Su un PC Windows con Python e uv:
 
 Verifica RSS/working set e USS/private working set con contatori equivalenti, non con
 commit. Documenta versione Windows, Python, numero di processi, copertura e sample_ms.
-Controlla processi protetti, uscita e resize. Per macOS ripeti con `./run.sh`, annotando
-i limiti di permesso e il significato di available. Non dichiarare completata la
+Controlla processi protetti, uscita e resize. Non pianificare prove interne macOS.
+Non dichiarare completata la
 validazione hardware finché non è stata eseguita. Nessun riavvio/logout necessario.
 
 ## Incrementi consigliati, indipendenti
@@ -345,3 +352,19 @@ precedente. `tests/ui_helpers.py` attende ora il rendering dopo `apply()` e fra
 app, processi e regioni. Non attende i worker, così i test di annullamento possono
 continuare a usare lettori bloccati. Aggiornati i cinque moduli interessati e
 verificati tutti i loro 30 test locali. Il comportamento applicativo resta invariato.
+
+## Politica macOS stabilita dall'utente
+
+L'utente ha richiesto di interrompere le verifiche macOS e di dichiarare questa
+regola in tutte le pagine e nei README: non abbiamo un Mac a disposizione, quindi
+macOS è sperimentale, non testato né validato dal progetto. Il backend rimane per
+eventuali contributi esterni; non va presentato come piattaforma verificata.
+Nessun ulteriore inseguimento di errori, runner o prove native macOS senza nuova
+istruzione. I tentativi e i problemi descritti sopra restano soltanto cronologia.
+
+Nel run `6b757d4` tutti i **sei job Linux/Windows sono riusciti**: Python 3.11,
+3.13 e 3.14 su entrambi i sistemi, con 226 test per job, CLI, build, archivi,
+installazione isolata e replay. Le tre prove native Windows sono passate su tutte
+le versioni. Le verifiche macOS rimaste sono state interrotte su richiesta.
+La matrice CI ora comprende esclusivamente Ubuntu e Windows; la policy è anche
+in AGENTS.md, nei dieci README, nelle pagine tecniche e nei dieci aiuti dell'app.

@@ -1,5 +1,9 @@
 # Lezioni verificate
 
+> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
+> validato dal progetto perché non abbiamo un Mac a disposizione. Gli esperimenti
+> storici riportati altrove non costituiscono una validazione della piattaforma.
+
 ## Memoria non leggibile non significa zero
 
 La scansione locale senza elevazione ha rilevato molti processi senza accesso a smaps_rollup.

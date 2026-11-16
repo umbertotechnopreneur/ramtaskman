@@ -4,7 +4,9 @@
 
 ### Sehen, wohin der Arbeitsspeicher geht – direkt im Terminal.
 
-ramtaskman ist ein experimenteller Speichermonitor für Linux, Windows und macOS. Aus Neugier und Forschung entstanden, hilft er beim Verständnis des Speichers auf verschiedenen Systemen, ohne komplizierte Werkzeuge zu benötigen. Ein Vibeware-Projekt.
+ramtaskman ist ein experimenteller Speichermonitor, der unter Linux und Windows entwickelt und getestet wird. Aus Neugier und Forschung entstanden, hilft er beim Verständnis des Speichers auf verschiedenen Systemen, ohne komplizierte Werkzeuge zu benötigen. Ein Vibeware-Projekt.
+
+Das macOS-Backend ist als experimenteller Code vorhanden. Uns steht kein Mac zur Verfügung; macOS liegt deshalb außerhalb des Prüfumfangs des Projekts und wird vom Projekt weder getestet noch validiert. Externe Tests gelten nicht als offizielle Validierung. Funktionsgleichheit mit Linux und Windows wird nicht zugesichert.
 
 ![ramtaskman](../images/overview.png)
 
@@ -50,13 +52,13 @@ Unter Windows im Projektordner mit Windows Terminal:
 
 Tasten: m wechselt den Modus, g Anwendungen/Prozesse, / sucht, f filtert, d zeigt Details, r öffnet Bereiche, ? erklärt die Werte und q beendet. Die vollständige technische Anleitung ist derzeit auf Italienisch.
 
-Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Anwendungstexte sind in zehn Sprachen verfügbar: `--language` wählt die Sprache für Oberfläche, Fußzeile, Hilfe, CLI und den Textbericht `--once`. Auch technische Meldungen der Anwendung werden übersetzt. Kennungen und JSON-Schema bleiben stabil; Betriebssystemdetails und Texte aus gespeicherten Aufnahmen behalten ihre ursprüngliche Sprache. Die lokale Überprüfung umfasst Linux mit Python 3.14.4: synthetische Oberfläche mit 160×48 und 80×24, CLI, Paketbau, isolierte Installation und Replay. Neue Hardwareprüfungen unter Windows/macOS wurden nicht durchgeführt. Eine muttersprachliche Prüfung der Übersetzungen steht weiterhin aus.
+Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Anwendungstexte sind in zehn Sprachen verfügbar: `--language` wählt die Sprache für Oberfläche, Fußzeile, Hilfe, CLI und den Textbericht `--once`. Auch technische Meldungen der Anwendung werden übersetzt. Kennungen und JSON-Schema bleiben stabil; Betriebssystemdetails und Texte aus gespeicherten Aufnahmen behalten ihre ursprüngliche Sprache. Die lokale Überprüfung umfasst Linux mit Python 3.14.4: synthetische Oberfläche mit 160×48 und 80×24, CLI, Paketbau, isolierte Installation und Replay. Windows wird in der CI geprüft; macOS ist von den Projektprüfungen ausgenommen. Eine muttersprachliche Prüfung der Übersetzungen steht weiterhin aus.
 
 ## Experimentell: Messwerte sorgfältig interpretieren
 
 Messungen erfolgen nacheinander, Berechtigungen können die Sichtbarkeit einschränken und die Anwendungsgruppierung ist heuristisch. Fehlende Daten sind n/a, nicht null. RSS kann gemeinsam genutzte Seiten mehrfach zählen; Prozess-PSS ist nicht der gesamte RAM. Cache überschneidet sich mit verfügbarem Speicher. Prozess-Swap wird nicht aus Commit abgeleitet.
 
-Linux liefert PSS und Prozess-Swap, sofern lesbar. Unter Windows und macOS werden sie hier nicht bereitgestellt. Linux-Bereiche nutzen smaps; Windows zeigt experimentelle virtuelle Bereiche; macOS hat noch keine Bereichsansicht. Hardware wurde lokal unter Linux geprüft; Windows und macOS benötigen native Validierung.
+Linux liefert PSS und Prozess-Swap, sofern lesbar. Unter Windows und im experimentellen macOS-Backend werden sie hier nicht bereitgestellt. Linux-Bereiche nutzen smaps; Windows zeigt experimentelle virtuelle Bereiche; macOS hat noch keine Bereichsansicht. Die Projektprüfungen umfassen lokale Linux-Prüfungen und native Windows-CI-Prüfungen; macOS bleibt außerhalb dieses Umfangs.
 
 ## Inspiration und Dank
 

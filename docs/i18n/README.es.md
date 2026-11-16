@@ -4,7 +4,9 @@
 
 ### Descubre adónde va la RAM, directamente desde la terminal.
 
-ramtaskman es un monitor experimental de memoria para Linux, Windows y macOS. Nació de la curiosidad y la investigación para entender la memoria en distintos sistemas sin recurrir a herramientas complicadas. Es un proyecto Vibeware.
+ramtaskman es un monitor experimental de memoria desarrollado y probado en Linux y Windows. Nació de la curiosidad y la investigación para entender la memoria en distintos sistemas sin recurrir a herramientas complicadas. Es un proyecto Vibeware.
+
+El backend de macOS se conserva como código experimental. No disponemos de un Mac, por lo que macOS queda fuera del alcance de las verificaciones del proyecto y no está probado ni validado por él. Las pruebas externas no constituyen validación oficial; no se promete paridad de funciones con Linux y Windows.
 
 ![ramtaskman](../images/overview.png)
 
@@ -50,13 +52,13 @@ Usa --once o --json para una muestra única o salida JSON. No compartas .venv en
 
 Teclas útiles: m cambia de modo, g alterna aplicaciones/procesos, / busca, f filtra, d muestra detalles, r abre regiones, ? explica las métricas y q sale. La guía técnica completa está actualmente en italiano.
 
-Inicia la pantalla principal con `./run.sh --language es` (Windows: `.\run.cmd --language es`). Los textos de la aplicación están disponibles en diez idiomas: `--language` selecciona el idioma de la interfaz, el pie de página, la ayuda, la CLI y el informe de texto `--once`. También se traducen los mensajes técnicos generados por la aplicación. Los identificadores y el esquema JSON permanecen estables; los detalles del sistema operativo y los textos de las capturas guardadas conservan su idioma original. La verificación local abarca Linux con Python 3.14.4: interfaz sintética a 160×48 y 80×24, CLI, construcción de paquetes, instalación aislada y replay. No se han realizado nuevas verificaciones en hardware Windows/macOS. Las traducciones todavía necesitan revisión de hablantes nativos.
+Inicia la pantalla principal con `./run.sh --language es` (Windows: `.\run.cmd --language es`). Los textos de la aplicación están disponibles en diez idiomas: `--language` selecciona el idioma de la interfaz, el pie de página, la ayuda, la CLI y el informe de texto `--once`. También se traducen los mensajes técnicos generados por la aplicación. Los identificadores y el esquema JSON permanecen estables; los detalles del sistema operativo y los textos de las capturas guardadas conservan su idioma original. La verificación local abarca Linux con Python 3.14.4: interfaz sintética a 160×48 y 80×24, CLI, construcción de paquetes, instalación aislada y replay. Las verificaciones de Windows se ejecutan en CI; macOS queda excluido de las verificaciones del proyecto. Las traducciones todavía necesitan revisión de hablantes nativos.
 
 ## Experimental: interpreta los datos con cuidado
 
 Las lecturas son secuenciales, los permisos pueden limitar la visibilidad y la agrupación de aplicaciones es heurística. Los datos ausentes son n/a, no cero. RSS puede contar páginas compartidas varias veces; la PSS de procesos no es toda la RAM. La caché se solapa con la memoria disponible. La swap por proceso no se deduce del commit.
 
-Linux ofrece PSS y swap por proceso cuando son legibles. Aquí no se exponen en Windows ni macOS. Las regiones Linux usan smaps; Windows muestra intervalos virtuales experimentales y macOS aún no tiene mapa. La verificación local en hardware se realizó en Linux; Windows y macOS necesitan validación nativa.
+Linux ofrece PSS y swap por proceso cuando son legibles. Aquí no se exponen en Windows ni en el backend experimental de macOS. Las regiones Linux usan smaps; Windows muestra intervalos virtuales experimentales y macOS aún no tiene mapa. Las verificaciones del proyecto abarcan Linux local y Windows en CI nativa; macOS permanece fuera de ese alcance.
 
 ## Inspiración y agradecimientos
 

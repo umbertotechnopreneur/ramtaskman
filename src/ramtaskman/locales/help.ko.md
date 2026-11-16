@@ -1,5 +1,7 @@
 # ramtaskman · 수치 이해하기
 
+이 프로젝트는 Linux와 Windows에서 개발하고 테스트합니다. 사용 가능한 Mac이 없으므로 macOS 백엔드는 실험적이며 프로젝트에서 테스트하거나 검증하지 않았습니다. macOS 검증은 외부 기여에 의존하며 프로젝트 CI에는 macOS가 포함되지 않습니다.
+
 gputaskman의 시각적 구조를 Linux, Windows, macOS 메모리에 맞게 적용했습니다.
 
 | 필드 | 의미 |

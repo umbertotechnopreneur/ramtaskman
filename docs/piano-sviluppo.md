@@ -1,14 +1,24 @@
 # Piano di sviluppo di ramtaskman — confronto, acquisizioni, piattaforme, prestazioni e distribuzione
 
-Preparato il 16 novembre 2026. **Stato: piano da eseguire, non funzionalità già implementate.**
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
+La CI attuale comprende sei job Ubuntu/Windows con Python 3.11, 3.13 e 3.14,
+passati; le prove manuali sul PC Windows personale restano da eseguire. Le sezioni
+macOS di questo piano sono conservate come proposte per contributor esterni e non
+sono requisiti di completamento, verifiche pianificate o attività interne.
+
+Preparato il 16 novembre 2026. **Il piano e l'inventario iniziali sono storici**:
+descrivono requisiti e stato dell'epoca; il registro distingue gli incrementi successivi.
 
 Questo documento è il riferimento operativo per proseguire **nella stessa chat**, anche
 con un agente diverso. È scritto per permettere incrementi piccoli, verificabili e
 riprendibili senza ricostruire tutte le decisioni dalla conversazione.
 
-La richiesta attuale autorizza la preparazione del piano. L'esecuzione dei blocchi
-inizierà con la successiva istruzione dell'utente. Non creare altre chat, remote,
-pubblicazioni o servizi per dare seguito al solo documento.
+La richiesta originaria autorizzava soltanto la preparazione del piano, poi eseguito
+con successive istruzioni dell'utente. La sola lettura del documento non autorizza
+nuove chat, remote, pubblicazioni o servizi.
 
 ## 1. Risultato atteso
 
@@ -18,7 +28,8 @@ Il prodotto finale di questo piano deve permettere di:
 1. Aprire un processo, fissare un campione A e confrontarlo con un campione B.
 2. Individuare intervalli cresciuti, ridotti, presenti solo in A/B o riorganizzati.
 3. Salvare i metadati delle rilevazioni e riaprirli senza accedere ai processi originali.
-4. Usare la stessa navigazione terminale su Linux, Windows e macOS, con capacità dichiarate.
+4. Usare la stessa navigazione terminale su Linux e Windows, con capacità dichiarate;
+   il backend macOS resta sperimentale e fuori dalle verifiche interne.
 5. Mantenere reattiva la UI anche con molti processi e regioni.
 6. Installare e verificare una versione riproducibile, con documentazione e stato Git chiari.
 
@@ -57,7 +68,7 @@ Leggere prima [AGENTS](../AGENTS.md), [README](../README.md), [lezioni](../lesso
 | JSON corrente | schema_version=1, sistema/processi/applicazioni; non contiene le regioni |
 | Test | Ultima esecuzione documentata: 93 test passati su Linux |
 | Pacchetti | Wheel e sdist costruiti; nuovi moduli/CSS inclusi, cache e catture escluse |
-| CI | Configurata per Linux/Windows/macOS × Python 3.11/3.13/3.14; non eseguita su GitHub |
+| CI, stato storico | In origine Linux/Windows/macOS × Python 3.11/3.13/3.14, non ancora eseguita allora; matrice attuale limitata a Ubuntu/Windows |
 | Git | Branch codex/ramtaskman-foundation; staged, unstaged e file nuovi da preservare |
 
 HEAD è ancora il commit upstream `7486bfa`; il lavoro RAM non è rappresentato da una serie
@@ -102,16 +113,16 @@ Ordine raccomandato:
 ```text
 Prima consegna:   F0 → F1.1 → F1.2 → F1.3 → F1.4
 Seconda consegna: F1.4 → F2.1 → F2.2 → F2.3 → F2.4
-Terza consegna:   F2.4 → F3.1 → F3.2 → F3.3 → F3.4 → F3.5
+Terza consegna:   F2.4 → F3.1 → F3.2 → F3.4 → F3.5
 
 F4.1: misurare presto, dopo F0; ripetere quando arrivano i provider nativi
 F4.2/F4.3/F4.4: ottimizzare dopo avere misure, senza cambiare i contratti di F1/F2
 F5: consolidare localmente a ogni milestone; chiudere la matrice finale alla fine
 ```
 
-Un agente può portare avanti i test simulati di F3 senza hardware Windows/Mac, ma deve
-lasciare esplicitamente aperte le relative verifiche reali. Non dichiarare completato
-un blocco perché non è possibile eseguirne la prova finale sulla macchina disponibile.
+F3.3 macOS è esclusa dall'ordine interno e resta una proposta per contributor esterni.
+Per Linux/Windows distinguere simulazioni, CI nativa e prove manuali: l'assenza della
+prova finale sulla macchina personale non equivale a una verifica eseguita.
 
 ## 4. Regole trasversali da mantenere
 
@@ -505,7 +516,8 @@ provider nativi o worker di campionamento. La vista deve usare i dati importati 
 un'indicazione permanente «Acquisizione salvata — nessun aggiornamento live».
 
 `r` nel replay non deve rileggere il PID del file; disabilitarlo o spiegare che il
-campione è fisso. Un file Linux deve aprirsi anche su Windows/Mac senza tentare `/proc`.
+campione è fisso. Un file Linux deve aprirsi anche su Windows senza tentare `/proc`;
+la stessa proprietà su Mac è una proposta esterna non verificata.
 I filtri, la mappa e il confronto devono riutilizzare le funzioni pure della UI corrente.
 
 **Test:** sostituire Collector/reader con stub che falliscono se chiamati; aprire e
@@ -539,12 +551,13 @@ RegionProvider
   capabilities
   read(process_identity, limits, cancellation) -> acquisizione regioni
 
-make_region_provider(platform) -> Linux / Windows / Mac / Unsupported
+make_region_provider(platform) -> Linux / Windows / Unsupported
 ```
 
 Possibile organizzazione: mantenere modelli comuni in `regions.py`, estrarre il reader
-Linux in `backends/linux_regions.py`, aggiungere `windows_regions.py`, `macos_regions.py`
-e una factory. Conservare inizialmente un re-export compatibile per i test/chiamanti.
+Linux in `backends/linux_regions.py`, aggiungere `windows_regions.py` e una factory.
+Un eventuale `macos_regions.py` è una proposta esterna, fuori dal lavoro interno.
+Conservare inizialmente un re-export compatibile per i test/chiamanti.
 Non rinominare contemporaneamente tutti i moduli senza necessità.
 
 Adattamenti al modello:
@@ -626,7 +639,12 @@ per individuare handle persi; verificare keyboard/resize e replay Linux su Windo
 limiti rispettati, CI nativa e rapporto hardware. Nessun requisito di amministratore
 per il normale avvio; i processi non accessibili rimangono parziali.
 
-### F3.3 — macOS: prova delle API e limiti di accesso
+### F3.3 — macOS: proposta esterna, esclusa dal lavoro interno
+
+I punti M1–M4 sono requisiti indicativi soltanto per un eventuale contributo esterno.
+Non disponiamo di un Mac: non vengono eseguiti, pianificati o mantenuti come verifiche
+interne, per espressa richiesta dell'utente. La [procedura conservata](verifica-macos.md)
+non è stata eseguita su un Mac e non costituisce una validazione del backend.
 
 Fatto verificato: XNU espone interrogazioni di regioni Mach e strutture con informazioni
 sulle regioni/submap. La traduzione dei campi in contatori ramtaskman deve essere verificata
@@ -634,9 +652,9 @@ sull'SDK e sul sistema realmente usati, non dedotta dal nome del campo.
 Fonti: [mach_vm.defs](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/mach_vm.defs),
 [vm_region.h](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/vm_region.h).
 
-**M1 — prova tecnica obbligatoria.**
+**M1 — prerequisito per un eventuale contributo esterno.**
 
-- Verificare SDK, ABI, tipi, conteggi delle strutture e page size sul Mac disponibile.
+- Verificare SDK, ABI, tipi, conteggi delle strutture e page size sul Mac del contributor.
 - Provare prima il proprio processo e un processo di test figlio.
 - Verificare quale accesso al task è consentito senza modifiche alle protezioni del sistema.
 - Distinguere una capacità non disponibile da un errore di autorizzazione.
@@ -681,8 +699,9 @@ di aggiungere categorie nuove.
 
 Windows: valutare i contatori pubblici disponibili, per esempio quelli restituiti da
 [GetPerformanceInfo](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getperformanceinfo),
-come indicatori separati. macOS: documentare le categorie ottenibili dalle API host
-supportate. Una partizione colorata globale è ammessa solo dopo aver dimostrato che
+come indicatori separati. Per macOS, lo studio delle categorie ottenibili dalle API
+host è una proposta esterna, fuori dal lavoro interno. Una partizione colorata
+globale è ammessa solo dopo aver dimostrato che
 le componenti sono disgiunte, nello stesso dominio e con totale noto. Altrimenti
 mantenere la barra in uso/disponibile e mostrare gli altri contatori separatamente.
 Non chiamare «slab» una categoria nativa diversa per ottenere lo stesso colore.
@@ -702,7 +721,9 @@ launcher condiviso, processi Python/Electron distinti, processi usciti e campi n
 
 ### F3.5 — matrice di accettazione per piattaforma
 
-Creare un rapporto breve per ogni ambiente realmente provato:
+Creare un rapporto breve per ogni ambiente Linux/Windows realmente provato.
+Eventuali risultati macOS esterni vanno indicati separatamente e non sono un
+criterio di accettazione del lavoro interno:
 
 | Campo | Informazione richiesta |
 |---|---|
@@ -866,8 +887,9 @@ upstream. Mantenere il prefisso `codex/` per nuovi branch quando necessari.
 
 ### F5.2 — CI e test di integrazione
 
-Conservare la matrice corrente come punto di partenza: Python 3.11/3.13/3.14 su Linux,
-Windows e macOS. Verificare le versioni effettive disponibili al momento dell'esecuzione;
+La matrice corrente comprende Python 3.11/3.13/3.14 su Ubuntu e Windows: sei job
+complessivi passati, incluse le verifiche native Windows. macOS è escluso dalla CI
+e dalle verifiche interne. Verificare le versioni effettive durante ogni esecuzione;
 le etichette `*-latest` non garantiscono una specifica architettura o release del sistema.
 
 Distinguere job:
@@ -949,7 +971,7 @@ e limiti dichiarati. «Pronto localmente» e «pubblicato» sono stati distinti.
 | File | round-trip, versioni, limiti, salvataggio fallito | apri altrove senza letture live |
 | Replay | Collector/reader vietati, controlli disattivati | r non interroga il PID salvato |
 | Windows | ABI, handles, regioni, pagine, permessi, limiti | prova nativa su macchina documentata |
-| macOS | ABI, task/submap, page size, risorse e accessi | prova nativa su macchina documentata |
+| macOS, solo proposta esterna | ABI, task/submap, page size, risorse e accessi non verificati | escluso dai criteri e dalle verifiche interne; nessun Mac disponibile |
 | Gruppi | istanze/utenti/helper, provenienza, copertura | ricerca non altera il totale app |
 | Budget | equità, limiti, cancellazione, contatori rinviati | nessuna misura vecchia spacciata per nuova |
 | UI | 160×48, 80×24, resize, tastiera, scroll, worker | uso completo senza mouse |
@@ -965,7 +987,7 @@ Regola di completamento di ogni blocco:
 
 ### Comandi di verifica da riutilizzare
 
-Dalla radice del repository, su Linux/macOS:
+Dalla radice del repository, su Linux:
 
 ```bash
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tests -v
@@ -1030,10 +1052,8 @@ Tutte le caselle seguenti sono inizialmente aperte. Le prime tre fasi precedenti
 - [ ] F3.2-W2 — enumerazione Windows.
 - [ ] F3.2-W3 — residenza Windows e copertura per pagina.
 - [ ] F3.2-W4 — integrazione e verifica Windows reale.
-- [ ] F3.3-M1 — prova tecnica macOS reale; probe e procedura preparati.
-- [ ] F3.3-M2 — enumerazione macOS/submap.
-- [ ] F3.3-M3 — contatori macOS verificati.
-- [ ] F3.3-M4 — integrazione e verifica macOS reale.
+- F3.3-M1–M4 — proposte macOS archiviate per contributor esterni; escluse dal lavoro
+  e dai criteri di completamento interni, non testate né validate.
 - [ ] F3.4 — audit globale e raggruppamento per piattaforma.
 - [ ] F3.5 — matrice finale delle capacità e delle prove.
 - [ ] F4.1 — benchmark sintetici e letture sul processo di prova; mancano misure su carichi reali estesi.
@@ -1041,7 +1061,7 @@ Tutte le caselle seguenti sono inizialmente aperte. Le prime tre fasi precedenti
 - [ ] F4.3 — cache diff, debounce e tabella paginata; restano misure sistematiche su carichi reali.
 - [ ] F4.4 — rapporto prestazioni e controllo risorse.
 - [x] F5.1 — identità locale configurata e base consolidata nel commit locale 3a4613f.
-- [ ] F5.2 — CI e smoke nativi con esiti verificati.
+- [x] F5.2 — CI Ubuntu/Windows × Python 3.11/3.13/3.14: sei job passati; macOS escluso.
 - [ ] F5.3 — wheel/sdist e installazione Linux verificate; verifiche native e launcher restanti aperti.
 - [ ] F5.4 — documentazione e versione candidata locale.
 
@@ -1057,10 +1077,10 @@ Aggiornare questa tabella dopo risultati verificati, senza inventare esecuzioni:
 |---|---|---|---|---|
 | Pianificazione | Completata | Questo documento | Collegamenti e coerenza documentale | Implementazione dei blocchi non iniziata |
 | F0–F2 | Completati | capture_models.py, comparison.py, capture_io.py, capture_dialog.py, replay.py, region_screen.py | Test sintetici; confronto Linux con mmap di prova: RSS +8.572.928 byte | Letture sequenziali non provano continuità dell'allocazione |
-| F3 | In corso | region_provider.py, backends/windows_regions.py, tools/verify_windows_regions.py, tools/verify_macos_regions.py | Enumerazione Windows e probe simulati; sorgente psutil esaminato | Eseguire [prove Windows](verifica-windows.md) e [macOS](verifica-macos.md); residenza Windows e provider macOS restano aperti |
+| F3 | In corso su Linux/Windows | region_provider.py, backends/windows_regions.py, tools/verify_windows_regions.py | Enumerazione Windows, test simulati e CI nativa Windows; sorgente psutil esaminato | [Prove manuali sul PC Windows personale](verifica-windows.md) e residenza Windows restano aperte; macOS è una proposta esterna esclusa dal lavoro interno |
 | F4 | In corso | collector.py, models.py, tools/benchmark_memory.py, [rapporto benchmark](benchmark.md) | Budget e schedulazione; diff in worker, debounce, tabella paginata; misure sintetiche e sul processo di prova | Prove su carichi reali/UI e obiettivi prestazionali non ancora completi |
-| F5 | In corso | README, schema-capture.md, workflow, Git | Build, audit e installazione Linux isolata; console script, CLI e replay sintetico verificati; workflow configurato | Matrice CI remota e installazioni native non ancora verificate |
-| Verifiche preparate | Completate localmente | tools/verify_windows_regions.py, tools/verify_macos_regions.py, relative procedure | Test simulati, supporto non nativo esplicito e verifica distribuzione locale | Probe Windows/macOS da eseguire sui sistemi originali |
+| F5 | In corso | README, schema-capture.md, workflow, Git | Build, audit e installazione Linux isolata; console script, CLI e replay sintetico verificati; sei job CI Ubuntu/Windows passati | Prove manuali sul PC Windows personale ancora da eseguire; macOS escluso |
+| Verifiche preparate | Preparazione storica conservata | tools/verify_windows_regions.py, tools/verify_macos_regions.py, relative procedure | Test simulati, supporto non nativo esplicito e verifica distribuzione locale | Procedura Windows manuale da eseguire; procedura macOS soltanto indicativa per contributor esterni, non eseguita né mantenuta internamente |
 
 Stati ammessi: da iniziare, in corso, completato, in attesa di verifica esterna.
 Distinguere sempre un impedimento esterno da un errore ancora da correggere nel codice.

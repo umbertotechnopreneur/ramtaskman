@@ -1,13 +1,21 @@
 # Verifica delle regioni su macOS
 
-**Stato:** procedura e diagnostica preparate su Linux; non sono state compilate o
-eseguite con un SDK macOS. La mappa delle regioni macOS di ramtaskman resta da
-implementare e validare. I test simulati non dimostrano l'ABI del Mac.
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
+**Stato:** questa procedura indicativa è conservata per contributor esterni che
+dispongano di un Mac. Non è stata eseguita su un Mac né viene mantenuta come
+procedura di verifica interna. La diagnostica fu preparata su Linux, senza
+compilazione con un SDK macOS; i test simulati non dimostrano l'ABI del Mac.
+La mappa delle regioni macOS non è implementata. Le istruzioni seguenti sono una
+traccia da controllare sul sistema del contributor, non un impegno della roadmap interna.
 
 ## Preparazione
 
-Usare un Mac sul quale è già presente un compilatore C con SDK macOS; non sono
-richiesti privilegi amministrativi per la prova sul processo proprio. Servono anche
+Per un eventuale contributo esterno, usare un Mac sul quale è già presente un
+compilatore C con SDK macOS; non sono richiesti privilegi amministrativi per la
+prova sul processo proprio. Servono anche
 Python >=3.11 e `uv` per la suite dell'app. La diagnostica Mach può essere lanciata
 con Python standard, senza installare altre librerie Python.
 
@@ -81,12 +89,14 @@ ogni esecuzione l'esito del programma, conteggi e codici Mach. Se emergono cresc
 continuative sospette, investigare prima di concludere che vi siano perdite: l'helper
 è riavviato a ogni esecuzione. Il probe non acquisisce ulteriori task port o diritti
 Mach da rilasciare; la porta self è presa in prestito e ogni mmap creata è rilasciata.
-Un controllo completo di perdite di porte/handle attraverso un futuro provider
-richiederà inoltre prove ripetute **nello stesso processo** e strumenti nativi adatti.
+Un eventuale provider proposto da contributor esterni richiederebbe inoltre prove
+ripetute **nello stesso processo** e strumenti nativi adatti per controllare perdite
+di porte/handle. Questa attività è fuori dalle verifiche interne.
 
 ## Applicazione e replay
 
-Nel progetto su Mac, eseguire:
+Un contributor esterno che scelga di valutare il progetto su Mac può usare questi
+comandi indicativi; non fanno parte della CI o delle verifiche interne:
 
 ```bash
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tests -v
@@ -104,18 +114,18 @@ controllare nomi, utenti e percorsi. Per il replay usare solo file sintetici o u
 acquisizione esplicitamente scelta dall'utente; `--open file.rtm.json` deve restare
 offline e `r` non deve avviare rilevazioni sul PID salvato.
 
-## Limiti ancora da verificare su Mac
+## Limiti da valutare soltanto in un eventuale contributo esterno
 
 - Questo probe non verifica la lettura di un **processo figlio** né il diniego su un
-  processo protetto: non ottiene task port esterne. Occorrerà una prova separata con
+  processo protetto: non ottiene task port esterne. Servirebbe una prova separata con
   un figlio di test avviato e controllato esplicitamente, e una prova di errore
   autorizzata, senza forzare privilegi. Se il sistema rifiuta l'accesso, registrare
   codice e contesto come limite, non tentare di aggirarlo.
 - La corrispondenza di resident, private, compressed, reusable e footprint con le
   metriche di ramtaskman è da verificare con fonti Apple e strumenti equivalenti;
   PSS non deve essere stimata da ref_count.
-- L'accesso ai task esterni, le differenze fra versioni e architetture, submap e
-  stabilità sotto cancellazione richiedono test nativi prima del provider macOS.
+- Un eventuale provider macOS esterno richiederebbe test nativi su accesso ai task,
+  differenze fra versioni e architetture, submap e stabilità sotto cancellazione.
 - I test `test_verify_macos_probe.py` controllano wrapper e flusso C con header
   **simulati su Linux**. Non dimostrano compilazione SDK, ABI o misurazioni macOS.
 

@@ -4,11 +4,16 @@
 
 ### Capire dove va la RAM, direttamente dal terminale.
 
-**ramtaskman** è un monitor sperimentale della memoria per Linux, Windows e macOS.
+**ramtaskman** è un monitor sperimentale della memoria sviluppato e testato su Linux e Windows.
 Nasce dalla voglia di capire meglio cosa succede alla RAM passando da un sistema
 all’altro, senza dover aprire strumenti complicati. È un progetto **Vibeware**:
 un’idea personale nata per curiosità e ricerca, diventata uno strumento utile
 nel lavoro di tutti i giorni.
+
+Il backend macOS è presente come codice sperimentale, ma non è testato né validato
+dal progetto: non disponiamo di un Mac. macOS resta fuori dall’ambito delle nostre
+verifiche. Eventuali prove esterne non costituiscono validazione ufficiale e non
+promettiamo parità di funzionalità con Linux e Windows.
 
 ![Vista principale di ramtaskman con RAM, grafici e applicazioni](docs/images/overview.png)
 
@@ -71,7 +76,8 @@ Su Windows, dalla cartella del progetto, usa **Windows Terminal** e avvia:
 ```
 
 Per un singolo campione o per l’output JSON: `./run.sh --once` e `./run.sh --json`
-su Linux/macOS, oppure `.\run.cmd --once` e `.\run.cmd --json` su Windows.
+su Linux, oppure `.\run.cmd --once` e `.\run.cmd --json` su Windows. Gli stessi
+comandi Unix restano disponibili per il backend macOS sperimentale e non testato.
 Il progetto non è pubblicato su PyPI. Non condividere la stessa `.venv` tra sistemi:
 ricreala localmente dopo aver copiato il progetto.
 
@@ -83,8 +89,9 @@ esempio `.\run.cmd --language ko`. Anche i messaggi tecnici prodotti dall’app 
 tradotti; identificatori e schema JSON restano stabili, mentre dettagli del sistema
 operativo e testi delle acquisizioni conservano la lingua originale. La verifica
 locale riguarda Linux con Python 3.14.4: UI sintetica a 160×48 e 80×24, CLI, build,
-installazione isolata e replay. Non sono state svolte nuove verifiche su hardware
-Windows/macOS; le traduzioni attendono ancora una revisione madrelingua.
+installazione isolata e replay. Le verifiche Windows sono eseguite in CI; macOS è
+escluso dalle verifiche del progetto. Le traduzioni attendono ancora una revisione
+madrelingua.
 
 **Scorciatoie utili:** `m` cambia modalità, `g` alterna app e processi, `/` cerca,
 `f` filtra, `d` mostra i dettagli, `r` apre le regioni, `?` spiega le metriche e
@@ -97,12 +104,12 @@ sono raccolte in momenti diversi, i permessi possono limitare la visibilità e i
 raggruppamento delle applicazioni non è infallibile. Un valore non disponibile è
 mostrato come **n/a**, non come zero.
 
-| | Linux | Windows | macOS |
+| | Linux | Windows | macOS (sperimentale, non testato) |
 |---|---|---|---|
-| RAM globale, RSS e USS | Disponibili | Disponibili | Disponibili |
+| RAM globale, RSS e USS | Disponibili | Disponibili | Backend presente, non validato |
 | PSS e swap per processo | Disponibili se leggibili | n/a | n/a |
 | Mappa regioni | `smaps`, su richiesta | Intervalli virtuali, sperimentale | Non ancora disponibile |
-| Verifica su hardware | Eseguita localmente | Da verificare | Da verificare |
+| Verifiche del progetto | Suite e prove locali | Suite e prove native in CI | Fuori ambito: nessun Mac disponibile |
 
 PSS non equivale alla RAM totale usata; RSS può contare più volte pagine condivise.
 Cache e memoria disponibile si sovrappongono. La swap per processo non viene dedotta

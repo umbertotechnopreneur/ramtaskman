@@ -1,5 +1,9 @@
 # Provenienza
 
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
 - Repository: <https://github.com/shanselman/gputaskman>
 - Commit sorgente: `7486bfa0a35e032298534d9c408ff8ad96d9768a`
 - Versione dichiarata nel sorgente: 0.4.1
@@ -18,7 +22,8 @@ pubblica; il push è disabilitato.
 - `src/ramtaskman/app.py`: composizione degli stessi pannelli Textual, tabella a righe
   alternate, inspector, footer e schermata di aiuto; grafici adattati dalla griglia originale.
 - Struttura `src/`, `tests/`, `tools/`, `docs/`, `pyproject.toml`, `uv.lock`, CI conservata
-  come organizzazione, con backend RAM Linux/Windows/macOS e CI multipiattaforma.
+  come organizzazione, con backend RAM Linux/Windows e un backend macOS sperimentale;
+  la CI attuale verifica Ubuntu e Windows con Python 3.11, 3.13 e 3.14.
 
 I collector GPU, scanner di runtime/modelli, release automatiche e packaging GPU/Nix
 sono stati rimossi dalla versione RAM. Non restano dipendenze NVIDIA. Il collector RAM,

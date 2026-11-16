@@ -1,5 +1,7 @@
 # ramtaskman · cách đọc các con số
 
+Chúng tôi phát triển và kiểm thử trên Linux và Windows. Backend macOS mang tính thử nghiệm, chưa được dự án kiểm thử hoặc xác minh vì chúng tôi không có máy Mac. Mọi hoạt động xác minh macOS đều phụ thuộc vào đóng góp bên ngoài; CI của dự án không bao gồm macOS.
+
 Cấu trúc giao diện của gputaskman, được điều chỉnh cho bộ nhớ trên Linux, Windows và macOS.
 
 | Trường | Ý nghĩa |

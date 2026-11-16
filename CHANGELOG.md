@@ -1,5 +1,8 @@
 # Modifiche
 
+> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
+> validato dal progetto perché non abbiamo un Mac a disposizione.
+
 ## In sviluppo — 0.1.0
 
 - Derivazione terminale RAM da gputaskman, con contatori di sistema e processi e
@@ -9,7 +12,8 @@
   contatori generali, senza provider delle regioni.
 - Salvataggio e replay offline delle acquisizioni, con dati mancanti espliciti.
 - Budget opzionale di campionamento, paginazione delle tabelle e benchmark locali.
-- Procedure riproducibili di verifica Windows e macOS, ancora da eseguire sui sistemi nativi.
+- Procedure di verifica Windows e indicazioni macOS per contributori esterni;
+  macOS escluso dalle verifiche interne e dalla CI.
 - Verifica locale della distribuzione isolata e configurazione CI multipiattaforma;
   nessun rilascio PyPI.
 - Nomi ed eseguibili letti dai metadati nativi, evitando i fallback impliciti di

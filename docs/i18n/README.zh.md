@@ -4,7 +4,9 @@
 
 ### 在终端中看清内存都用到了哪里。
 
-ramtaskman 是一款适用于 Linux、Windows 和 macOS 的实验性内存监视器。它源于好奇心和研究，希望让人在不同系统上理解内存使用情况时，无须依赖复杂工具。这是一个 Vibeware 项目。
+ramtaskman 是一款在 Linux 和 Windows 上开发和测试的实验性内存监视器。它源于好奇心和研究，希望让人在不同系统上理解内存使用情况时，无须依赖复杂工具。这是一个 Vibeware 项目。
+
+macOS 后端作为实验性代码保留在项目中。由于我们没有可用的 Mac，macOS 不在项目的验证范围内，未经过项目测试或验证。外部测试结果不构成官方验证，也不承诺与 Linux 和 Windows 功能对等。
 
 ![ramtaskman](../images/overview.png)
 
@@ -50,13 +52,13 @@ cd ramtaskman
 
 常用按键：m 切换模式，g 切换应用/进程，/ 搜索，f 筛选，d 查看详情，r 打开区域，? 解释指标，q 退出。完整技术指南目前为意大利语。
 
-使用 `./run.sh --language zh` 启动中文主界面（Windows：`.\run.cmd --language zh`）。应用文本现已提供十种语言版本：`--language` 可选择界面、页脚、帮助、命令行和 `--once` 文本报告的语言，应用自身生成的技术消息也已翻译。标识符和 JSON 结构保持稳定；操作系统详情和已保存采集文件中的文本保留原始语言。本地验证范围为 Linux 和 Python 3.14.4：160×48 与 80×24 的合成数据界面、命令行、构建、隔离安装和回放。未进行新的 Windows/macOS 实机验证。翻译仍有待母语者审校。
+使用 `./run.sh --language zh` 启动中文主界面（Windows：`.\run.cmd --language zh`）。应用文本现已提供十种语言版本：`--language` 可选择界面、页脚、帮助、命令行和 `--once` 文本报告的语言，应用自身生成的技术消息也已翻译。标识符和 JSON 结构保持稳定；操作系统详情和已保存采集文件中的文本保留原始语言。本地验证范围为 Linux 和 Python 3.14.4：160×48 与 80×24 的合成数据界面、命令行、构建、隔离安装和回放。Windows 通过 CI 检查；macOS 不属于项目的验证范围。翻译仍有待母语者审校。
 
 ## 实验性项目：请谨慎解读数据
 
 采样是顺序进行的，权限可能限制可见性，应用分组采用启发式方法。不可用数据标为 n/a，而不是零。RSS 可能重复计算共享页；进程 PSS 不等于系统总内存。缓存与可用内存重叠；不会把 commit 推算为进程交换空间。
 
-Linux 在可读取时提供 PSS 和每进程交换空间；本项目在 Windows 和 macOS 上不提供这些指标。Linux 区域使用 smaps；Windows 仅提供实验性虚拟区间；macOS 尚无区域地图。已在 Linux 实机验证，Windows 和 macOS 仍需原生验证。
+Linux 在可读取时提供 PSS 和每进程交换空间；Windows 和实验性 macOS 后端不提供这些指标。Linux 区域使用 smaps；Windows 仅提供实验性虚拟区间；macOS 尚无区域地图。项目验证涵盖本地 Linux 检查和原生 Windows CI 检查，macOS 不在此范围内。
 
 ## 灵感与致谢
 

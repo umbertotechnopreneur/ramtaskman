@@ -1,6 +1,11 @@
 # Guida a ramtaskman
 
-Task manager **multipiattaforma per la RAM: Linux, Windows e macOS**, scritto in Python e Textual. Riprende layout,
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
+Task manager **per la RAM su Linux e Windows**, con un backend macOS sperimentale,
+scritto in Python e Textual. Riprende layout,
 widget, colori e scorciatoie di [gputaskman di Scott Hanselman](https://github.com/shanselman/gputaskman),
 con un collector dedicato a memoria per applicazione, **PSS, USS, RSS, swap e SwapPSS**.
 
@@ -11,11 +16,12 @@ Le metriche e le etichette sono adattate alla RAM; non è una copia pixel per pi
 ## Avvio
 
 Servono Python >=3.11 e `uv`. Linux richiede `/proc` e `smaps_rollup`.
-Su Windows usa Windows Terminal. Su macOS usa Terminal o un terminale compatibile.
+Su Windows usa Windows Terminal. Per un eventuale contributo esterno su macOS,
+consulta la [procedura indicativa non verificata](verifica-macos.md).
 La versione minima è dichiarata in pyproject.toml; non viene imposto Python 3.14
 su Windows o macOS. La macchina di sviluppo usa Python 3.14.4.
 
-Linux/macOS:
+Linux:
 
 ```bash
 ./run.sh
@@ -71,13 +77,14 @@ conservano i motivi nel testo registrato: riaprirle con un'altra lingua traduce
 l'interfaccia, non quei dati. Le traduzioni sono preparate con assistenza AI e
 richiedono revisione di madrelingua. Sono state eseguite verifiche locali Linux
 con Python 3.14.4 su CLI, UI sintetica a 160×48 e 80×24, build, installazione
-isolata e replay. Queste prove non attestano i backend su hardware Windows/macOS.
+isolata e replay. Sono passate anche le verifiche native Windows in CI; le prove
+manuali sul PC Windows personale restano da eseguire. macOS non è testato né validato.
 
 ## Supporto per piattaforma
 
 | Funzione | Linux | Windows | macOS |
 |---|---|---|---|
-| UI Textual, app/processi, grafici, JSON | Implementata | Implementata | Implementata |
+| UI Textual, app/processi, grafici, JSON | Implementata | Implementata | Codice sperimentale, non verificato |
 | RAM globale e RSS | procfs / psutil | psutil / working set | psutil |
 | USS | Private_Clean + Private_Dirty | psutil, memoria residente privata | psutil, memoria privata |
 | PSS | smaps_rollup | n/a | n/a |
@@ -85,11 +92,12 @@ isolata e replay. Queste prove non attestano i backend su hardware Windows/macOS
 | Swap globale | meminfo | pagefile tramite psutil | psutil |
 | Cache, slab, PSI Linux | Disponibili | n/a | n/a |
 | Regioni del processo e mappa navigabile | smaps su richiesta | Solo intervalli virtuali, sperimentale | Non implementate |
-| Validazione effettuata | Test e prova locale | Test simulati, da provare su PC Windows | Test simulati, da provare su Mac |
+| Validazione effettuata | Test e prova locale | CI nativa passata; prova manuale su PC personale da eseguire | Non testato né validato; nessun Mac disponibile |
 
 Su Windows/macOS l'ordinamento iniziale è USS, su Linux PSS. La stessa UI mantiene
-le colonne non disponibili a n/a e spiega il limite. La CI è configurata per tutti e
-tre i sistemi con Python 3.11, 3.13 e 3.14; consulta GitHub Actions per i risultati aggiornati.
+le colonne non disponibili a n/a e spiega il limite. La CI attuale copre Ubuntu e
+Windows con Python 3.11, 3.13 e 3.14: sei job complessivi passati. macOS è escluso
+dalla matrice e dalle verifiche interne. Consulta GitHub Actions per gli esiti successivi.
 
 Le API native sono gestite da `psutil`: per questa base non occorrono pywin32 o WMI.
 PSS non è esposta da psutil su Windows/macOS; il private commit/PagefileUsage Windows
@@ -286,7 +294,8 @@ Seleziona un'app, premi `Invio` per scegliere uno dei suoi processi, poi premi *
 mappe dei processi di un gruppo. La vista conserva pannelli, bordi, colori e tabella
 dell'interfaccia terminale. Su Windows il provider sperimentale mostra intervalli virtuali,
 senza contatori residenti per regione; su macOS la funzione non è ancora disponibile.
-Il provider Windows è coperto da simulazioni ma non è stato verificato su Windows reale.
+Il provider Windows è coperto da simulazioni e verifiche native in CI Windows;
+le prove manuali sul PC Windows personale restano da eseguire.
 
 La mappa ha due modalità, selezionabili con **v**:
 
@@ -423,10 +432,13 @@ Le schermate SVG in `captures/` usano dati **sintetici**, non misure del PC. Son
 da Git. Il JSON live contiene nomi, UID e percorsi degli eseguibili: controllarlo prima
 di condividerlo. Non vengono salvate rilevazioni automaticamente.
 
-Verificati localmente **171 test** con Python 3.14.4: 170 passati e un test nativo
+Checkpoint storico: verificati localmente **171 test** con Python 3.14.4, 170 passati e un test nativo
 Windows saltato su Linux. Build wheel/sdist, verifica della distribuzione installata
 e rilevazione Linux sono riuscite.
-Su Windows/macOS sono stati verificati contratti con API simulate, non misure hardware.
+In quel checkpoint i contratti Windows/macOS erano simulati, senza misure hardware.
+Lo stato attuale comprende la CI nativa Windows e sei job Ubuntu/Windows passati;
+le prove manuali sul PC Windows personale restano da eseguire. Il backend macOS
+rimane sperimentale, non testato né validato, fuori dalle verifiche interne.
 La UI è stata catturata e controllata con fixture sintetiche, inclusi filtri, dettaglio RAM e regioni.
 La suite include contabilità delle barre, parser e limiti smaps, identità PID, filtri,
 selezione/zoom, aggiornamento ed errori della mappa, con UI 160×48 e 80×24 e campionamento
@@ -435,8 +447,8 @@ escludendo cache e catture locali.
 
 ## Provenienza e prosecuzione
 
-- [Verifiche da eseguire su Windows](verifica-windows.md)
-- [Verifiche da eseguire su macOS](verifica-macos.md)
+- [Prove manuali da eseguire sul PC Windows personale](verifica-windows.md)
+- [Procedura macOS indicativa per contributor esterni, non verificata](verifica-macos.md)
 - [Audit dei contatori delle piattaforme](audit-contatori-piattaforma.md)
 - [Benchmark locale e limiti delle misure](benchmark.md)
 - [Piano dettagliato: confronto, acquisizioni, piattaforme, prestazioni e distribuzione](piano-sviluppo.md)

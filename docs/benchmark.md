@@ -1,5 +1,9 @@
 # Benchmark locale della memoria
 
+Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
+sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
+dell'utente, macOS è escluso dalle verifiche interne.
+
 Questo documento descrive misure riproducibili, non requisiti di prestazione garantiti.
 Lo strumento usa solo la libreria standard e dipendenze già installate nel progetto.
 
@@ -108,11 +112,13 @@ miglioramento generale né misurano il paint del terminale.
 - RSS prima/dopo e numero di fd indicano solo due punti; non dimostrano l'assenza di
   crescita in una lunga sessione. Servono molti cicli controllati, con serie temporali.
 - I carichi sintetici non ricostruiscono la distribuzione, permessi, pagine grandi o
-  tempi di un browser reale. Non sono state verificate latenze su terminali Windows/macOS.
+  tempi di un browser reale. Le latenze su un terminale Windows personale restano da
+  misurare; le misure macOS non rientrano nelle verifiche interne.
 - Oltre al diff, filtro, ordinamento e `render_regions` a 32.768 regioni possono ancora
   occupare il thread UI; spostarli in elaborazioni cancellabili richiede test di
   generazione e selezione, e ulteriori misure. La paginazione da sola non garantisce
   il completamento entro 50 ms.
 - Cancellazione cooperativa non interrompe una syscall o un ordinamento già in corso.
 - Il progetto non ha ancora misure di paint, latenza percepita, resize e chiusura su
-  sistemi nativi e sotto carico variabile; F4 rimane aperta.
+  sistemi Linux/Windows sotto carico variabile; F4 rimane aperta. I risultati della
+  CI Ubuntu/Windows non sostituiscono queste misure interattive.

@@ -50,7 +50,7 @@ Dùng --once để lấy một mẫu hoặc --json để xuất JSON. Không dù
 
 Phím hữu ích: m đổi chế độ, g đổi ứng dụng/tiến trình, / tìm kiếm, f lọc, d xem chi tiết, r mở vùng nhớ, ? giải thích chỉ số và q thoát. Hướng dẫn kỹ thuật đầy đủ hiện bằng tiếng Ý.
 
-Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Bản địa hóa chưa hoàn chỉnh: phần giải thích chi tiết, vùng nhớ, lỗi và một số điều khiển vẫn bằng tiếng Ý hoặc tiếng Anh.
+Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Bản dịch gồm bảng điều khiển, trợ giúp, chi tiết bộ đếm và so sánh A/B. Chân trang, CLI và một số thông báo kỹ thuật vẫn bằng tiếng Ý hoặc tiếng Anh. Checkpoint này chưa được kiểm thử lại.
 
 ## Dự án thử nghiệm: hãy đọc số liệu cẩn thận
 

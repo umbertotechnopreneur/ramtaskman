@@ -34,8 +34,8 @@ nel lavoro di tutti i giorni.
 ![Sei schermate della dashboard in italiano, inglese, cinese, coreano, francese e vietnamita](docs/images/multilingual.png)
 
 *Schermate catturate su Linux con dati sintetici. La localizzazione dell’app è in corso:
-la dashboard è parzialmente tradotta; dettagli, regioni, errori e alcuni controlli
-restano in italiano o inglese.*
+dashboard, aiuto, dettaglio dei contatori e confronto A/B hanno testi nelle dieci lingue.
+Footer, CLI e alcuni messaggi tecnici restano in italiano o inglese.*
 
 ## Uno sguardo dentro
 
@@ -78,8 +78,8 @@ ricreala localmente dopo aver copiato il progetto.
 La dashboard supporta una traduzione parziale selezionabile con `--language`, per
 esempio `./run.sh --language zh`. Codici disponibili: `it`, `en`, `zh` (cinese
 semplificato), `ko`, `fr`, `vi`, `es`, `pt`, `de`, `ja`. Su Windows usa ad esempio
-`.\run.cmd --language ko`. Le viste di dettaglio e altri messaggi non sono ancora
-interamente tradotti.
+`.\run.cmd --language ko`. Footer, CLI e alcuni messaggi dei backend richiedono
+ancora traduzioni. Questo checkpoint non è stato sottoposto a nuovi test.
 
 **Scorciatoie utili:** `m` cambia modalità, `g` alterna app e processi, `/` cerca,
 `f` filtra, `d` mostra i dettagli, `r` apre le regioni, `?` spiega le metriche e

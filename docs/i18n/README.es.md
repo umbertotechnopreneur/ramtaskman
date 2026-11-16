@@ -50,7 +50,7 @@ Usa --once o --json para una muestra única o salida JSON. No compartas .venv en
 
 Teclas útiles: m cambia de modo, g alterna aplicaciones/procesos, / busca, f filtra, d muestra detalles, r abre regiones, ? explica las métricas y q sale. La guía técnica completa está actualmente en italiano.
 
-La pantalla principal se inicia con `./run.sh --language es` (Windows: `.\run.cmd --language es`). La traducción es parcial: explicaciones detalladas, regiones, errores y algunos controles siguen en italiano o inglés.
+La pantalla principal se inicia con `./run.sh --language es` (Windows: `.\run.cmd --language es`). La traducción incluye pantalla principal, ayuda, detalles de contadores y comparación A/B. El pie de página, la CLI y algunos mensajes técnicos siguen en italiano o inglés. Este checkpoint no se ha vuelto a probar.
 
 ## Experimental: interpreta los datos con cuidado
 

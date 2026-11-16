@@ -50,7 +50,7 @@ Utilisez --once ou --json pour une mesure unique ou une sortie JSON. Ne partagez
 
 Touches utiles : m change de mode, g alterne applications/processus, / recherche, f filtre, d affiche les détails, r ouvre les régions, ? explique les métriques et q quitte. Le guide technique complet est actuellement en italien.
 
-Le tableau de bord peut être lancé avec `./run.sh --language fr` (Windows : `.\run.cmd --language fr`). La traduction est partielle : les explications détaillées, régions, erreurs et certaines commandes restent en italien ou en anglais.
+Le tableau de bord peut être lancé avec `./run.sh --language fr` (Windows : `.\run.cmd --language fr`). La traduction couvre le tableau de bord, l’aide, les détails des compteurs et la comparaison A/B. Le pied de page, la CLI et certains messages techniques restent en italien ou en anglais. Ce checkpoint n’a pas été retesté.
 
 ## Expérimental : interpréter les chiffres avec prudence
 

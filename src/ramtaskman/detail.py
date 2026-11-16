@@ -9,16 +9,16 @@ from .report import size
 from .i18n import translate
 
 BREAKDOWN = (
-    ('pss_anon', 'PSS anonima', 'Quota PSS delle pagine anonime'),
-    ('pss_file', 'PSS file', 'Quota PSS delle pagine basate su file'),
-    ('pss_shmem', 'PSS shmem', 'Quota PSS delle pagine shmem'),
-    ('private_clean', 'Privata clean', 'Pagine residenti private clean'),
-    ('private_dirty', 'Privata dirty', 'Pagine residenti private dirty'),
-    ('shared_clean', 'Condivisa clean', 'Pagine RSS condivise clean, non quota PSS'),
-    ('shared_dirty', 'Condivisa dirty', 'Pagine RSS condivise dirty, non quota PSS'),
-    ('anonymous', 'Anonymous', 'Pagine residenti anonime, già incluse nei contatori RSS'),
-    ('lazy_free', 'LazyFree', 'Pagine marcate MADV_FREE, recuperabili dal kernel'),
-    ('anon_huge_pages', 'AnonHugePages', 'Pagine anonime THP, già incluse nelle altre viste'),
+    ('pss_anon', 'PSS anonima', 'detail_desc_pss_anon'),
+    ('pss_file', 'PSS file', 'detail_desc_pss_file'),
+    ('pss_shmem', 'PSS shmem', 'detail_desc_pss_shmem'),
+    ('private_clean', 'Privata clean', 'detail_desc_private_clean'),
+    ('private_dirty', 'Privata dirty', 'detail_desc_private_dirty'),
+    ('shared_clean', 'Condivisa clean', 'detail_desc_shared_clean'),
+    ('shared_dirty', 'Condivisa dirty', 'detail_desc_shared_dirty'),
+    ('anonymous', 'Anonymous', 'detail_desc_anonymous'),
+    ('lazy_free', 'LazyFree', 'detail_desc_lazy_free'),
+    ('anon_huge_pages', 'AnonHugePages', 'detail_desc_anon_huge_pages'),
 )
 
 PSS_PARTS = (
@@ -39,20 +39,32 @@ _PART_LABELS = {
     'private_clean': 'detail_private_clean', 'private_dirty': 'detail_private_dirty',
     'shared_clean': 'detail_shared_clean', 'shared_dirty': 'detail_shared_dirty',
 }
+_SHORT_LABELS = {
+    'private_clean': 'detail_short_private_clean',
+    'private_dirty': 'detail_short_private_dirty',
+    'shared_clean': 'detail_short_shared_clean',
+    'shared_dirty': 'detail_short_shared_dirty',
+}
 
 
 def detail_bars(row: ApplicationMemory | ProcessMemory, language: str = 'it') -> tuple[MemoryBreakdownBar, ...]:
     """Check each member before summing: opposing inconsistencies must not cancel."""
+    def tr(key: str, **values: object) -> str:
+        return translate(language, key, **values)
+
     processes = row.processes if isinstance(row, ApplicationMemory) else [row]
+    membership_complete = not isinstance(row, ApplicationMemory) or row.membership_complete
     bars = []
     for metric, specs in (('pss', PSS_PARTS), ('rss', RSS_PARTS)):
         total = row.total(metric) if isinstance(row, ApplicationMemory) else getattr(row, metric)
         complete = [proc for proc in processes if getattr(proc, metric) is not None
                     and all(proc.breakdown.get(spec[0]) is not None for spec in specs)]
-        if not processes or len(complete) != len(processes) or (isinstance(row, ApplicationMemory) and not row.membership_complete):
-            bars.append(MemoryBreakdownBar(metric.upper(), total, reason=
-                f'letture complete {len(complete)}/{len(processes)}; componenti o membri mancanti', language=language))
+        if not processes or len(complete) != len(processes) or not membership_complete:
+            reason = tr('detail_components_missing', complete=len(complete), total=len(processes))
+            bars.append(MemoryBreakdownBar(metric.upper(), total, reason=reason, language=language))
             continue
+
+        # Validate the accounting of every member before adding the group.
         residual = 0
         inconsistent = False
         for proc in complete:
@@ -71,15 +83,21 @@ def detail_bars(row: ApplicationMemory | ProcessMemory, language: str = 'it') ->
             residual += difference
         if inconsistent:
             bars.append(MemoryBreakdownBar(metric.upper(), total, reason=
-                'componenti incoerenti con il totale di almeno un processo', language=language))
+                tr('detail_components_inconsistent'), language=language))
             continue
-        parts = [MemoryPart(translate(language, _PART_LABELS[key]), short,
-                            sum(proc.breakdown[key] for proc in complete), color, foreground)
-                 for key, label, short, color, foreground in specs]
+
+        parts = []
+        for key, _, short, color, foreground in specs:
+            label = tr(_PART_LABELS[key])
+            short_label = tr(_SHORT_LABELS[key]) if key in _SHORT_LABELS else short
+            value = sum(proc.breakdown[key] for proc in complete)
+            parts.append(MemoryPart(label, short_label, value, color, foreground))
+
         note = None
         if residual:
-            parts.append(MemoryPart('Arrotondamento procfs', 'Arrot.', residual, '#6b7280', 'white'))
-            note = f'arrotondamento kB esplicito: {size(residual)}'
+            parts.append(MemoryPart(tr('detail_rounding_label'), tr('detail_rounding_short'),
+                                    residual, '#6b7280', 'white'))
+            note = tr('detail_rounding_note', size=size(residual))
         bars.append(MemoryBreakdownBar(metric.upper(), total, tuple(parts), note=note, language=language))
     return tuple(bars)
 
@@ -93,12 +111,15 @@ def breakdown_total(row: ApplicationMemory | ProcessMemory, metric: str) -> tupl
     return value, count, len(values)
 
 
-def breakdown_summary(row: ApplicationMemory | ProcessMemory) -> Text:
+def breakdown_summary(row: ApplicationMemory | ProcessMemory, language: str = 'it') -> Text:
+    """Summarize the three PSS components without changing the selected sample."""
     parts = []
-    for key, label in (('pss_anon', 'anonima'), ('pss_file', 'file'), ('pss_shmem', 'shmem')):
+    for key in ('pss_anon', 'pss_file', 'pss_shmem'):
+        label = translate(language, _PART_LABELS[key]).lower()
         value, _, _ = breakdown_total(row, key)
         parts.append(f'{label} {size(value)}')
-    return Text('PSS: ' + ' · '.join(parts) + ' · d: dettagli', style='cyan')
+    hint = translate(language, 'detail_summary_hint')
+    return Text('PSS: ' + ' · '.join(parts) + ' · ' + hint, style='cyan')
 
 
 def detail_content(row: ApplicationMemory | ProcessMemory, platform: str, language: str = 'it') -> Group:
@@ -114,17 +135,13 @@ def detail_content(row: ApplicationMemory | ProcessMemory, platform: str, langua
     table = Table(expand=True)
     for label in (tr('detail_counter'), tr('detail_memory'), tr('readings'), tr('detail_meaning')):
         table.add_column(label)
-    for key, label, description in BREAKDOWN:
+    for key, label, description_key in BREAKDOWN:
         value, count, total = breakdown_total(row, key)
         translated_label = tr(_PART_LABELS[key]) if key in _PART_LABELS else label
         if key in ('pss_anon', 'pss_file', 'pss_shmem'):
             translated_label = 'PSS ' + translated_label
-        table.add_row(translated_label, size(value), f'{count}/{total}', description)
-    notes = Text('Ogni barra ha il proprio totale; PSS e RSS non si sommano. Swap è separata dalla RAM residente.\n'
-                 'Le righe sono viste sovrapposte: non sommarle tutte. PSS anonima/file/shmem ripartisce PSS;\n'
-                 'privata clean + dirty dà USS. Condivisa clean/dirty è RSS condivisa e può essere contata\n'
-                 'più volte nei gruppi. Un solo campo mancante rende il totale di quella riga n/a.\n'
-                 'THP è incluso nei contatori ordinari; HugeTLB esplicito resta escluso.', style='yellow')
+        table.add_row(translated_label, size(value), f'{count}/{total}', tr(description_key))
+    notes = Text(tr('detail_notes'), style='yellow')
     metrics = []
     for key in ('pss', 'uss', 'rss', 'swap', 'swap_pss'):
         value = row.total(key) if isinstance(row, ApplicationMemory) else getattr(row, key)

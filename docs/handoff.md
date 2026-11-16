@@ -239,3 +239,18 @@ dettaglio; la localizzazione completa dell'app rimane aperta. La prima CI GitHub
 è fallita nella verifica offline: il problema è stato riprodotto con una cache nuova
 e corretto localmente usando il lockfile per preparare l'ambiente isolato. I risultati
 Linux locali e la simulazione della cache non costituiscono un nuovo esito CI remoto.
+
+## Checkpoint richiesto senza nuovi test
+
+L'utente ha poi chiesto esplicitamente di sistemare ancora codice e traduzioni,
+fare commit e push subito e **non eseguire test adesso**. Il lavoro precedente è
+stato salvato e pubblicato nel checkpoint `529e95a`. L'incremento successivo traduce
+anche l'aiuto esteso (file Markdown per lingua), diagnostica Linux/Windows,
+descrizioni e note del dettaglio e gran parte del confronto A/B. Il rendering della
+dashboard è stato scomposto con un helper per i contatori OS e variabili intermedie
+per righe e copertura. Queste ultime modifiche non sono state testate, avviate,
+lintate o compilate: le verifiche precedenti non attestano questo checkpoint.
+I commit di questa consegna contengono `[skip ci]` per rispettare la sospensione
+dei test anche nel push. Restano da tradurre footer, CLI e diversi messaggi tecnici
+dei backend e dell'inspector. La prossima verifica dovrà coprire l'intero incremento,
+tenendo conto che in questa consegna i test sono stati sospesi su richiesta.

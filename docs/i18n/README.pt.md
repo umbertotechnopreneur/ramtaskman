@@ -50,7 +50,7 @@ Use --once ou --json para uma leitura única ou saída JSON. Não compartilhe .v
 
 Atalhos: m troca o modo, g alterna aplicativos/processos, / pesquisa, f filtra, d mostra detalhes, r abre regiões, ? explica as métricas e q sai. O guia técnico completo está atualmente em italiano.
 
-A tela principal pode ser aberta com `./run.sh --language pt` (Windows: `.\run.cmd --language pt`). A tradução é parcial: explicações detalhadas, regiões, erros e alguns controles permanecem em italiano ou inglês.
+A tela principal pode ser aberta com `./run.sh --language pt` (Windows: `.\run.cmd --language pt`). A tradução inclui painel, ajuda, detalhes dos contadores e comparação A/B. O rodapé, a CLI e algumas mensagens técnicas ainda usam italiano ou inglês. Este checkpoint não foi testado novamente.
 
 ## Experimental: interprete os números com cuidado
 

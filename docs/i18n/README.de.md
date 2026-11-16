@@ -50,7 +50,7 @@ Unter Windows im Projektordner mit Windows Terminal:
 
 Tasten: m wechselt den Modus, g Anwendungen/Prozesse, / sucht, f filtert, d zeigt Details, r öffnet Bereiche, ? erklärt die Werte und q beendet. Die vollständige technische Anleitung ist derzeit auf Italienisch.
 
-Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Übersetzung ist unvollständig: detaillierte Erklärungen, Bereiche, Fehler und einige Bedienelemente bleiben italienisch oder englisch.
+Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Übersetzung umfasst Übersicht, Hilfe, Zählerdetails und A/B-Vergleich. Fußzeile, CLI und einige technische Meldungen bleiben italienisch oder englisch. Dieser Checkpoint wurde nicht erneut getestet.
 
 ## Experimentell: Messwerte sorgfältig interpretieren
 

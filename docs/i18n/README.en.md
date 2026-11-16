@@ -50,7 +50,7 @@ Use --once or --json for a single reading or JSON output. Do not share a .venv b
 
 Useful keys: m switches modes, g toggles apps/processes, / searches, f filters, d opens details, r opens regions, ? explains metrics and q quits. The complete technical guide is currently in Italian.
 
-The dashboard can be started with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). Dashboard localization is partial: detailed explanations, regions, errors and some controls remain in Italian or English.
+The dashboard can be started with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). Localization includes the dashboard, help, counter details and A/B comparison. Footer labels, CLI and some technical messages still use Italian or English. This checkpoint has not been retested.
 
 ## Experimental: read the numbers carefully
 

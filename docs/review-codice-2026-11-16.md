@@ -35,10 +35,11 @@ codice e i mock non sostituiscono prove hardware Windows/macOS.
 ## Da completare
 
 1. **Localizzazione ancora incompleta.** La richiesta copre tutta l'applicazione.
-   Questa revisione estende la traduzione a barre USS, parti della mappa, ricerca
-   delle categorie e finestre di acquisizione, oltre ai titoli del dettaglio. Restano
-   testi in italiano o inglese nell'aiuto esteso, descrizioni e note del dettaglio,
-   confronto A/B, scorciatoie nel footer, vari messaggi di errore e CLI. I messaggi
+   La revisione e il checkpoint successivo estendono la traduzione a barre USS,
+   parti della mappa, ricerca delle categorie, finestre di acquisizione, aiuto
+   esteso, descrizioni e note del dettaglio e gran parte del confronto A/B. Restano
+   testi in italiano o inglese nelle scorciatoie del footer, in alcuni messaggi
+   dell'inspector, nei messaggi di errore e nella CLI. I messaggi
    generati dai backend e le stringhe di errore dei file di acquisizione richiedono
    un contratto di codici separato dalla presentazione, per evitare di tradurre dati
    arbitrari, percorsi o motivazioni provenienti dal sistema operativo. Le lingue
@@ -67,3 +68,14 @@ separatamente. Sono state rigenerate catture sintetiche e verificati `--once`,
 `--json`, build, installazione del wheel e replay in un ambiente isolato alimentato
 da una cache nuova. Nessun nuovo risultato GitHub Actions è stato ottenuto per queste
 modifiche locali.
+
+## Checkpoint successivo senza test
+
+Su richiesta dell'utente, l'incremento successivo è stato preparato e pubblicato
+come checkpoint senza eseguire nuovi test, lint, build, catture o avvii dell'app.
+I risultati sopra riguardano il lavoro precedente. I file di aiuto sono ora risorse
+Markdown per le dieci lingue; la diagnostica OS e ulteriori testi del dettaglio e
+del confronto usano i cataloghi. L'helper dei contatori di piattaforma riduce il
+metodo principale del dashboard; le righe della tabella usano variabili esplicite
+per valori, copertura e identità. La correttezza di queste ultime modifiche dovrà
+essere verificata successivamente. I commit contengono `[skip ci]`.

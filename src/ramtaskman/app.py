@@ -15,7 +15,7 @@ from textual.widgets import Button, DataTable, Footer, Input, Markdown, Select, 
 from textual.worker import get_current_worker
 
 from .collector import Collector
-from .models import ApplicationMemory, ProcessMemory, Snapshot
+from .models import ApplicationMemory, ProcessMemory, Snapshot, SystemMemory
 from .filters import RowFilter, owner_options
 from .detail import breakdown_summary, detail_content
 from .report import size
@@ -23,97 +23,7 @@ from .ram_bar import SystemRamBar
 from .application_bar import application_uss_bar
 from .region_screen import RegionScreen
 from .widgets import spark
-from .i18n import LANGUAGES, translate
-
-HELP_MD = """\
-# ramtaskman · come leggere i numeri
-
-Stessa struttura visiva di gputaskman, dedicata alla memoria di Linux, Windows e macOS.
-
-| Campo | Significato |
-|---|---|
-| PSS | RAM privata + quota proporzionale delle pagine condivise |
-| USS | Private_Clean + Private_Dirty: pagine residenti private |
-| RSS | Pagine residenti, comprese quelle condivise: sommare può duplicarle |
-| Swap | Swap da smaps_rollup, esclusa la swap shmem; può duplicare pagine condivise |
-| SwapPSS | Quota proporzionale della swap condivisa contabilizzata da smaps_rollup |
-| RAM used | MemTotal − MemAvailable: non coincide con la somma dei processi |
-| Cache | Cached + Buffers + SReclaimable − Shmem; si sovrappone alla memoria disponibile |
-| PSI some | Percentuale di tempo con almeno un task in attesa di memoria, media su 10 s |
-
-**Barra RAM:** occupa tutta la larghezza e ripartisce i contatori OS Linux:
-anonima, file cache (Cached − Shmem), condivisa/tmpfs, buffer, slab recuperabile/non
-recuperabile, altro (residuo calcolato) e libera. Sono categorie contabili: l'ordine non
-rappresenta indirizzi fisici. Disponibile è un indicatore separato e include cache
-recuperabile, quindi non è un ulteriore segmento. I dettagli clean/dirty e PSS del
-processo restano nella vista **d**, perché si sovrappongono ai contatori globali.
-Se mancano campi o il campione è incoerente, la barra mostra in uso/disponibile e il
-motivo della ripartizione assente. La legenda riporta anche categorie inferiori a un carattere.
-
-**Barra USS app:** prime 10 app con USS completa e altre app complete. La scala è la
-somma USS delle sole app complete del campione, non la RAM totale. Numeri e colori
-rimandano alla legenda. I gruppi parziali sono esclusi e la copertura è dichiarata.
-Il raggruppamento segue la tabella; i segmenti non indicano indirizzi fisici.
-
-**Windows/macOS:** USS e RSS da psutil; PSS, Swap e SwapPSS per processo non sono
-esposti e restano n/a. Su Windows il private commit/pagefile NON è swap su disco.
-Su macOS RAM used è total − available da psutil, non la Memory Pressure di Activity Monitor.
-
-**Applicazione:** su Linux un cgroup systemd esplicito identifica l'istanza dell'app,
-anche con helper diversi. Utenti e istanze distinte restano separati. Senza questa
-identità (anche su Windows/macOS) si usa utente + eseguibile, oppure utente + nome
-come euristica se il percorso non è leggibile. L'inspector indica il metodo usato.
-
-**Ricerca e filtri:** premi **/** per cercare nome, eseguibile o PID esatto; **f** per
-scegliere utente e stato memoria (**con swap** o **dati parziali**). Si combinano fra loro.
-Un'applicazione corrisponde se un suo processo soddisfa la ricerca o lo stato memoria,
-ma il totale mantiene tutti i membri. Entrando nella vista processi rimangono i filtri.
-I filtri agiscono prima del limite Top 30; grafici e dashboard descrivono il sistema intero.
-**Invio** dalla ricerca torna alla tabella. **Esc** dai controlli o **Reset** cancella i
-filtri; **Esc** nella tabella dei processi torna alle app conservandoli. Dati parziali
-considera solo i contatori supportati dal sistema; swap sconosciuta non significa swap usata.
-
-**d** apre il dettaglio RAM del gruppo o processo: PSS anonima/file/shmem, privata e
-condivisa clean/dirty, pagine anonime, LazyFree e THP. Campi solo Linux: altrove n/a.
-Le righe sono viste sovrapposte, non vanno sommate tutte. Il dettaglio fissa il campione
-all'apertura: chiudi e riapri per aggiornarlo. **Esc** o **d** chiude il dettaglio.
-
-**r** o **Invio** su un processo apre la mappa delle regioni Linux. Dentro un'app,
-**r** mostra prima i PID: ogni processo ha un proprio spazio virtuale. Le barre di **d**
-ripartiscono separatamente PSS e RSS; la swap resta fuori dalla RAM residente.
-Nella mappa: **v** alterna RSS/indirizzi virtuali, **s** ordina, **/** cerca file o
-indirizzo 0x…, **f** filtra tipo/stato, **z** o **Invio** ingrandisce il vicinato della
-regione selezionata, **r** aggiorna, **Esc** azzera i filtri/esce dallo zoom/torna indietro.
-La mappa segue gli indirizzi virtuali, non i frame fisici. I buchi sono esclusi dalla
-scala virtuale e segnalati con │; le regioni inferiori a un carattere restano in tabella.
-Tipo indica l'origine della mappatura, non il suo contenuto: file può avere pagine CoW
-private; heap/stack sono solo quelli riconosciuti. I campioni sono su richiesta e
-mostrano età, durata e limiti di lettura. Windows: solo intervalli virtuali sperimentali;
-macOS: mappa per regioni non disponibile.
-
-Nelle regioni **b** fissa A, **r** raccoglie B e **c** apre il confronto. In confronto,
-**v** cambia metrica, **s** ordine, **f** filtra lo stato e **Ctrl+B** rimuove A.
-**Ctrl+S** salva i campioni, **Ctrl+O** apre un file offline. I file contengono metadati
-e possono includere percorsi personali. I dati mancanti e le regioni riorganizzate
-restano n/a; stesso intervallo non dimostra la stessa allocazione né un memory leak.
-
-**n/a non è zero.** Un totale di applicazione è n/a se manca anche un solo valore.
-Letture indica la copertura PSS/USS. I totali visibili nel dashboard sono somme
-parziali delle sole letture disponibili e non rappresentano tutta la RAM del sistema.
-Le letture non sono atomiche: i processi possono cambiare durante il campionamento.
-Altri utenti, sandbox e permessi procfs possono impedire le letture. Nessuna elevazione automatica.
-HugeTLB non è incluso nei normali contatori RSS/PSS/USS qui mostrati.
-
-Il programma legge metadati: non legge /proc/PID/mem, cmdline, environment o contenuti delle app.
-
-**g** applicazioni/processi · **Invio** processi dell'app selezionata · **Esc** torna alle app
-**s** ordinamento · **c** grafico · **a** tutti/primi 30 · **m** compatto/completo
-**/** ricerca · **f** filtri · **d** dettagli · **r** regioni · **p** pausa · **?** aiuto · **q** esci
-
-Grafici: ultimi 60 campioni, percentuali con scala 0–100. Lo spazio vuoto indica un dato assente.
-L'intervallo è una pausa dopo la rilevazione: la durata effettiva include il tempo di scansione.
-"""
-
+from .i18n import LANGUAGES, load_help, translate
 
 class HelpScreen(ModalScreen):
     BINDINGS = [Binding('escape,q,question_mark', 'app.pop_screen', 'Close')]
@@ -124,7 +34,7 @@ class HelpScreen(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
-            yield Markdown(HELP_MD)
+            yield Markdown(load_help(getattr(self.app, 'language', 'it')))
 
 
 class MemoryDetailScreen(ModalScreen):
@@ -197,12 +107,12 @@ class RamTaskManager(App):
 
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='dashboard'):
-            yield Static('Sampling RAM counters...', id='device')
-            yield Static('Sampling system memory...', id='system')
+            yield Static(self.tr('sampling_ram'), id='device')
+            yield Static(self.tr('sampling_system'), id='system')
             with Vertical(id='history'):
                 with Horizontal(id='chart-controls'):
                     yield Static(self.tr('charts'), id='chart-label')
-                    yield Select([(self.tr('all_charts'), -1), *((n, i) for i, n in enumerate(self.CHARTS))],
+                    yield Select([(self.tr('all_charts'), -1), *((self.chart_label(n), i) for i, n in enumerate(self.CHARTS))],
                                  value=-1, allow_blank=False, compact=True, id='chart-mode')
                     yield Static(self.tr('chart_hint'), id='chart-hint')
                 yield Static(id='charts')
@@ -260,7 +170,7 @@ class RamTaskManager(App):
         for history in self.histories.values():
             history.append(None)
         for widget in ('device', 'system', 'charts', 'inspector'):
-            self.query_one(f'#{widget}', Static).update(Text('Rilevazione non disponibile: ' + reason, style='yellow'))
+            self.query_one(f'#{widget}', Static).update(Text(self.tr('sample_error', reason=reason), style='yellow'))
 
     def apply(self, snap: Snapshot) -> None:
         if self.paused:
@@ -288,72 +198,96 @@ class RamTaskManager(App):
             if isinstance(screen, RegionScreen) and screen.is_mounted:
                 screen.render_memory_context()
 
+    def _platform_details(self, memory: SystemMemory) -> list[Text]:
+        """Render overlapping OS counters separately from the RAM partition."""
+        lines: list[Text] = []
+        linux = memory.linux_details
+        if linux is not None:
+            lines.append(Text(self.tr('linux_cache_slab', cache=size(memory.cache), slab=size(memory.slab)), style='cyan'))
+            lines.append(Text(self.tr('linux_commit', total=size(linux.commit_total), limit=size(linux.commit_limit)), style='magenta'))
+            lines.append(Text(self.tr('linux_commit_note'), style='grey70'))
+
+            # Missing optional counters are explicit; they never become zero.
+            counters = (('Committed_AS', linux.commit_total), ('CommitLimit', linux.commit_limit),
+                        ('cache', memory.cache), ('Slab', memory.slab))
+            missing = [name for name, value in counters if value is None]
+            if missing:
+                lines.append(Text(self.tr('meminfo_missing', fields=', '.join(missing)), style='yellow'))
+
+        windows = memory.windows_details
+        if windows is not None:
+            lines.append(Text(self.tr('windows_cache_pool', cache=size(windows.system_cache),
+                                      paged=size(windows.kernel_paged), nonpaged=size(windows.kernel_nonpaged)), style='cyan'))
+            lines.append(Text(self.tr('windows_commit', total=size(windows.commit_total),
+                                      limit=size(windows.commit_limit), peak=size(windows.commit_peak)), style='magenta'))
+            lines.append(Text(self.tr('windows_memory_note'), style='grey70'))
+            if windows.reason:
+                lines.append(Text(windows.reason, style='yellow'))
+        return lines
+
     def render_dashboard(self) -> None:
-        if not self.snap:
+        if self.snap is None:
             return
-        s, m = self.snap, self.snap.system
-        bar = SystemRamBar(m, self.language)
-        top = [Text(f'{self.tr("system_ram")} · {s.platform} · ' + self.tr('os_breakdown' if bar.detailed else 'availability'), style='bold'), bar, bar.legend(),
-               Text(f'{self.tr("total")} {size(m.total)} · {self.tr("net_used")} {size(m.used)} · {self.tr("available")} {size(m.available)}', style='bold')]
+        snapshot = self.snap
+        memory = snapshot.system
+        bar = SystemRamBar(memory, self.language)
+        partition_label = self.tr('os_breakdown' if bar.detailed else 'availability')
+        heading = f'{self.tr("system_ram")} · {snapshot.platform} · {partition_label}'
+        totals = (f'{self.tr("total")} {size(memory.total)} · {self.tr("net_used")} {size(memory.used)} · '
+                  f'{self.tr("available")} {size(memory.available)}')
+        content = [Text(heading, style='bold'), bar, bar.legend(), Text(totals, style='bold')]
+
         if bar.detailed:
-            top.append(Text(self.tr('net_explanation'), style='grey70'))
-        elif s.platform == 'windows' and m.windows_details is not None and not m.windows_details.reason:
-            top.append(Text('Barra RAM: in uso / disponibile. Cache, pool e commit sono viste sovrapposte, '
-                            'non segmenti da sommare.', style='grey70'))
+            content.append(Text(self.tr('net_explanation'), style='grey70'))
+        elif snapshot.platform == 'windows' and memory.windows_details is not None and not memory.windows_details.reason:
+            content.append(Text(self.tr('ram_overlap_note'), style='grey70'))
         else:
-            top.append(Text('Ripartizione OS n/a: ' + (m.segments_reason or 'contatori non esposti da questo backend') +
-                            '. Barra: in uso / disponibile.', style='yellow'))
+            reason = memory.segments_reason or self.tr('os_counters_missing')
+            content.append(Text(self.tr('os_breakdown_missing', reason=reason), style='yellow'))
+
         if not self.monitoring:
-            apps_bar = application_uss_bar(s, self.language)
-            top.extend((apps_bar.heading(), apps_bar, apps_bar.legend(),
-                        Text(self.tr('uss_app_note'), style='grey70')))
-            if m.linux_details is not None:
-                linux = m.linux_details
-                top.append(Text(f'Cache Linux {size(m.cache)} · Slab kernel {size(m.slab)}', style='cyan'))
-                top.append(Text(f'Commit Linux {size(linux.commit_total)} / limite {size(linux.commit_limit)}', style='magenta'))
-                top.append(Text('Cache e slab si sovrappongono alle categorie della barra. Commit: memoria virtuale '
-                                'impegnata, non RAM residente né swap; il limite dipende dalle impostazioni overcommit.',
-                                style='grey70'))
-                missing = [name for name, value in (('Committed_AS', linux.commit_total),
-                                                      ('CommitLimit', linux.commit_limit),
-                                                      ('cache', m.cache), ('Slab', m.slab)) if value is None]
-                if missing:
-                    top.append(Text('Contatori meminfo non disponibili: ' + ', '.join(missing), style='yellow'))
-            if m.windows_details is not None:
-                w = m.windows_details
-                top.append(Text(f'Cache di sistema {size(w.system_cache)} · Pool kernel paginabile {size(w.kernel_paged)} · '
-                                f'non paginabile {size(w.kernel_nonpaged)}', style='cyan'))
-                top.append(Text(f'Commit {size(w.commit_total)} / {size(w.commit_limit)} · '
-                                f'Picco dal boot {size(w.commit_peak)}', style='magenta'))
-                top.append(Text('Cache include standby e working set di sistema; si sovrappone alla RAM disponibile. '
-                                'Pool paginabile: allocazione, non sola residenza. Commit: impegno di memoria virtuale, '
-                                'non RAM residente né swap. Letture sequenziali.', style='grey70'))
-                if w.reason:
-                    top.append(Text(w.reason, style='yellow'))
-            top.append(Text(f'PSS visible {size(s.visible_sum("pss"))}  USS visible {size(s.visible_sum("uss"))}  '
-                            f'Swap {size(m.swap_used)} / {size(m.swap_total)}'))
+            apps_bar = application_uss_bar(snapshot, self.language)
+            content.extend((apps_bar.heading(), apps_bar, apps_bar.legend(),
+                            Text(self.tr('uss_app_note'), style='grey70')))
+            content.extend(self._platform_details(memory))
+            content.append(Text(f'{self.tr("pss_visible")} {size(snapshot.visible_sum("pss"))}  '
+                                f'{self.tr("uss_visible")} {size(snapshot.visible_sum("uss"))}  '
+                                f'Swap {size(memory.swap_used)} / {size(memory.swap_total)}'))
+
         panel = self.query_one('#device', Static)
-        panel.border_title = self.tr('slim' if self.monitoring else 'full') + (f' · {self.tr("paused")}' if self.paused else '')
-        panel.update(Group(*top))
+        panel_title = self.tr('slim' if self.monitoring else 'full')
+        if self.paused:
+            panel_title += ' · ' + self.tr('paused')
+        panel.border_title = panel_title
+        panel.update(Group(*content))
+
         system = self.query_one('#system', Static)
         system.border_title = self.tr('system')
-        cpu = 'n/a' if m.cpu_percent is None else f'{m.cpu_percent:.0f}%'
-        psi = 'n/a' if m.pressure_percent is None else f'{m.pressure_percent:.2f}%'
-        status = Text(f'CPU {cpu}   Memory pressure (PSI some, 10s) {psi}\n')
-        status.append(f'{self.tr("readings")} PSS {s.measured}/{len(s.processes)} · USS {s.coverage("uss")}/{len(s.processes)} · {len(s.applications)} {self.tr("groups")} · '
-                      f'{self.tr("skipped")} {s.skipped} · {self.tr("scan")} {s.sample_ms:.0f} ms\n')
+        cpu = 'n/a' if memory.cpu_percent is None else f'{memory.cpu_percent:.0f}%'
+        pressure = 'n/a' if memory.pressure_percent is None else f'{memory.pressure_percent:.2f}%'
+        status = Text(f'CPU {cpu}   {self.tr("pressure")} {pressure}\n')
+        status.append(f'{self.tr("readings")} PSS {snapshot.measured}/{len(snapshot.processes)} · '
+                      f'USS {snapshot.coverage("uss")}/{len(snapshot.processes)} · '
+                      f'{len(snapshot.applications)} {self.tr("groups")} · '
+                      f'{self.tr("skipped")} {snapshot.skipped} · {self.tr("scan")} {snapshot.sample_ms:.0f} ms\n')
         status.append(self.tr('partial'), style='yellow')
-        if s.measurement_attempted is not None:
-            status.append(f'\nBudget: {s.measurement_attempted} misure tentate · {s.measurement_deferred} rinviate · '
-                          f'identità {"complete" if s.enumeration_complete else "incomplete: totali app n/a"}', style='yellow')
-        elif not s.enumeration_complete:
-            status.append('\nIdentità incomplete: totali app n/a.', style='yellow')
-        if s.unsupported:
-            status.append('\nPSS / Swap / SwapPSS per processo: n/a su questo backend. RSS e USS ove leggibili.', style='yellow')
-        for note in m.notes:
+        if snapshot.measurement_attempted is not None:
+            identity = self.tr('identity_complete' if snapshot.enumeration_complete else 'identity_incomplete')
+            status.append('\n' + self.tr('budget_status', attempted=snapshot.measurement_attempted,
+                                        deferred=snapshot.measurement_deferred, identity=identity), style='yellow')
+        elif not snapshot.enumeration_complete:
+            status.append('\n' + self.tr('identity_incomplete_note'), style='yellow')
+        if snapshot.unsupported:
+            status.append('\n' + self.tr('unsupported_process_counters'), style='yellow')
+        for note in memory.notes:
             status.append('\n' + note, style='grey62')
         system.update(status)
         self.render_charts()
+
+    def chart_label(self, name: str) -> str:
+        """Translate display labels while history keys and colors stay stable."""
+        keys = {'PSS visible': 'pss_visible', 'USS visible': 'uss_visible', 'Cache': 'chart_cache'}
+        return self.tr(keys[name]) if name in keys else name
 
     def render_charts(self) -> None:
         width = max(1, self.size.width - 6)
@@ -369,7 +303,8 @@ class RamTaskManager(App):
             values = self.histories[name]
             current = values[-1] if values else None
             label = 'n/a' if current is None else f'{current:.1f}%'
-            cell = Text(f'{name:<12} ', style=self.CHART_COLORS[name])
+            cell = Text(self.chart_label(name), style=self.CHART_COLORS[name])
+            cell.truncate(13, overflow='crop', pad=True)
             cell.append(f'{label:>8} ', style='bold')
             cell.append(spark(values, max(1, cell_width - 22), 100))
             cells.append(cell)
@@ -409,14 +344,25 @@ class RamTaskManager(App):
             pss = self.metric(row, 'pss')
             count = len(row.processes) if grouped else 1
             measured = row.measured if grouped else int(row.pss is not None)
-            info = self.tr('group_' + row.grouping) if grouped else (row.reason or ('smaps_rollup' if self.snap.platform == 'linux' else 'psutil: RSS / USS'))
+            uss_measured = sum(p.uss is not None for p in row.processes) if grouped else int(row.uss is not None)
+            if grouped:
+                info = self.tr('group_' + row.grouping)
+            else:
+                metric_source = 'smaps_rollup' if self.snap.platform == 'linux' else 'psutil: RSS / USS'
+                info = row.reason or metric_source
             if grouped and not row.membership_complete:
                 info += ' · ' + self.tr('group_incomplete')
-            table.add_row(str(count) + ' procs' if grouped else str(row.pid), Text(row.name),
-                          Text(str(row.uid) if row.uid is not None else (row.user or 'n/a')),
-                          *(size(self.metric(row, m)) for m in self.SORTS[:-1]),
-                          f'{100 * pss / self.snap.system.total:.1f}' if pss is not None and self.snap.system.total else 'n/a',
-                          f'P {measured}/{count} U {sum(p.uss is not None for p in row.processes) if grouped else int(row.uss is not None)}/{count}', Text(info), key=f'{generation}|{row.key}')
+
+            # Keep values, coverage and row identity separate from display text.
+            identity = f'{count} {self.tr("processes").lower()}' if grouped else str(row.pid)
+            owner = str(row.uid) if row.uid is not None else (row.user or 'n/a')
+            memory_values = [size(self.metric(row, name)) for name in self.SORTS[:-1]]
+            system_total = self.snap.system.total
+            pss_percent = f'{100 * pss / system_total:.1f}' if pss is not None and system_total else 'n/a'
+            coverage = f'P {measured}/{count} U {uss_measured}/{count}'
+            row_key = f'{generation}|{row.key}'
+            table.add_row(identity, Text(row.name), Text(owner), *memory_values,
+                          pss_percent, coverage, Text(info), key=row_key)
         keys = list(self.rows)
         index = keys.index(selected) if selected in self.rows else 0
         self.selected_key = keys[index] if keys else None
@@ -427,7 +373,7 @@ class RamTaskManager(App):
         self.query_one('#inspector', Static).border_subtitle = self.sub_title
         status = self.tr('filter_status', shown=len(rows), matching=matching, total=total)
         if self.row_filter.memory == 'swap' and 'swap' in self.snap.unsupported:
-            status = 'Swap per processo non disponibile su questo sistema; filtro senza risultati.'
+            status = self.tr('swap_filter_unsupported')
         self.query_one('#filter-status', Static).update(Text(status))
         self.render_inspector()
 
@@ -437,8 +383,8 @@ class RamTaskManager(App):
             self.collector.set_priority((row.pid, row.started_at) if isinstance(row, ProcessMemory) else None)
         panel = self.query_one('#inspector', Static)
         if row is None:
-            panel.border_title = 'Inspector'
-            panel.update('Nessun risultato. /: cerca · f: filtri · Esc: reset o ritorno alle app.' if self.row_filter.active else self.tr('no_rows'))
+            panel.border_title = self.tr('inspector')
+            panel.update(self.tr('no_matches') if self.row_filter.active else self.tr('no_rows'))
             return
         grouped = isinstance(row, ApplicationMemory)
         panel.border_title = Text(row.name)
@@ -447,7 +393,7 @@ class RamTaskManager(App):
         pids = ', '.join(str(p.pid) for p in processes[:20]) + (' …' if len(processes) > 20 else '')
         reasons = sorted({p.reason for p in processes if p.reason})
         panel.update(Group(Text(counters, style='bold'),
-                           breakdown_summary(row),
+                           breakdown_summary(row, self.language),
                            Text(f'PID: {pids} · ' + self.tr('enter_group' if grouped else 'enter_regions')),
                            Text((self.tr('group_' + row.grouping) + ': ' + (row.grouping_id or 'n/a')) if grouped else (self.tr('executable') + ': ' + (row.executable or 'n/a')), style='grey62'),
                            Text(' · '.join(reasons) if reasons else self.tr('source'),

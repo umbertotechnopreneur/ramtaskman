@@ -27,12 +27,10 @@ from .capture_models import CaptureSnapshot, freeze_snapshot
 from .comparison import ComparisonCancelled, compare_captures
 from .region_provider import make_region_provider
 
-COMPARISON_LABELS = {
-    'same_interval': 'stesso intervallo', 'metadata_changed': 'metadati cambiati',
-    'backing_changed': 'origine cambiata', 'backing_unverified': 'origine non verificata',
-    'restructured': 'riorganizzata', 'only_a': 'solo A', 'only_b': 'solo B',
-    'unobserved': 'non osservata',
-}
+COMPARISON_STATES = (
+    'same_interval', 'metadata_changed', 'backing_changed', 'backing_unverified',
+    'restructured', 'only_a', 'only_b', 'unobserved',
+)
 
 
 def filter_regions(regions: list[MemoryRegion], query: str, category: str, state: str,
@@ -139,6 +137,10 @@ class RegionScreen(ModalScreen):
     def tr(self, key: str, **values: object) -> str:
         return translate(getattr(self.app, 'language', 'it'), key, **values)
 
+    def comparison_label(self, status: str) -> str:
+        """Translate known states, keeping unknown captured identifiers literal."""
+        return self.tr('comparison_' + status) if status in COMPARISON_STATES else status
+
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='region-dashboard'):
             yield Static(id='region-summary')
@@ -157,10 +159,8 @@ class RegionScreen(ModalScreen):
                              allow_blank=False, value='all', compact=True, id='region-kind')
                 yield Select([(self.tr('region_all_states'), 'all'), (self.tr('region_resident'), 'resident'), (self.tr('region_with_swap'), 'swap'),
                               (self.tr('region_shared') + ' RSS > 0', 'shared')], allow_blank=False, value='all', compact=True, id='region-state')
-                yield Select([('Tutte le variazioni', 'all'), ('Intervalli uguali', 'same_interval'),
-                              ('Metadati cambiati', 'metadata_changed'), ('Origine cambiata', 'backing_changed'),
-                              ('Origine non verificata', 'backing_unverified'), ('Riorganizzati', 'restructured'),
-                              ('Solo A', 'only_a'), ('Solo B', 'only_b'), ('Non osservati', 'unobserved')],
+                yield Select([(self.tr('comparison_all'), 'all'),
+                              *((self.comparison_label(status), status) for status in COMPARISON_STATES)],
                              allow_blank=False, value='all', compact=True, id='comparison-state')
         yield Static(id='region-count')
         yield DataTable(id='region-table', cursor_type='row', zebra_stripes=True)
@@ -191,10 +191,18 @@ class RegionScreen(ModalScreen):
     def set_columns(self, comparison: bool) -> None:
         table = self.query_one('#region-table', DataTable)
         table.clear(columns=True)
-        columns = (('Indirizzo virtuale', 'Stato', 'A', 'B', 'Delta B−A', 'Regione') if comparison else
-                   ('Indirizzo virtuale', 'Tipo', 'Virtuale', 'RSS', 'PSS', 'USS', 'Swap', 'Permessi', 'File / nome'))
-        for column in columns:
-            table.add_column(column, key=column)
+        # Column identities remain stable when their displayed labels change.
+        columns = (
+            (('start', self.tr('region_column_address')), ('status', self.tr('region_column_state')),
+             ('a', 'A'), ('b', 'B'), ('delta', 'Δ B−A'), ('region', self.tr('region_column_region')))
+            if comparison else
+            (('start', self.tr('region_column_address')), ('category', self.tr('region_column_type')),
+             ('size', self.tr('region_column_virtual')), ('rss', 'RSS'), ('pss', 'PSS'), ('uss', 'USS'),
+             ('swap', 'Swap'), ('permissions', self.tr('region_column_permissions')),
+             ('path', self.tr('region_column_file')))
+        )
+        for key, label in columns:
+            table.add_column(label, key=key)
 
     def on_unmount(self) -> None:
         self._cancel_search_timer()
@@ -204,7 +212,7 @@ class RegionScreen(ModalScreen):
 
     def action_refresh_regions(self) -> None:
         if self.offline:
-            self.notify('Acquisizione salvata: nessun aggiornamento live.', severity='warning')
+            self.notify(self.tr('region_notice_offline'), severity='warning')
             return
         self._invalidate_comparison()
         if not self.loading:
@@ -279,7 +287,7 @@ class RegionScreen(ModalScreen):
         panel = self.query_one('#region-summary', Static)
         panel.border_title = Text(self.tr('region_title', name=self.process.name, pid=self.process.pid))
         if self.loading:
-            baseline_note = (' · A storico fissato ' + datetime.fromtimestamp(self.baseline.taken).strftime('%H:%M:%S')
+            baseline_note = (' · ' + self.tr('region_baseline', time=datetime.fromtimestamp(self.baseline.taken).strftime('%H:%M:%S'))
                              if self.baseline else '')
             panel.update(self.tr('region_loading') + baseline_note + ' · Esc')
         elif self.snapshot:
@@ -349,7 +357,7 @@ class RegionScreen(ModalScreen):
                           Text(r.path or '[anonima]'), key=f'{self.generation}|{r.key}')
         if self.selected:
             table.move_cursor(row=self.page_keys.index(self.selected), animate=False)
-        partial = ' · lettura incompleta' if self.snapshot and not self.snapshot.complete else ''
+        partial = ' · ' + self.tr('partial_sample') if self.snapshot and not self.snapshot.complete else ''
         self.query_one('#region-count', Static).update(self.tr('region_count', shown=len(ordered),
             total=len(regions), sort=sort.upper(), page=self.page + 1, pages=pages, partial=partial))
         self.render_map()
@@ -536,12 +544,12 @@ class RegionScreen(ModalScreen):
 
     def action_baseline(self) -> None:
         if self.current_capture is None or not self.current_capture.complete:
-            self.notify('Serve un campione completo per fissare A.', severity='warning')
+            self.notify(self.tr('region_notice_baseline_complete'), severity='warning')
             return
         self._invalidate_comparison()
         self.baseline = self.current_capture
         self.render_regions()
-        self.notify('Campione A fissato.')
+        self.notify(self.tr('region_notice_baseline_set'))
 
     def action_clear_baseline(self) -> None:
         self.baseline = None
@@ -555,7 +563,7 @@ class RegionScreen(ModalScreen):
 
     def action_compare(self) -> None:
         if not self.baseline or not self.current_capture:
-            self.notify('Fissa A e acquisisci B per confrontare.', severity='warning')
+            self.notify(self.tr('region_notice_need_samples'), severity='warning')
             return
         if not self.comparison_mode and self._comparison_error:
             # Only an explicit re-entry retries an error. Ordinary repaints
@@ -572,7 +580,7 @@ class RegionScreen(ModalScreen):
 
     def action_save_capture(self) -> None:
         if not self.current_capture:
-            self.notify('Nessun campione disponibile.', severity='warning')
+            self.notify(self.tr('region_none'), severity='warning')
             return
         from .capture_dialog import CaptureSaveScreen
         self.app.push_screen(CaptureSaveScreen(self.current_capture, self.baseline))
@@ -638,7 +646,7 @@ class RegionScreen(ModalScreen):
         if isinstance(result, Exception):
             self._comparison_inputs = (baseline, current)
             self._comparison_result = None
-            self._comparison_error = f'Confronto non disponibile: {type(result).__name__}'
+            self._comparison_error = self.tr('comparison_unavailable', reason=type(result).__name__)
             self.render_comparison()
             return
         self._comparison_inputs = (baseline, current)
@@ -656,32 +664,34 @@ class RegionScreen(ModalScreen):
         self.comparison_rows = {}
         self.query_one('#region-map', RegionMap).set_regions([], 'resident', None)
         self.query_one('#region-legend', Static).update('')
-        self.query_one('#region-map-note', Static).update('v: metrica · s: ordinamento · f: filtri · b: fissa A · r: B · c: vista corrente')
+        self.query_one('#region-map-note', Static).update(self.tr('comparison_hint'))
         if not self.baseline or not self.current_capture:
-            self.query_one('#region-map-title', Static).update('Confronto n/a: acquisizione corrente non disponibile.')
+            self.query_one('#region-map-title', Static).update(self.tr('comparison_missing_current'))
             self.query_one('#region-count', Static).update('')
             self.render_comparison_inspector()
             return
         result = self.comparison_for_current()
         if result is None:
-            self.query_one('#region-map-title', Static).update(self._comparison_error or 'Calcolo confronto A/B in corso…')
+            self.query_one('#region-map-title', Static).update(self._comparison_error or self.tr('comparison_loading'))
             self.query_one('#region-count', Static).update('')
             self.render_comparison_inspector()
             return
         if not result.compatible:
-            self.query_one('#region-map-title', Static).update(Text('Confronto n/a: ' + result.reason, style='yellow'))
+            self.query_one('#region-map-title', Static).update(Text(self.tr('comparison_unavailable', reason=result.reason), style='yellow'))
             self.query_one('#region-count', Static).update('')
             self.render_comparison_inspector()
             return
         metric = self.comparison_metric
         def signed(value):
             return 'n/a' if value is None else ('+' if value > 0 else '−' if value < 0 else '') + size(abs(value))
-        self.query_one('#region-map-title', Static).update(Text(f'Delta totale {metric.upper()} B−A: {signed(result.totals[metric])}' +
-              (' · ordine temporale inverso' if result.reverse_order else ''), style='bold'))
+        title = self.tr('comparison_total_delta', metric=metric.upper(), delta=signed(result.totals[metric]))
+        if result.reverse_order:
+            title += ' · ' + self.tr('comparison_reverse')
+        self.query_one('#region-map-title', Static).update(Text(title, style='bold'))
         a_total, b_total = self.baseline.total(metric), self.current_capture.total(metric)
         scale = max(a_total, b_total) if a_total is not None and b_total is not None else None
         bar.set_values(result.totals[metric], scale)
-        self.query_one('#region-legend', Static).update(Text(f'◀ riduzione  │ zero  ▶ crescita · scala ±{size(scale)}'))
+        self.query_one('#region-legend', Static).update(Text(self.tr('comparison_scale', size=size(scale))))
         query = self.query_one('#region-search', Input).value.strip().casefold()
         kind = self.query_one('#region-kind', Select).value
         state = self.query_one('#region-state', Select).value
@@ -690,7 +700,8 @@ class RegionScreen(ModalScreen):
                    if (status == 'all' or row.status == status)
                    and filter_regions(list(row.after + row.before), query, str(kind), str(state),
                                       getattr(self.app, 'language', 'it'))]
-        sort = ('crescita', 'riduzione', 'variazione assoluta', 'indirizzo')[self.comparison_sort]
+        sort = self.tr(('comparison_sort_growth', 'comparison_sort_reduction',
+                        'comparison_sort_absolute', 'comparison_sort_address')[self.comparison_sort])
         def sort_key(row):
             delta = row.delta(metric)
             if self.comparison_sort == 3:
@@ -707,10 +718,11 @@ class RegionScreen(ModalScreen):
         self.page_keys = [row.key for row in page_rows]
         for row in page_rows:
             region = (row.after or row.before)[0]
-            table.add_row(f'{row.start:x}–{row.end:x}', COMPARISON_LABELS.get(row.status, row.status), size(row.value_a(metric)),
+            table.add_row(f'{row.start:x}–{row.end:x}', Text(self.comparison_label(row.status)), size(row.value_a(metric)),
                           size(row.value_b(metric)), signed(row.delta(metric)), Text(region.path or '[anonima]'),
                           key=f'{self.generation}|{row.key}')
-        self.query_one('#region-count', Static).update(f'{len(self.comparison_rows)}/{len(result.rows)} intervalli · {metric.upper()} · {sort} · pagina {self.page+1}/{pages} · Ctrl+U/D')
+        self.query_one('#region-count', Static).update(self.tr('comparison_count', shown=len(self.comparison_rows),
+            total=len(result.rows), metric=metric.upper(), sort=sort, page=self.page + 1, pages=pages))
         if self.selected not in self.page_keys:
             self.selected = self.page_keys[0] if self.page_keys else None
         if self.selected:
@@ -721,17 +733,18 @@ class RegionScreen(ModalScreen):
         panel = self.query_one('#region-inspector', VerticalScroll)
         details = self.query_one('#region-details', Static)
         row = self.comparison_rows.get(self.selected)
-        panel.border_title = 'Confronto A → B'
+        panel.border_title = self.tr('comparison_inspector_title')
         if row is None:
-            details.update('Nessun intervallo confrontabile. Verifica origine, copertura e filtri.')
+            details.update(self.tr('comparison_no_intervals'))
             return
-        lines = [Text(f'{COMPARISON_LABELS.get(row.status, row.status)} · 0x{row.start:x}–0x{row.end:x}', style='bold')]
+        lines = [Text(f'{self.comparison_label(row.status)} · 0x{row.start:x}–0x{row.end:x}', style='bold')]
         for metric in ('rss', 'pss', 'uss', 'swap', 'size'):
             delta = row.delta(metric)
             change = 'n/a' if delta is None else ('+' if delta > 0 else '−' if delta < 0 else '') + size(abs(delta))
             lines.append(Text(f'{metric.upper()} · A {size(row.value_a(metric))} · B {size(row.value_b(metric))} · Δ {change}'))
-        lines.append(Text('Attributi cambiati: ' + (', '.join(row.changes) or 'nessuno osservato'), style='grey70'))
-        lines.append(Text('Stesso intervallo non dimostra la stessa allocazione; crescita non prova un leak.', style='yellow'))
+        changes = ', '.join(row.changes) or self.tr('comparison_no_changes')
+        lines.append(Text(self.tr('comparison_attributes', changes=changes), style='grey70'))
+        lines.append(Text(self.tr('comparison_caution'), style='yellow'))
         details.update(Group(*lines))
 
     def action_back(self) -> None:

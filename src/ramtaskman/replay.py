@@ -8,9 +8,10 @@ from .region_screen import RegionScreen
 class ReplayApp(App):
     TITLE = 'ramtaskman · acquisizione salvata'
 
-    def __init__(self, current, baseline=None) -> None:
+    def __init__(self, current, baseline=None, *, language: str = 'it') -> None:
         super().__init__()
         self.current, self.baseline = current, baseline
+        self.language = language
 
     def on_mount(self) -> None:
         c = self.current

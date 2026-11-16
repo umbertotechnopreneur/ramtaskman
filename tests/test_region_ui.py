@@ -68,9 +68,21 @@ class RegionMapTests(unittest.TestCase):
         self.assertEqual(filter_regions(rows, '', 'all', 'shared'), [rows[0], rows[2]])
         rows[2].breakdown['shared_dirty'] = None
         self.assertEqual(filter_regions(rows, '', 'file', 'shared'), [])
+        self.assertEqual(filter_regions(rows, '识别出的堆', 'all', 'all', language='zh'), [rows[1]])
 
 
 class RegionUITests(unittest.IsolatedAsyncioTestCase):
+    async def test_cjk_map_labels_fit_terminal_cells(self):
+        app = RamTaskManager(live=False, region_reader=FakeReader(), language='zh')
+        async with app.run_test(size=(160, 48)) as pilot:
+            screen = await self.open_regions(app, pilot)
+            widget = screen.query_one('#region-map', RegionMap)
+            self.assertIn('识别出的堆', widget.render().plain)
+            self.assertEqual(widget.render().cell_len, widget.content_size.width)
+            await pilot.resize_terminal(80, 24)
+            await pilot.pause()
+            self.assertEqual(widget.render().cell_len, widget.content_size.width)
+
     async def open_regions(self, app, pilot):
         app.apply(fixture())
         await pilot.pause()

@@ -231,6 +231,11 @@ def load_capture(path: str | Path) -> CaptureFile:
 
 def save_capture(path: str | Path, current: CaptureSnapshot, baseline: CaptureSnapshot | None = None,
                  *, overwrite: bool = False) -> None:
+    """Validate, size-bound and atomically persist a local capture.
+
+    When overwrite is false, a concurrent file creation wins and the existing
+    file is never replaced. A temporary file is removed on every failure.
+    """
     if baseline is not None and baseline.capture_id == current.capture_id:
         _error('Baseline A e campione corrente coincidono: aggiorna B o rimuovi la baseline prima di salvare')
     captures = [current] if baseline is None else [baseline, current]
@@ -238,9 +243,15 @@ def save_capture(path: str | Path, current: CaptureSnapshot, baseline: CaptureSn
            'current_capture_id':current.capture_id, 'baseline_capture_id':baseline.capture_id if baseline else None,
            'captures':[_capture_data(c) for c in captures]}
     _decode_document(doc)  # Validate even programmatically generated data before writing.
-    data = json.dumps(doc, ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode('utf-8')
-    if len(data) > MAX_BYTES:
-        _error('file acquisizione oltre 64 MiB')
+    # Enforce the byte limit while encoding. Building a full JSON string first
+    # could allocate gigabytes before discovering that the capture is too large.
+    encoder = json.JSONEncoder(ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+    data = bytearray()
+    for chunk in encoder.iterencode(doc):
+        encoded = chunk.encode('utf-8')
+        if len(data) + len(encoded) > MAX_BYTES:
+            _error('file acquisizione oltre 64 MiB')
+        data.extend(encoded)
     dest = Path(path)
     temp = None
     try:

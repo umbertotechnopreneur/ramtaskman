@@ -3,7 +3,7 @@ import unittest
 
 from textual.widgets import DataTable, Input, Static
 
-from ramtaskman.app import RamTaskManager
+from ramtaskman.app import MemoryDetailScreen, RamTaskManager
 from ramtaskman.i18n import CATALOG, LANGUAGES, translate
 from test_memory import fixture
 
@@ -23,6 +23,20 @@ class TranslationTests(unittest.TestCase):
 
 
 class TranslationUITests(unittest.IsolatedAsyncioTestCase):
+    async def test_detail_title_tracks_language_across_resize(self):
+        app = RamTaskManager(live=False, language='zh')
+        async with app.run_test(size=(160, 48)) as pilot:
+            app.apply(fixture())
+            await pilot.pause()
+            await pilot.press('d')
+            await pilot.pause()
+            self.assertIsInstance(app.screen, MemoryDetailScreen)
+            content = app.screen.query_one(Static).content
+            self.assertIn(translate('zh', 'detail_title'), content.renderables[0].plain)
+            await pilot.resize_terminal(80, 24)
+            await pilot.pause()
+            self.assertTrue(app.screen.query_one(Static).is_mounted)
+
     async def test_localized_dashboard_and_filters_at_both_sizes(self):
         for lang in LANGUAGES:
             with self.subTest(language=lang):

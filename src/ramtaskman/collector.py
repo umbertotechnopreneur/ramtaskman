@@ -104,6 +104,8 @@ class Collector:
         to any group. The optional budget limits expensive process measurements,
         not the OS enumeration or a syscall already in progress.
         """
+        # First discover identities independently of the measurement budget.
+        # Missing identities make every application membership uncertain.
         identities = []
         skipped = 0
         enumeration_complete = True
@@ -132,6 +134,8 @@ class Collector:
             # permits a fresh attempt; it never fabricates a measurement.
             self._backoff = {key: value for key, value in self._backoff.items()
                              if self._cycle - value[1] <= 128}
+        # Build a fair rotation from eligible identities, without reusing an
+        # older measurement for a process deferred by the budget or backoff.
         eligible_keys = [key for key in ordered_keys if not self.measurement_backoff or
                          self._backoff.get(key, (0, 0, ''))[1] <= self._cycle]
         scheduled = min(len(eligible_keys), self.max_measurements)
@@ -155,6 +159,8 @@ class Collector:
                 selected_set.add(key)
         rotation_keys = [key for key in selected_keys if not (use_priority and key == priority)]
         chosen = selected_set
+        # Measure only the selected identities; unselected ones remain visible
+        # with explicit missing metrics and a reason for the deferral.
         rows = []
         attempted = 0
         interrupted = not enumeration_complete

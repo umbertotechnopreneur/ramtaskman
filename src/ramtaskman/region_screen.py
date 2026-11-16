@@ -18,9 +18,10 @@ from textual.worker import get_current_worker
 from .models import ProcessMemory
 from .application_bar import process_uss_bar
 from .ram_bar import SystemRamBar
+from .i18n import translate
 from .region_map import CATEGORIES, RegionMap
 from .delta_bar import DeltaBar
-from .regions import LinuxRegionReader, MemoryRegion, RegionSnapshot
+from .regions import MemoryRegion, RegionSnapshot
 from .report import size
 from .capture_models import CaptureSnapshot, freeze_snapshot
 from .comparison import ComparisonCancelled, compare_captures
@@ -34,7 +35,8 @@ COMPARISON_LABELS = {
 }
 
 
-def filter_regions(regions: list[MemoryRegion], query: str, category: str, state: str) -> list[MemoryRegion]:
+def filter_regions(regions: list[MemoryRegion], query: str, category: str, state: str,
+                   language: str = 'it') -> list[MemoryRegion]:
     query = query.strip().casefold()
     address = None
     if query.startswith('0x'):
@@ -42,6 +44,8 @@ def filter_regions(regions: list[MemoryRegion], query: str, category: str, state
             address = int(query, 16)
         except ValueError:
             pass
+    labels = ({key: translate(language, 'category_' + key) for key in CATEGORIES}
+              if query else {})
     result = []
     for region in regions:
         if category != 'all' and region.category != category:
@@ -54,9 +58,12 @@ def filter_regions(regions: list[MemoryRegion], query: str, category: str, state
             shared = [region.breakdown.get(k) for k in ('shared_clean', 'shared_dirty')]
             if not all(v is not None for v in shared) or sum(shared) <= 0:
                 continue
-        haystack = f'{region.path} {region.permissions} {region.start:x}-{region.end:x} {CATEGORIES.get(region.category, (region.category,))[0]}'.casefold()
-        if query and not ((address is not None and region.start <= address < region.end) or query in haystack):
-            continue
+        if query:
+            label = labels.get(region.category, region.category)
+            haystack = f'{region.path} {region.permissions} {region.start:x}-{region.end:x} {label}'.casefold()
+            address_matches = address is not None and region.start <= address < region.end
+            if not address_matches and query not in haystack:
+                continue
         result.append(region)
     return result
 
@@ -129,23 +136,27 @@ class RegionScreen(ModalScreen):
         self._restore_zoom: str | None = None
         self._restore_page = 0
 
+    def tr(self, key: str, **values: object) -> str:
+        return translate(getattr(self.app, 'language', 'it'), key, **values)
+
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='region-dashboard'):
             yield Static(id='region-summary')
             yield Static(id='region-memory')
             with Vertical(id='region-map-panel'):
                 yield Static(id='region-map-title')
-                yield RegionMap(id='region-map')
+                yield RegionMap(language=getattr(self.app, 'language', 'it'), id='region-map')
                 yield DeltaBar(id='delta-bar')
                 yield Static(id='region-legend')
                 yield Static(id='region-map-note')
         with Vertical(id='region-filters'):
-            yield Input(placeholder='File, tipo, permessi o indirizzo 0x… · Invio: tabella', id='region-search')
+            yield Input(placeholder=self.tr('region_search'), id='region-search')
             with Horizontal(id='region-selectors'):
-                yield Select([('Tutti i tipi', 'all'), *((v[0], k) for k, v in CATEGORIES.items())],
+                yield Select([(self.tr('region_all_types'), 'all'),
+                              *((self.tr('category_' + k), k) for k in CATEGORIES)],
                              allow_blank=False, value='all', compact=True, id='region-kind')
-                yield Select([('Tutti gli stati', 'all'), ('Residenti', 'resident'), ('Con swap', 'swap'),
-                              ('RSS condivisa > 0', 'shared')], allow_blank=False, value='all', compact=True, id='region-state')
+                yield Select([(self.tr('region_all_states'), 'all'), (self.tr('region_resident'), 'resident'), (self.tr('region_with_swap'), 'swap'),
+                              (self.tr('region_shared') + ' RSS > 0', 'shared')], allow_blank=False, value='all', compact=True, id='region-state')
                 yield Select([('Tutte le variazioni', 'all'), ('Intervalli uguali', 'same_interval'),
                               ('Metadati cambiati', 'metadata_changed'), ('Origine cambiata', 'backing_changed'),
                               ('Origine non verificata', 'backing_unverified'), ('Riorganizzati', 'restructured'),
@@ -266,46 +277,46 @@ class RegionScreen(ModalScreen):
             return
         self.render_memory_context()
         panel = self.query_one('#region-summary', Static)
-        panel.border_title = Text(f'Regioni · {self.process.name} · PID {self.process.pid}')
+        panel.border_title = Text(self.tr('region_title', name=self.process.name, pid=self.process.pid))
         if self.loading:
             baseline_note = (' · A storico fissato ' + datetime.fromtimestamp(self.baseline.taken).strftime('%H:%M:%S')
                              if self.baseline else '')
-            panel.update('Lettura regioni in corso…' + baseline_note + ' · Esc: torna ai processi')
+            panel.update(self.tr('region_loading') + baseline_note + ' · Esc')
         elif self.snapshot:
             snap = self.snapshot
             date = datetime.fromtimestamp(snap.taken).strftime('%H:%M:%S')
-            status = 'Campione completo' if snap.complete else 'Campione parziale / non disponibile'
+            status = self.tr('region_complete' if snap.complete else 'region_partial')
             if self.offline:
-                status += ' · Acquisizione salvata (offline)'
+                status += ' · ' + self.tr('region_offline')
             if self.baseline:
-                status += ' · A fissato ' + datetime.fromtimestamp(self.baseline.taken).strftime('%H:%M:%S')
-            panel.update(Group(Text(f'{status} · {date} · età {max(0, time()-snap.taken):.0f}s · {snap.sample_ms:.0f} ms', style='bold'),
-                               Text(snap.reason or ('Acquisizione salvata · dati fissi' if self.offline else
-                                    f'{self.platform} · lettura su richiesta, sequenziale · r: aggiorna'),
+                status += ' · ' + self.tr('region_baseline', time=datetime.fromtimestamp(self.baseline.taken).strftime('%H:%M:%S'))
+            age = self.tr('region_age', age=f'{max(0, time()-snap.taken):.0f}')
+            source = self.tr('region_fixed') if self.offline else self.tr('region_live', platform=self.platform)
+            panel.update(Group(Text(f'{status} · {date} · {age} · {snap.sample_ms:.0f} ms', style='bold'),
+                               Text(snap.reason or source,
                                     style='yellow' if snap.reason else 'grey70')))
         else:
-            panel.update('Nessun campione disponibile.')
+            panel.update(self.tr('region_none'))
 
     def render_memory_context(self) -> None:
         panel = self.query_one('#region-memory', Static)
         panel.display = not self.offline
         if self.offline:
             return
-        panel.border_title = Text(f'RAM del sistema e consumo · {self.process.name} · PID {self.process.pid}')
+        panel.border_title = Text(self.tr('region_ram_context', name=self.process.name, pid=self.process.pid))
         snap = getattr(self.app, 'snap', None)
         if snap is None:
-            panel.update(Text('Campione RAM non disponibile.', style='yellow'))
+            panel.update(Text(self.tr('region_ram_missing'), style='yellow'))
             return
-        bar = SystemRamBar(snap.system)
-        process_bar = process_uss_bar(snap, self.process)
+        bar = SystemRamBar(snap.system, getattr(self.app, 'language', 'it'))
+        process_bar = process_uss_bar(snap, self.process, getattr(self.app, 'language', 'it'))
         current = next((p for p in snap.processes if p.key == self.process.key), None)
         panel.update(Group(bar, bar.legend(), process_bar, process_bar.legend(),
                            Text(f'PID {self.process.pid} · USS {size(current.uss if current else None)} · '
                                 f'RSS {size(current.rss if current else None)} · '
-                                f'campione RAM: età {max(0, time() - snap.taken):.0f}s', style='bold'),
+                                + self.tr('region_ram_age', age=f'{max(0, time() - snap.taken):.0f}'), style='bold'),
                            Text(process_bar.reason or process_bar.note, style='yellow' if process_bar.reason else 'grey70'),
-                           Text('Quote di consumo, non indirizzi fisici. Sotto: intervalli virtuali del solo PID; '
-                                'campione separato su richiesta.', style='grey70')))
+                           Text(self.tr('region_scale_note'), style='grey70')))
 
     def render_regions(self) -> None:
         if not self.is_mounted:
@@ -316,7 +327,8 @@ class RegionScreen(ModalScreen):
             return
         regions = self.snapshot.regions if self.snapshot else []
         kind, state = self.query_one('#region-kind', Select).value, self.query_one('#region-state', Select).value
-        filtered = filter_regions(regions, self.query_one('#region-search', Input).value, str(kind), str(state))
+        filtered = filter_regions(regions, self.query_one('#region-search', Input).value, str(kind), str(state),
+                                  getattr(self.app, 'language', 'it'))
         sort = self.SORTS[self.sort_index]
         ordered = sorted(filtered, key=lambda r: (r.start,) if sort == 'start' else
                          (getattr(r, sort) is None, -(getattr(r, sort) or 0), r.start))
@@ -331,13 +343,15 @@ class RegionScreen(ModalScreen):
         table.clear()
         self.generation += 1
         for r in page_rows:
-            table.add_row(f'{r.start:x}–{r.end:x}', Text(CATEGORIES.get(r.category, (r.category,))[0]),
+            category = (self.tr('category_' + r.category) if r.category in CATEGORIES else r.category)
+            table.add_row(f'{r.start:x}–{r.end:x}', Text(category),
                           size(r.size), size(r.rss), size(r.pss), size(r.uss), size(r.swap), Text(r.permissions),
                           Text(r.path or '[anonima]'), key=f'{self.generation}|{r.key}')
         if self.selected:
             table.move_cursor(row=self.page_keys.index(self.selected), animate=False)
         partial = ' · lettura incompleta' if self.snapshot and not self.snapshot.complete else ''
-        self.query_one('#region-count', Static).update(f'{len(ordered)}/{len(regions)} regioni · ordine {sort.upper()} · pagina {self.page + 1}/{pages} · Ctrl+U/D{partial}')
+        self.query_one('#region-count', Static).update(self.tr('region_count', shown=len(ordered),
+            total=len(regions), sort=sort.upper(), page=self.page + 1, pages=pages, partial=partial))
         self.render_map()
         self.render_inspector()
 
@@ -353,32 +367,34 @@ class RegionScreen(ModalScreen):
         self.query_one('#region-map', RegionMap).set_regions(regions, self.mode, self.selected)
         values = [r.size if self.mode == 'virtual' else r.rss for r in regions]
         total = sum(values) if values and all(v is not None for v in values) else None
-        title = ('Spazio virtuale mappato' if self.mode == 'virtual' else 'RAM residente RSS') + f' · {size(total)} nelle regioni mostrate'
+        title = self.tr('region_virtual' if self.mode == 'virtual' else 'region_resident_title')
+        title += ' · ' + self.tr('region_shown', size=size(total))
         if self.zoom_key:
             title += f' · zoom {len(regions)}/{len(self.rows)}'
         if self.mode == 'virtual' and regions:
-            title += f' · 0x{regions[0].start:x}–0x{regions[-1].end:x} (fine esclusa)'
+            title += f' · 0x{regions[0].start:x}–0x{regions[-1].end:x} ({self.tr("region_end_exclusive")})'
         self.query_one('#region-map-title', Static).update(Text(title, style='bold'))
         legend = Text()
         for category in dict.fromkeys(r.category for r in regions):
             label, color = CATEGORIES.get(category, (category, '#6b7280'))
+            if category in CATEGORIES:
+                label = self.tr('category_' + category)
             legend.append('■ ', style=color)
             legend.append(label + '  ')
         self.query_one('#region-legend', Static).update(legend)
-        note = ('Indirizzi virtuali crescenti · │ buchi esclusi dalla scala.' if self.mode == 'virtual' else
-                'Area proporzionale a RSS · ordine virtuale; le pagine condivise possono ripetersi.')
+        note = self.tr('region_virtual_note' if self.mode == 'virtual' else 'region_resident_note')
         selected = self.rows.get(self.selected)
         if selected is not None:
-            note += f' ◆ PID {self.process.pid}: 0x{selected.start:x}–0x{selected.end:x} (fine esclusa).'
-        self.query_one('#region-map-note', Static).update(note + ' ◆ selezione · regioni <1 cella: tabella.')
+            note += f' ◆ PID {self.process.pid}: 0x{selected.start:x}–0x{selected.end:x} ({self.tr("region_end_exclusive")}).'
+        self.query_one('#region-map-note', Static).update(note + ' ' + self.tr('region_selection_note'))
 
     def render_inspector(self) -> None:
         panel = self.query_one('#region-inspector', VerticalScroll)
         details = self.query_one('#region-details', Static)
         row = self.rows.get(self.selected)
         if row is None:
-            panel.border_title = 'Dettaglio regione'
-            details.update('Nessuna regione corrispondente. /: cerca · f: filtri · Esc: reset o indietro.')
+            panel.border_title = self.tr('region_detail')
+            details.update(self.tr('region_no_match'))
             return
         panel.border_title = Text(row.path or '[anonima]')
         panel.border_subtitle = 'Tab: focus · ↑/↓/PgDn: scorri dettagli'
@@ -672,7 +688,8 @@ class RegionScreen(ModalScreen):
         status = self.query_one('#comparison-state', Select).value
         visible = [row for row in result.rows
                    if (status == 'all' or row.status == status)
-                   and filter_regions(list(row.after + row.before), query, str(kind), str(state))]
+                   and filter_regions(list(row.after + row.before), query, str(kind), str(state),
+                                      getattr(self.app, 'language', 'it'))]
         sort = ('crescita', 'riduzione', 'variazione assoluta', 'indirizzo')[self.comparison_sort]
         def sort_key(row):
             delta = row.delta(metric)

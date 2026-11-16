@@ -4,12 +4,14 @@ from __future__ import annotations
 from bisect import bisect_right
 from itertools import groupby
 
+from rich.cells import cell_len
 from rich.text import Text
 from textual import events
 from textual.message import Message
 from textual.widgets import Static
 
 from .regions import MemoryRegion
+from .i18n import translate
 
 CATEGORIES = {
     'executable': ('Eseguibile', '#60a5fa'),
@@ -60,8 +62,9 @@ class RegionMap(Static):
             super().__init__()
             self.key = key
 
-    def __init__(self, **kwargs):
+    def __init__(self, *, language: str = 'it', **kwargs):
         super().__init__(**kwargs)
+        self.language = language
         self.regions: list[MemoryRegion] = []
         self.mode = 'resident'
         self.selected: str | None = None
@@ -71,13 +74,15 @@ class RegionMap(Static):
         self.refresh()
 
     def render(self) -> Text:
+        if self.content_size.width <= 0:
+            return Text('')
         if not self.regions:
-            return Text('Nessuna regione da rappresentare.', style='grey70')
-        if self.mode == 'resident' and any(r.rss is None for r in self.regions):
-            return Text('Mappa RSS n/a: letture mancanti; consulta la tabella.', style='yellow')
+            return Text(translate(self.language, 'no_regions'), style='grey70')
+        if self.mode == 'resident' and any(r.rss is None or r.rss < 0 for r in self.regions):
+            return Text(translate(self.language, 'rss_unavailable'), style='yellow')
         cells = region_cells(self.regions, self.mode, self.content_size.width)
         if not cells:
-            return Text('RSS misurata: 0 B nelle regioni mostrate.', style='grey70')
+            return Text(translate(self.language, 'zero_rss'), style='grey70')
         lookup = {r.key: r for r in self.regions}
         result = Text(no_wrap=True, overflow='crop')
         for key, run in groupby(cells):
@@ -85,12 +90,16 @@ class RegionMap(Static):
             if key is None:
                 result.append('│' * width, style='grey70')
                 continue
-            label, color = CATEGORIES.get(lookup[key].category, CATEGORIES['special'])
+            category = lookup[key].category if lookup[key].category in CATEGORIES else 'special'
+            _, color = CATEGORIES[category]
+            label = translate(self.language, 'category_' + category)
             label = label.split(' (', 1)[0]
             caption = ('◆ ' if key == self.selected else '') + label
-            if len(caption) > width:
+            if cell_len(caption) > width:
                 caption = '◆' if key == self.selected else ''
-            result.append(caption.center(width), style=f'black on {color}')
+            padding = width - cell_len(caption)
+            result.append(' ' * (padding // 2) + caption + ' ' * (padding - padding // 2),
+                          style=f'black on {color}')
         return result
 
     def on_click(self, event: events.Click) -> None:

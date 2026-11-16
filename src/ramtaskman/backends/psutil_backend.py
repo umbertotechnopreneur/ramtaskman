@@ -76,10 +76,11 @@ class PsutilBackend:
             full = process.memory_full_info()
             row.rss = full.rss
             row.uss = getattr(full, 'uss', None)
-            if row.uss is None:
-                row.reason = 'USS non disponibile da psutil'
+            # A successful full read also recovers RSS after a denied basic read.
+            row.reason = 'USS non disponibile da psutil' if row.uss is None else None
         except (psutil.AccessDenied, OSError, NotImplementedError):
-            row.reason = 'USS: accesso negato o lettura non disponibile'
+            uss_reason = 'USS: accesso negato o lettura non disponibile'
+            row.reason = f'{row.reason}; {uss_reason}' if row.reason else uss_reason
         # Do not use full.vms, full.private or full.pagefile as resident private RAM or swap.
         # PSS / Swap / SwapPSS intentionally stay None: backend capabilities explain why.
         return row if process.is_running() else None

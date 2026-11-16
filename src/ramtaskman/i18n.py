@@ -1,44 +1,26 @@
-"""Localized dashboard labels. Missing messages keep the original Italian text."""
+"""Application messages, stored as readable UTF-8 catalogs for translators.
+
+Catalog keys and replacement fields are the same in every language. Internal
+identifiers, process names and paths are never translated. A caller chooses the
+language once when constructing the app; no global locale is changed.
+"""
 from __future__ import annotations
 
+import json
+from importlib.resources import files
+
 LANGUAGES = ('it', 'en', 'zh', 'ko', 'fr', 'vi', 'es', 'pt', 'de', 'ja')
-_KEYS = ('system_ram', 'os_breakdown', 'availability', 'total', 'net_used', 'available',
-         'slim', 'full', 'paused', 'system', 'readings', 'groups', 'skipped', 'scan',
-         'partial', 'charts', 'all_charts', 'chart_hint', 'applications', 'processes',
-         'all', 'readings_col', 'app_process', 'user', 'inside', 'free', 'anonymous',
-         'shared', 'buffers', 'other', 'in_use', 'search', 'all_users', 'all_memory',
-         'with_swap', 'partial_data', 'reset', 'no_rows', 'filter_status')
-_ROWS = {
-'it': 'RAM del sistema|Ripartizione OS|Disponibilità|Totale|Uso netto|Disponibile|Monitoraggio compatto|Diagnostica completa|PAUSA|Sistema (dati OS)|Letture|gruppi|non raccolti/terminati|scansione|Totali dei processi visibili parziali. n/a = dato non disponibile.|Grafici|Tutti i grafici|Clic per scegliere · c: cambia|Applicazioni|Processi|Tutti|Letture|Applicazione / Processo|Utente / UID|Identità|Libera|Anonima|Condivisa/tmpfs|Buffer|Altro (residuo)|In uso|Cerca nome, eseguibile o PID esatto · Invio: tabella · Esc: reset|Tutti gli utenti|Tutta la memoria|Con swap|Dati parziali|Reset|Nessuna riga disponibile.|{shown} mostrate · {matching} corrispondenti / {total} righe · grafici: sistema intero',
-'en': 'System RAM|OS breakdown|Availability|Total|Net used|Available|Slim monitoring|Full diagnostics|PAUSED|System (OS-reported)|Readings|groups|skipped/exited|scan|Visible process totals are partial. n/a = unavailable.|Charts|All charts|Click to choose · c cycles|Applications|Processes|All|Readings|Application / Process|User / UID|Identity|Free|Anonymous|Shared/tmpfs|Buffers|Other (residual)|In use|Search name, executable or exact PID · Enter: table · Esc: reset|All users|All memory|With swap|Partial data|Reset|No rows available.|{shown} shown · {matching} matching / {total} rows · charts: whole system',
-'zh': '系统内存|系统分类|可用情况|总计|净使用|可用|精简监控|完整诊断|已暂停|系统（操作系统数据）|读取|组|未采集/已退出|扫描|可见进程总计不完整。n/a = 不可用。|图表|所有图表|点击选择 · c 切换|应用|进程|全部|读取|应用 / 进程|用户 / UID|身份|空闲|匿名|共享/tmpfs|缓冲区|其他（剩余）|使用中|搜索名称、程序或精确 PID · 回车：表格 · Esc：重置|所有用户|全部内存|有交换空间|部分数据|重置|无可用行。|显示 {shown} · 匹配 {matching} / 共 {total} 行 · 图表：整个系统',
-'ko': '시스템 RAM|OS 분류|사용 가능|전체|순 사용|사용 가능|간단 모니터링|전체 진단|일시 정지|시스템(OS 보고)|측정|그룹|미수집/종료|스캔|표시된 프로세스 합계는 부분값입니다. n/a = 사용 불가.|그래프|모든 그래프|클릭하여 선택 · c 전환|애플리케이션|프로세스|전체|측정|앱 / 프로세스|사용자 / UID|식별|여유|익명|공유/tmpfs|버퍼|기타(잔여)|사용 중|이름, 실행 파일 또는 정확한 PID 검색 · Enter: 표 · Esc: 초기화|모든 사용자|전체 메모리|스왑 사용|부분 데이터|초기화|표시할 행이 없습니다.|표시 {shown} · 일치 {matching} / 전체 {total} 행 · 그래프: 전체 시스템',
-'fr': 'RAM système|Répartition OS|Disponibilité|Total|Utilisation nette|Disponible|Surveillance compacte|Diagnostic complet|PAUSE|Système (données OS)|Lectures|groupes|ignorés/terminés|analyse|Les totaux des processus visibles sont partiels. n/a = indisponible.|Graphiques|Tous les graphiques|Cliquer pour choisir · c alterne|Applications|Processus|Tous|Lectures|Application / Processus|Utilisateur / UID|Identité|Libre|Anonyme|Partagée/tmpfs|Tampons|Autre (résidu)|Utilisée|Nom, exécutable ou PID exact · Entrée : tableau · Échap : reset|Tous les utilisateurs|Toute la mémoire|Avec swap|Données partielles|Reset|Aucune ligne disponible.|{shown} affichées · {matching} correspondantes / {total} lignes · graphiques : système entier',
-'vi': 'RAM hệ thống|Phân bổ của OS|Khả dụng|Tổng|Đã dùng ròng|Khả dụng|Theo dõi gọn|Chẩn đoán đầy đủ|TẠM DỪNG|Hệ thống (theo OS)|Lần đọc|nhóm|bỏ qua/đã thoát|quét|Tổng tiến trình hiển thị chỉ là một phần. n/a = không có dữ liệu.|Biểu đồ|Tất cả biểu đồ|Nhấp để chọn · c để đổi|Ứng dụng|Tiến trình|Tất cả|Lần đọc|Ứng dụng / Tiến trình|Người dùng / UID|Danh tính|Trống|Ẩn danh|Chia sẻ/tmpfs|Bộ đệm|Khác (phần dư)|Đang dùng|Tìm tên, tệp thực thi hoặc PID chính xác · Enter: bảng · Esc: đặt lại|Mọi người dùng|Toàn bộ bộ nhớ|Có swap|Dữ liệu một phần|Đặt lại|Không có dòng nào.|Hiện {shown} · khớp {matching} / {total} dòng · biểu đồ: toàn hệ thống',
-'es': 'RAM del sistema|Distribución del SO|Disponibilidad|Total|Uso neto|Disponible|Monitor compacto|Diagnóstico completo|PAUSA|Sistema (datos del SO)|Lecturas|grupos|omitidos/terminados|escaneo|Los totales de procesos visibles son parciales. n/a = no disponible.|Gráficos|Todos los gráficos|Clic para elegir · c cambia|Aplicaciones|Procesos|Todos|Lecturas|Aplicación / Proceso|Usuario / UID|Identidad|Libre|Anónima|Compartida/tmpfs|Búferes|Otros (residuo)|En uso|Buscar nombre, ejecutable o PID exacto · Intro: tabla · Esc: reset|Todos los usuarios|Toda la memoria|Con swap|Datos parciales|Reset|No hay filas disponibles.|{shown} mostradas · {matching} coinciden / {total} filas · gráficos: sistema completo',
-'pt': 'RAM do sistema|Distribuição do SO|Disponibilidade|Total|Uso líquido|Disponível|Monitor compacto|Diagnóstico completo|PAUSA|Sistema (dados do SO)|Leituras|grupos|ignorados/encerrados|varredura|Os totais dos processos visíveis são parciais. n/a = indisponível.|Gráficos|Todos os gráficos|Clique para escolher · c alterna|Aplicativos|Processos|Todos|Leituras|Aplicativo / Processo|Usuário / UID|Identidade|Livre|Anônima|Compartilhada/tmpfs|Buffers|Outro (resíduo)|Em uso|Buscar nome, executável ou PID exato · Enter: tabela · Esc: reset|Todos os usuários|Toda a memória|Com swap|Dados parciais|Reset|Nenhuma linha disponível.|{shown} exibidas · {matching} correspondentes / {total} linhas · gráficos: sistema inteiro',
-'de': 'System-RAM|OS-Aufteilung|Verfügbarkeit|Gesamt|Nettonutzung|Verfügbar|Kompaktansicht|Vollständige Diagnose|PAUSE|System (OS-Daten)|Messungen|Gruppen|übersprungen/beendet|Scan|Summen sichtbarer Prozesse sind unvollständig. n/a = nicht verfügbar.|Diagramme|Alle Diagramme|Klicken zum Wählen · c wechselt|Anwendungen|Prozesse|Alle|Messungen|Anwendung / Prozess|Benutzer / UID|Identität|Frei|Anonym|Geteilt/tmpfs|Puffer|Sonstiges (Rest)|Belegt|Name, Programm oder exakte PID suchen · Enter: Tabelle · Esc: Reset|Alle Benutzer|Gesamter Speicher|Mit Swap|Unvollständige Daten|Reset|Keine Zeilen verfügbar.|{shown} angezeigt · {matching} passend / {total} Zeilen · Diagramme: Gesamtsystem',
-'ja': 'システムRAM|OSの内訳|利用可能|合計|正味使用量|利用可能|簡易監視|詳細診断|一時停止|システム（OS報告）|測定|グループ|未取得/終了|スキャン|表示プロセスの合計は部分値です。n/a = 利用不可。|グラフ|すべてのグラフ|クリックで選択 · c で切替|アプリ|プロセス|すべて|測定|アプリ / プロセス|ユーザー / UID|識別|空き|匿名|共有/tmpfs|バッファ|その他（残余）|使用中|名前・実行ファイル・正確なPIDを検索 · Enter: 表 · Esc: リセット|全ユーザー|すべてのメモリ|スワップあり|部分データ|リセット|行がありません。|表示 {shown} · 一致 {matching} / 全 {total} 行 · グラフ: システム全体',
-}
-CATALOG = {lang: dict(zip(_KEYS, row.split('|'), strict=True)) for lang, row in _ROWS.items()}
+
+
+def _load_catalog(language: str) -> dict[str, str]:
+    """Load a bundled catalog, including when installed from a wheel."""
+    resource = files('ramtaskman').joinpath('locales', f'{language}.json')
+    return json.loads(resource.read_text(encoding='utf-8'))
+
+
+CATALOG = {language: _load_catalog(language) for language in LANGUAGES}
 
 
 def translate(language: str, key: str, **values: object) -> str:
+    """Format a translated message without interpreting interpolated data as markup."""
     return CATALOG[language][key].format(**values)
-
-_EXTRA_KEYS = ('net_explanation', 'group_cgroup', 'group_executable', 'group_name',
-               'group_incomplete', 'chart_note', 'enter_group', 'enter_regions', 'source', 'executable')
-_EXTRA_ROWS = {
-'it': 'Uso netto = totale − disponibile · Altro = residuo contabile.|Istanza applicativa systemd|Utente + eseguibile (fallback)|Utente + nome (euristica)|membri incompleti|Ultimi 60 campioni · 0–100% · vuoto = dato assente · pausa fra scansioni {interval}s|Invio: esplora i processi del gruppo.|Invio / r: regioni · Esc: applicazioni.|Fonte: metadati del kernel; nessuna lettura dei contenuti della memoria.|Eseguibile',
-'en': 'Net used = total − available · Other = accounting residual.|systemd application instance|User + executable (fallback)|User + name (heuristic)|incomplete membership|Last 60 samples · 0–100% · blank = no reading · pause between scans {interval}s|Enter: explore processes in this group.|Enter / r: regions · Esc: applications.|Source: kernel metadata; process memory contents are not read.|Executable',
-'zh': '净使用 = 总计 − 可用 · 其他 = 统计剩余。|systemd 应用实例|用户 + 可执行文件（备用）|用户 + 名称（启发式）|成员不完整|最近 60 次采样 · 0–100% · 空白 = 无数据 · 扫描间隔 {interval} 秒|回车：浏览此组进程。|回车 / r：区域 · Esc：应用。|来源：内核元数据；不读取进程内存内容。|可执行文件',
-'ko': '순 사용 = 전체 − 사용 가능 · 기타 = 회계상 잔여량.|systemd 앱 인스턴스|사용자 + 실행 파일(대체)|사용자 + 이름(휴리스틱)|구성원 불완전|최근 60개 샘플 · 0–100% · 빈칸 = 측정 없음 · 스캔 간격 {interval}초|Enter: 그룹의 프로세스 탐색.|Enter / r: 영역 · Esc: 앱.|출처: 커널 메타데이터; 프로세스 메모리 내용은 읽지 않습니다.|실행 파일',
-'fr': 'Utilisation nette = total − disponible · Autre = résidu comptable.|Instance d’application systemd|Utilisateur + exécutable (repli)|Utilisateur + nom (heuristique)|membres incomplets|60 derniers échantillons · 0–100 % · vide = aucune lecture · pause entre analyses {interval}s|Entrée : explorer les processus du groupe.|Entrée / r : régions · Échap : applications.|Source : métadonnées du noyau ; le contenu de la mémoire n’est pas lu.|Exécutable',
-'vi': 'Đã dùng ròng = tổng − khả dụng · Khác = phần dư kế toán.|Phiên bản ứng dụng systemd|Người dùng + tệp thực thi (dự phòng)|Người dùng + tên (phỏng đoán)|thiếu thành viên|60 mẫu gần nhất · 0–100% · trống = không có số liệu · nghỉ giữa các lần quét {interval}s|Enter: xem tiến trình trong nhóm.|Enter / r: vùng nhớ · Esc: ứng dụng.|Nguồn: siêu dữ liệu nhân; không đọc nội dung bộ nhớ tiến trình.|Tệp thực thi',
-'es': 'Uso neto = total − disponible · Otros = residuo contable.|Instancia de aplicación systemd|Usuario + ejecutable (alternativa)|Usuario + nombre (heurística)|miembros incompletos|Últimas 60 muestras · 0–100% · vacío = sin lectura · pausa entre escaneos {interval}s|Intro: explorar procesos del grupo.|Intro / r: regiones · Esc: aplicaciones.|Fuente: metadatos del kernel; no se lee el contenido de la memoria.|Ejecutable',
-'pt': 'Uso líquido = total − disponível · Outro = resíduo contábil.|Instância de aplicativo systemd|Usuário + executável (alternativa)|Usuário + nome (heurística)|membros incompletos|Últimas 60 amostras · 0–100% · vazio = sem leitura · pausa entre varreduras {interval}s|Enter: explorar processos do grupo.|Enter / r: regiões · Esc: aplicativos.|Fonte: metadados do kernel; o conteúdo da memória não é lido.|Executável',
-'de': 'Nettonutzung = Gesamt − verfügbar · Sonstiges = rechnerischer Rest.|systemd-Anwendungsinstanz|Benutzer + Programm (Fallback)|Benutzer + Name (Heuristik)|unvollständige Mitglieder|Letzte 60 Messungen · 0–100% · leer = kein Wert · Pause zwischen Scans {interval}s|Enter: Prozesse der Gruppe ansehen.|Enter / r: Bereiche · Esc: Anwendungen.|Quelle: Kernel-Metadaten; Speicherinhalte werden nicht gelesen.|Programm',
-'ja': '正味使用量 = 合計 − 利用可能 · その他 = 会計上の残余。|systemdアプリのインスタンス|ユーザー + 実行ファイル（代替）|ユーザー + 名前（推測）|メンバーが不完全|直近60サンプル · 0–100% · 空白 = 値なし · スキャン間隔 {interval}秒|Enter: グループのプロセスを表示。|Enter / r: 領域 · Esc: アプリ。|出典: カーネルのメタデータ。メモリの内容は読みません。|実行ファイル',
-}
-for _language, _row in _EXTRA_ROWS.items():
-    CATALOG[_language].update(dict(zip(_EXTRA_KEYS, _row.split('|'), strict=True)))

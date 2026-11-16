@@ -50,6 +50,20 @@ class BackendTests(unittest.TestCase):
         self.assertIsNone(row.uss)
         self.assertIn('accesso negato', row.reason)
 
+    def test_full_read_recovers_after_denied_basic_rss(self):
+        p = process()
+        p.memory_info.side_effect = psutil.AccessDenied(42)
+        row = PsutilBackend('windows').read_process(p)
+        self.assertEqual((row.rss, row.uss), (1000, 600))
+        self.assertIsNone(row.reason)
+
+        p.memory_full_info.side_effect = psutil.AccessDenied(42)
+        row = PsutilBackend('windows').read_process(p)
+        self.assertIsNone(row.rss)
+        self.assertIsNone(row.uss)
+        self.assertIn('RSS:', row.reason)
+        self.assertIn('USS:', row.reason)
+
     def test_mac_uses_uid_and_retains_missing_metrics(self):
         p = process()
         p.exe.return_value = '/Applications/Editor.app/Contents/MacOS/Editor'
@@ -78,6 +92,7 @@ class BackendTests(unittest.TestCase):
 
     def test_windows_owners_and_unknown_owner_are_never_combined(self):
         snap = fixture()
+        snap.platform = 'windows'
         snap.processes = [
             ProcessMemory(1, 1, 'app', None, 'c:\\app.exe', user='DOMAIN\\alice'),
             ProcessMemory(2, 2, 'app', None, 'c:\\app.exe', user='DOMAIN\\bob'),
@@ -93,6 +108,7 @@ class BackendTests(unittest.TestCase):
         b.exe.return_value = 'c:\\apps\\EDITOR.EXE'
         backend = PsutilBackend('windows')
         snap = fixture()
+        snap.platform = 'windows'
         snap.processes = [backend.read_process(a), backend.read_process(b)]
         self.assertEqual(len(snap.applications), 1)
         self.assertEqual(snap.applications[0].total('uss'), 1200)

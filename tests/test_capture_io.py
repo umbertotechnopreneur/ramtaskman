@@ -113,6 +113,16 @@ class CaptureIOTests(unittest.TestCase):
                 with self.assertRaises(CaptureFormatError):
                     load_capture(path)
 
+    def test_file_limit_enforced_before_writing_or_replacing(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / 'capture.rtm.json'
+            path.write_bytes(b'original')
+            with patch('ramtaskman.capture_io.MAX_BYTES', 64):
+                with self.assertRaises(CaptureFormatError):
+                    save_capture(path, fixture(), overwrite=True)
+            self.assertEqual(path.read_bytes(), b'original')
+            self.assertEqual([entry.name for entry in Path(td).iterdir()], [path.name])
+
     def test_cli_replay_never_constructs_collector(self):
         import sys
         from ramtaskman import cli

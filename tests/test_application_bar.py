@@ -91,7 +91,6 @@ class ApplicationBarUITests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
             self.assertGreaterEqual(screen.query_one('#region-table', DataTable).size.height, 4)
             app.show_error('errore di prova')
-            screen.render_memory_context()
             await pilot.pause()
             self.assertIn('non disponibile', str(screen.query_one('#region-memory', Static).content))
 

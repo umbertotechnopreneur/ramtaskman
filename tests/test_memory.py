@@ -37,6 +37,11 @@ def fixture() -> Snapshot:
 
 
 class AccountingTests(unittest.TestCase):
+    def test_unix_executable_name_preserves_backslash(self):
+        snap = fixture()
+        snap.processes = [ProcessMemory(1, 1, 'demo', 1000, '/demo/name\\literal', uss=0)]
+        self.assertEqual(snap.applications[0].name, 'name\\literal')
+
     def test_pss_uss_and_swap_are_distinct(self):
         values = parse_rollup(ROLLUP)
         self.assertEqual(values, dict(rss=100*K, pss=70*K, uss=40*K, swap=8*K, swap_pss=4*K))

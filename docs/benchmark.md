@@ -93,6 +93,14 @@ nel mezzo dell'operazione. Se l'utente chiude la vista o cambia campione, il wor
 può finire un'operazione in corso ma il risultato vecchio viene scartato tramite
 generazione e identità degli snapshot. Un risultato parziale non viene mostrato.
 
+## Ricerca localizzata, verifica puntuale
+
+16 novembre 2026, Linux x86_64, Python 3.14.4: con `tools/benchmark_memory.py`,
+fixture sintetiche da 1.000 regioni e tre ripetizioni, la mediana della ricerca
+è stata 0,76 ms prima e 0,52 ms dopo aver preparato le etichette tradotte una
+volta per filtro. Sono poche misure locali, soggette a rumore; non dimostrano un
+miglioramento generale né misurano il paint del terminale.
+
 ## Limiti e lavoro ancora aperto
 
 - Non è stata eseguita una misura realistica su tutti i processi del PC: la prova

@@ -1,4 +1,3 @@
-import ctypes
 from dataclasses import asdict
 import sys
 import unittest

@@ -134,9 +134,9 @@ class MemoryDetailScreen(ModalScreen):
     MemoryDetailScreen > VerticalScroll { width: 140; max-width: 95%; height: 85%; border: round $secondary; background: $surface; padding: 1 2; }
     """
 
-    def __init__(self, row: ApplicationMemory | ProcessMemory, platform: str) -> None:
+    def __init__(self, row: ApplicationMemory | ProcessMemory, platform: str, language: str = 'it') -> None:
         super().__init__()
-        self.content = detail_content(row, platform)
+        self.content = detail_content(row, platform, language)
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
@@ -242,6 +242,8 @@ class RamTaskManager(App):
                     snap = (collector.sample(cancelled=lambda: worker.is_cancelled)
                             if isinstance(collector, Collector) else collector.sample())
                 except Exception as error:
+                    # A collector failure must clear stale values, not kill the
+                    # worker: the next sampling cycle may recover on its own.
                     if not worker.is_cancelled:
                         self.call_from_thread(self.show_error, f'{type(error).__name__}: {error}')
                 else:
@@ -251,6 +253,7 @@ class RamTaskManager(App):
 
     def show_error(self, reason: str) -> None:
         self.snap = None
+        self._refresh_region_memory_context()
         self.rows.clear()
         self.selected_key = None
         self.query_one('#procs', DataTable).clear()
@@ -263,6 +266,7 @@ class RamTaskManager(App):
         if self.paused:
             return
         self.snap = snap
+        self._refresh_region_memory_context()
         self.update_owner_options()
         if not self._default_sort_set:
             self.sort_idx = 1 if 'pss' in snap.unsupported else 0
@@ -277,6 +281,12 @@ class RamTaskManager(App):
             self.histories[name].append(value)
         self.render_dashboard()
         self.render_table()
+
+    def _refresh_region_memory_context(self) -> None:
+        """Update open region screens immediately when the system sample changes."""
+        for screen in self.screen_stack:
+            if isinstance(screen, RegionScreen) and screen.is_mounted:
+                screen.render_memory_context()
 
     def render_dashboard(self) -> None:
         if not self.snap:
@@ -294,10 +304,9 @@ class RamTaskManager(App):
             top.append(Text('Ripartizione OS n/a: ' + (m.segments_reason or 'contatori non esposti da questo backend') +
                             '. Barra: in uso / disponibile.', style='yellow'))
         if not self.monitoring:
-            apps_bar = application_uss_bar(s)
+            apps_bar = application_uss_bar(s, self.language)
             top.extend((apps_bar.heading(), apps_bar, apps_bar.legend(),
-                        Text('Scala: sola USS delle app complete; esclude gruppi parziali, memoria condivisa e kernel. '
-                             'Gruppi come in tabella; i blocchi non sono indirizzi fisici.', style='grey70')))
+                        Text(self.tr('uss_app_note'), style='grey70')))
             if m.linux_details is not None:
                 linux = m.linux_details
                 top.append(Text(f'Cache Linux {size(m.cache)} · Slab kernel {size(m.slab)}', style='cyan'))
@@ -519,7 +528,7 @@ class RamTaskManager(App):
     def action_detail(self) -> None:
         row = self.rows.get(self.selected_key)
         if self.snap is not None and row is not None:
-            self.push_screen(MemoryDetailScreen(row, self.snap.platform))
+            self.push_screen(MemoryDetailScreen(row, self.snap.platform, self.language))
 
     def open_regions(self, row: ProcessMemory) -> None:
         if self.snap is not None:

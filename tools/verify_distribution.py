@@ -18,7 +18,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = ('app.tcss', 'capture_io.py', 'capture_models.py', 'comparison.py',
             'delta_bar.py', 'region_provider.py', 'region_screen.py', 'replay.py',
-            'backends/windows_regions.py')
+            'backends/windows_regions.py', *(f'locales/{language}.json' for language in
+                ('it', 'en', 'zh', 'ko', 'fr', 'vi', 'es', 'pt', 'de', 'ja')))
 FORBIDDEN = {'.uv-cache', '.venv', 'captures', 'recordings', '__pycache__'}
 
 
@@ -45,6 +46,16 @@ def _run(command, *, cwd: Path, env: dict[str, str]) -> subprocess.CompletedProc
     return result
 
 
+def _verification_environment(source: dict[str, str]) -> dict[str, str]:
+    """Keep the caller's populated uv cache while isolating Python imports."""
+    env = source.copy()
+    env.pop('PYTHONPATH', None)
+    env.setdefault('UV_CACHE_DIR', str(ROOT / '.uv-cache'))
+    env['UV_PYTHON_DOWNLOADS'] = 'never'
+    env['PYTHONUTF8'] = '1'
+    return env
+
+
 def verify() -> None:
     wheels = list((ROOT / 'dist').glob('ramtaskman-*.whl'))
     sdists = list((ROOT / 'dist').glob('ramtaskman-*.tar.gz'))
@@ -54,18 +65,24 @@ def verify() -> None:
         _check_names(archive.namelist(), wheel=True)
     with tarfile.open(sdists[0], 'r:gz') as archive:
         _check_names(archive.getnames(), wheel=False)
-    env = os.environ.copy()
-    env.pop('PYTHONPATH', None)
-    env['UV_CACHE_DIR'] = str(ROOT / '.uv-cache')
-    env['UV_PYTHON_DOWNLOADS'] = 'never'
-    env['PYTHONUTF8'] = '1'
+    # CI primes its own cache during ``uv sync``; the local launcher sets a
+    # project-local cache. Reuse whichever one the caller has prepared.
+    env = _verification_environment(os.environ)
     with tempfile.TemporaryDirectory(prefix='.venv-dist-check-', dir=ROOT) as folder:
         base = Path(folder)
         venv = base / 'ambiente con spazi'
         _run(['uv', 'venv', '--python', sys.executable, str(venv)], cwd=base, env=env)
         python = venv / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
         executable = venv / ('Scripts/ramtaskman.exe' if os.name == 'nt' else 'bin/ramtaskman')
-        _run(['uv', 'pip', 'install', '--offline', '--python', str(python), str(wheels[0])], cwd=base, env=env)
+        # uv sync can install directly from lockfile artifacts already in the
+        # cache, even when offline index metadata is absent. Then install the
+        # built wheel itself and check that its dependencies are satisfied.
+        locked_env = env | {'UV_PROJECT_ENVIRONMENT': str(venv)}
+        _run(['uv', 'sync', '--locked', '--offline', '--no-install-project',
+              '--python', sys.executable], cwd=ROOT, env=locked_env)
+        _run(['uv', 'pip', 'install', '--offline', '--no-deps', '--python', str(python),
+              str(wheels[0])], cwd=base, env=env)
+        _run(['uv', 'pip', 'check', '--python', str(python)], cwd=base, env=env)
         output = _run([str(executable), '--json', '--max-measurements', '2'], cwd=base, env=env)
         document = json.loads(output.stdout)
         if document.get('measurement_attempted', 0) > 2:

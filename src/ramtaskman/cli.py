@@ -70,7 +70,7 @@ def main() -> int:
                 print(f'ramtaskman: acquisizione non valida: {error}', file=sys.stderr)
                 return 1
             from .replay import ReplayApp
-            ReplayApp(current, baseline).run()
+            ReplayApp(current, baseline, language=args.language).run()
             return 0
         collector = Collector(max_measurements=args.max_measurements,
                               selected_priority=args.selected_priority,

@@ -6,6 +6,8 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      # A failure on one platform must not hide results from the other systems.
+      fail-fast: false
       matrix:
         python: ["3.11", "3.13", "3.14"]
         os: [ubuntu-latest, windows-latest, macos-latest]

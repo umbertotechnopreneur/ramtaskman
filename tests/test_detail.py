@@ -6,6 +6,7 @@ from rich.console import Console
 
 from ramtaskman.detail import breakdown_total, detail_bars, detail_content
 from ramtaskman.models import ApplicationMemory, ProcessMemory
+from ramtaskman.memory_bars import MemoryBreakdownBar, MemoryPart
 from ramtaskman.report import to_dict
 from test_memory import fixture
 
@@ -20,6 +21,11 @@ def complete_process(pid=7):
 
 
 class DetailTests(unittest.TestCase):
+    def test_wide_character_labels_do_not_change_bar_width(self):
+        bar = MemoryBreakdownBar('RSS', 10, (MemoryPart('内存', '内存', 10, 'blue'),))
+        for width in (12, 20, 80):
+            self.assertEqual(bar.render(width).cell_len, width)
+
     def test_separate_pss_and_rss_partitions_do_not_include_swap_or_duplicate_uss(self):
         proc = complete_process()
         bars = detail_bars(proc)

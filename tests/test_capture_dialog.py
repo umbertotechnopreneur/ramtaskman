@@ -4,10 +4,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from textual.app import App
-from textual.widgets import Input, Static
+from textual.widgets import Button, Input, Static
 
 from ramtaskman.capture_dialog import CaptureOpenScreen, CaptureSaveScreen
-from ramtaskman.capture_io import load_capture, save_capture
+from ramtaskman.capture_io import load_capture
 from ramtaskman.replay import ReplayApp
 from test_capture_io import fixture
 
@@ -26,6 +26,17 @@ class DialogApp(App):
 
 
 class CaptureDialogTests(unittest.IsolatedAsyncioTestCase):
+    async def test_replay_and_save_dialog_use_selected_language(self):
+        app = ReplayApp(fixture(), language='ko')
+        async with app.run_test(size=(80, 24)) as pilot:
+            await pilot.pause()
+            self.assertEqual(app.screen.query_one('#region-search', Input).placeholder,
+                             '파일, 유형, 권한 또는 0x 주소… · Enter: 표')
+            await pilot.press('ctrl+s')
+            await pilot.pause()
+            self.assertIsInstance(app.screen, CaptureSaveScreen)
+            self.assertEqual(str(app.screen.query_one('#capture-save', Button).label), '저장')
+
     async def test_save_then_confirm_overwrite_and_open(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / 'esempio.rtm.json'

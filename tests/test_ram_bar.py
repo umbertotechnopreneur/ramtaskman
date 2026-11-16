@@ -49,3 +49,11 @@ class RamBarTests(unittest.TestCase):
         self.assertIn('Disponibile', bar.legend().plain)
         self.assertNotIn('Anonima', bar.legend().plain)
         self.assertEqual(bar.render(80).cell_len, 80)
+
+    def test_wide_localized_labels_keep_bar_width(self):
+        memory = fixture().system
+        memory.segments = {}
+        for language in ('zh', 'ko', 'ja'):
+            for width in (20, 80, 160):
+                with self.subTest(language=language, width=width):
+                    self.assertEqual(SystemRamBar(memory, language).render(width).cell_len, width)

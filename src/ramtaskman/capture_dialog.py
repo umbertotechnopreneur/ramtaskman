@@ -14,9 +14,18 @@ from textual.widgets import Button, Input, Static
 from textual.worker import get_current_worker
 
 from .capture_io import CaptureFormatError, load_capture, save_capture
+from .i18n import translate
 
 
-class CaptureSaveScreen(ModalScreen):
+class _LocalizedCaptureScreen(ModalScreen):
+    """Use the owning app's language without changing the process locale."""
+
+    def tr(self, key: str, **values: object) -> str:
+        language = getattr(self.app, 'language', 'it')
+        return translate(language, key, **values)
+
+
+class CaptureSaveScreen(_LocalizedCaptureScreen):
     """Save a snapshot to an explicitly chosen path, confirming replacement separately."""
     BINDINGS = [Binding('escape', 'cancel', 'Annulla')]
     DEFAULT_CSS = '''
@@ -36,16 +45,17 @@ class CaptureSaveScreen(ModalScreen):
         self.request_id = 0
 
     def compose(self) -> ComposeResult:
-        status = 'completo' if self.current.complete else 'parziale'
+        status = self.tr('complete' if self.current.complete else 'partial_sample')
         when = datetime.fromtimestamp(self.current.taken).strftime('%Y-%m-%d %H:%M:%S')
         with Vertical():
-            yield Static(Text(f'Salva · {self.current.name} · PID {self.current.pid} · {when} · {status}', style='bold'))
-            yield Static(f'{1 + int(self.baseline is not None)} campione/i · include percorsi e metadati, nessun contenuto RAM')
-            yield Input(placeholder='Percorso file .rtm.json', id='capture-path')
+            yield Static(Text(self.tr('capture_save_title', name=self.current.name, pid=self.current.pid,
+                                      time=when, status=status), style='bold'))
+            yield Static(self.tr('capture_count', count=1 + int(self.baseline is not None)))
+            yield Input(placeholder=self.tr('capture_path'), id='capture-path')
             with Horizontal():
-                yield Button('Salva', id='capture-save', compact=True)
-                yield Button('Sostituisci file', id='capture-overwrite', compact=True, variant='warning')
-                yield Button('Annulla', id='capture-cancel', compact=True)
+                yield Button(self.tr('save'), id='capture-save', compact=True)
+                yield Button(self.tr('replace_file'), id='capture-overwrite', compact=True, variant='warning')
+                yield Button(self.tr('cancel'), id='capture-cancel', compact=True)
             yield Static('', id='capture-error')
 
     def on_mount(self) -> None:
@@ -76,14 +86,14 @@ class CaptureSaveScreen(ModalScreen):
             return
         path = self.query_one('#capture-path', Input).value.strip()
         if not path:
-            self.query_one('#capture-error', Static).update('Inserisci un percorso.')
+            self.query_one('#capture-error', Static).update(self.tr('enter_path'))
             return
         if overwrite and path != self.pending_path:
-            self.query_one('#capture-error', Static).update('Il percorso è cambiato: premi prima Salva.')
+            self.query_one('#capture-error', Static).update(self.tr('path_changed'))
             return
         self.request_id += 1
         self.busy = True
-        self.query_one('#capture-error', Static).update('Salvataggio in corso…')
+        self.query_one('#capture-error', Static).update(self.tr('saving'))
         self.write_file(self.request_id, path, overwrite)
 
     @work(thread=True, exclusive=True, group='capture-save')
@@ -110,7 +120,7 @@ class CaptureSaveScreen(ModalScreen):
         if result == 'exists':
             self.pending_path = path
             self.query_one('#capture-overwrite', Button).display = True
-            self.query_one('#capture-error', Static).update('Il file esiste. Cambia percorso oppure scegli Sostituisci file.')
+            self.query_one('#capture-error', Static).update(self.tr('file_exists'))
         elif result is not None:
             self.query_one('#capture-error', Static).update(Text(result, style='yellow'))
         else:
@@ -119,12 +129,12 @@ class CaptureSaveScreen(ModalScreen):
     def action_cancel(self) -> None:
         if self.busy:
             # Do not claim cancellation of an atomic write already underway.
-            self.query_one('#capture-error', Static).update('Attendi il completamento della scrittura.')
+            self.query_one('#capture-error', Static).update(self.tr('wait_write'))
             return
         self.dismiss(False)
 
 
-class CaptureOpenScreen(ModalScreen):
+class CaptureOpenScreen(_LocalizedCaptureScreen):
     """Select and validate a bounded capture in a worker; returns CaptureFile or None."""
     BINDINGS = [Binding('escape', 'cancel', 'Annulla')]
     DEFAULT_CSS = '''
@@ -142,11 +152,11 @@ class CaptureOpenScreen(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Static('Apri acquisizione locale · esplorazione offline', classes='bold')
-            yield Input(placeholder='Percorso file .rtm.json', id='capture-open-path')
+            yield Static(self.tr('capture_open_title'), classes='bold')
+            yield Input(placeholder=self.tr('capture_path'), id='capture-open-path')
             with Horizontal():
-                yield Button('Apri', id='capture-open', compact=True)
-                yield Button('Annulla', id='capture-open-cancel', compact=True)
+                yield Button(self.tr('open'), id='capture-open', compact=True)
+                yield Button(self.tr('cancel'), id='capture-open-cancel', compact=True)
             yield Static('', id='capture-open-error')
 
     def on_mount(self) -> None:
@@ -168,11 +178,11 @@ class CaptureOpenScreen(ModalScreen):
             return
         path = self.query_one('#capture-open-path', Input).value.strip()
         if not path:
-            self.query_one('#capture-open-error', Static).update('Inserisci un percorso.')
+            self.query_one('#capture-open-error', Static).update(self.tr('enter_path'))
             return
         self.request_id += 1
         self.busy = True
-        self.query_one('#capture-open-error', Static).update('Lettura e validazione…')
+        self.query_one('#capture-open-error', Static).update(self.tr('loading_capture'))
         self.read_file(self.request_id, path)
 
     @work(thread=True, exclusive=True, group='capture-open')

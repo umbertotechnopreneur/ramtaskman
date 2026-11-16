@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import ntpath
+import posixpath
 
 
 @dataclass
@@ -26,6 +27,7 @@ class ProcessMemory:
 
     @property
     def key(self) -> str:
+        """Distinguish a reused PID from the process that previously owned it."""
         return f"pid:{self.pid}:{self.started_at}"
 
 
@@ -42,6 +44,7 @@ class ApplicationMemory:
     membership_complete: bool = True
 
     def total(self, metric: str) -> int | None:
+        """Return a total only when membership and every measurement are known."""
         values = [getattr(p, metric) for p in self.processes]
         # Do not disguise an incomplete group as a complete total.
         return sum(values) if self.membership_complete and values and all(v is not None for v in values) else None
@@ -107,6 +110,7 @@ class Snapshot:
 
     @property
     def applications(self) -> list[ApplicationMemory]:
+        """Group known members by explicit systemd instance or declared fallback."""
         groups: dict[tuple, ApplicationMemory] = {}
         for proc in self.processes:
             # Name-only grouping is explicitly marked as a heuristic in UI/docs.
@@ -118,7 +122,10 @@ class Snapshot:
             else:
                 grouping = 'executable' if proc.executable else 'name'
                 grouping_id = proc.executable or proc.name
-                app_name = ntpath.basename(proc.executable) if proc.executable else proc.name
+                # Backslashes are ordinary filename characters on Unix, but
+                # path separators on Windows. Use the sampled OS, not the host.
+                path_module = ntpath if self.platform == 'windows' else posixpath
+                app_name = path_module.basename(proc.executable) if proc.executable else proc.name
             identity = (owner, grouping, grouping_id)
             if identity not in groups:
                 groups[identity] = ApplicationMemory(

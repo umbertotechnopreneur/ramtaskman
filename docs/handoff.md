@@ -231,3 +231,11 @@ sono catture Textual su Linux con dati sintetici; il banner ritaglia sei dashboa
 La dashboard ha una prima localizzazione per dieci lingue tramite `--language`;
 la UI non è ancora interamente tradotta: aiuto, dettagli, regioni, messaggi dei
 backend e altre parti richiedono lavoro. Il README dichiara questo limite.
+
+La revisione successiva è documentata in [review del codice](review-codice-2026-11-16.md).
+I cataloghi sono ora file UTF-8 nel pacchetto, con verifiche delle chiavi e dei
+segnaposto. Tradotte anche le finestre di acquisizione, parti della mappa e del
+dettaglio; la localizzazione completa dell'app rimane aperta. La prima CI GitHub
+è fallita nella verifica offline: il problema è stato riprodotto con una cache nuova
+e corretto localmente usando il lockfile per preparare l'ambiente isolato. I risultati
+Linux locali e la simulazione della cache non costituiscono un nuovo esito CI remoto.

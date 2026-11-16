@@ -35,8 +35,10 @@ Dans les régions, **b** fixe A, **r** collecte B et **c** ouvre la comparaison.
 
 Le programme lit des métadonnées, pas /proc/PID/mem, cmdline, environment ou le contenu des applis.
 
-**g** applis/processus · **Entrée** processus de l'appli choisie · **Échap** retour aux applis  
-**s** tri · **c** graphique · **a** tous/30 premiers · **m** compact/complet  
+**g** applis/processus · **Entrée** processus de l'appli choisie · **Échap** retour aux applis
+
+**s** tri · **c** graphique · **a** tous/30 premiers · **m** compact/complet
+
 **/** recherche · **f** filtres · **d** détails · **r** régions · **p** pause · **?** aide · **q** quitter
 
 Graphiques : 60 derniers échantillons, pourcentages sur une échelle 0–100. Le vide indique une donnée absente. L'intervalle est une pause après la mesure ; la durée réelle inclut aussi l'analyse.

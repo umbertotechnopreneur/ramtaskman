@@ -35,8 +35,10 @@ In Regionen fixiert **b** A, **r** erfasst B, **c** öffnet den Vergleich. Dort 
 
 Das Programm liest Metadaten, nicht /proc/PID/mem, cmdline, environment oder App-Inhalte.
 
-**g** Apps/Prozesse · **Enter** Prozesse der gewählten App · **Esc** zurück zu Apps  
-**s** Sortierung · **c** Diagramm · **a** alle/erste 30 · **m** kompakt/vollständig  
+**g** Apps/Prozesse · **Enter** Prozesse der gewählten App · **Esc** zurück zu Apps
+
+**s** Sortierung · **c** Diagramm · **a** alle/erste 30 · **m** kompakt/vollständig
+
 **/** Suche · **f** Filter · **d** Details · **r** Bereiche · **p** Pause · **?** Hilfe · **q** beenden
 
 Diagramme zeigen die letzten 60 Messungen als Prozentwerte von 0–100. Leere Stellen bedeuten fehlende Daten. Das Intervall ist die Pause nach der Messung; die tatsächliche Dauer enthält zusätzlich den Scan.

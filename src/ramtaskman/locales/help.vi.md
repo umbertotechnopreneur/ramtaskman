@@ -35,8 +35,10 @@ Trong vùng nhớ, **b** cố định A, **r** lấy B và **c** mở so sánh. 
 
 Chương trình đọc siêu dữ liệu, không đọc /proc/PID/mem, cmdline, environment hay nội dung ứng dụng.
 
-**g** ứng dụng/tiến trình · **Enter** tiến trình của ứng dụng đã chọn · **Esc** về ứng dụng  
-**s** sắp xếp · **c** biểu đồ · **a** tất cả/30 đầu · **m** gọn/đầy đủ  
+**g** ứng dụng/tiến trình · **Enter** tiến trình của ứng dụng đã chọn · **Esc** về ứng dụng
+
+**s** sắp xếp · **c** biểu đồ · **a** tất cả/30 đầu · **m** gọn/đầy đủ
+
 **/** tìm kiếm · **f** bộ lọc · **d** chi tiết · **r** vùng nhớ · **p** tạm dừng · **?** trợ giúp · **q** thoát
 
 Biểu đồ hiển thị 60 mẫu gần nhất, phần trăm trên thang 0–100. Khoảng trắng nghĩa là thiếu dữ liệu. Khoảng lấy mẫu là thời gian nghỉ sau phép đo; chu kỳ thực còn gồm thời gian quét.

@@ -35,8 +35,10 @@ En regiones, **b** fija A, **r** recoge B y **c** abre la comparación. Allí **
 
 El programa lee metadatos, no /proc/PID/mem, cmdline, environment ni contenido de las apps.
 
-**g** apps/procesos · **Intro** procesos de la app seleccionada · **Esc** volver a apps  
-**s** orden · **c** gráfico · **a** todos/primeros 30 · **m** compacto/completo  
+**g** apps/procesos · **Intro** procesos de la app seleccionada · **Esc** volver a apps
+
+**s** orden · **c** gráfico · **a** todos/primeros 30 · **m** compacto/completo
+
 **/** búsqueda · **f** filtros · **d** detalles · **r** regiones · **p** pausa · **?** ayuda · **q** salir
 
 Gráficos: últimas 60 muestras, porcentajes en escala 0–100. El espacio vacío indica dato ausente. El intervalo es una pausa después de la lectura; el tiempo real incluye el escaneo.

@@ -35,8 +35,10 @@ Nas regiões, **b** fixa A, **r** coleta B e **c** abre comparação. Nela **v**
 
 O programa lê metadados, não /proc/PID/mem, cmdline, environment ou conteúdo dos apps.
 
-**g** apps/processos · **Enter** processos do app selecionado · **Esc** voltar aos apps  
-**s** ordenação · **c** gráfico · **a** todos/primeiros 30 · **m** compacto/completo  
+**g** apps/processos · **Enter** processos do app selecionado · **Esc** voltar aos apps
+
+**s** ordenação · **c** gráfico · **a** todos/primeiros 30 · **m** compacto/completo
+
 **/** busca · **f** filtros · **d** detalhes · **r** regiões · **p** pausa · **?** ajuda · **q** sair
 
 Gráficos: últimas 60 amostras, percentuais na escala 0–100. Espaço vazio indica dado ausente. O intervalo é uma pausa após a medição; o tempo real inclui a varredura.

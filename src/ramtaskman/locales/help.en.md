@@ -35,8 +35,10 @@ In regions, **b** fixes A, **r** collects B and **c** opens comparison. In compa
 
 The program reads metadata, not /proc/PID/mem, cmdline, environment or app contents.
 
-**g** apps/processes · **Enter** selected app's processes · **Esc** back to apps  
-**s** sort · **c** chart · **a** all/top 30 · **m** compact/full  
+**g** apps/processes · **Enter** selected app's processes · **Esc** back to apps
+
+**s** sort · **c** chart · **a** all/top 30 · **m** compact/full
+
 **/** search · **f** filters · **d** details · **r** regions · **p** pause · **?** help · **q** quit
 
 Charts show the last 60 samples, percentages on a 0–100 scale. Blank space means missing data. The interval is a pause after sampling; actual elapsed time also includes the scan.

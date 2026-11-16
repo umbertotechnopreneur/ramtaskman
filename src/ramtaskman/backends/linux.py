@@ -9,6 +9,7 @@ from ..models import LinuxSystemMemory, ProcessMemory, SystemMemory
 from ..memory_segments import partition_meminfo
 from ..grouping import CGROUP_LIMIT, application_cgroup
 from ..messages import message
+from ..process_identity import process_executable, process_name
 
 
 def parse_kib(text: str) -> dict[str, int]:
@@ -98,15 +99,12 @@ class LinuxBackend:
     def read_identity(self, process: psutil.Process) -> ProcessMemory | None:
         pid = process.pid
         started = process.create_time()
-        name = process.name()
+        name = process_name(process)
         try:
             uid = process.uids().real
         except psutil.AccessDenied:
             uid = None
-        try:
-            executable = process.exe() or None
-        except psutil.AccessDenied:
-            executable = None
+        executable = process_executable(process)
         row = ProcessMemory(pid, started, name, uid, executable)
         app = read_app_cgroup(self.proc / str(pid) / 'cgroup', uid)
         if app is not None:

@@ -313,3 +313,27 @@ all'annullamento del run obsoleto. Il log non identificava la chiamata in attesa
 Gli smoke CLI della CI hanno ora un limite di due minuti e dump periodici dello
 stack Python per diagnosticare eventuali attese native; il job ha un limite di
 15 minuti. Questi limiti riguardano il runner CI, non il monitor avviato dall'utente.
+
+La diagnosi del sorgente ha inoltre individuato un fallback implicito di
+`psutil.Process.name()` / `.exe()` su `cmdline()`, contrario al contratto del
+progetto. `process_identity.py` isola ora i getter nativi di psutil 7; tutti i
+backend e i lettori delle regioni li usano senza espandere nomi, indovinare percorsi
+o riusare le cache pubbliche. API assente o accesso negato producono un'etichetta
+PID e percorso None; gli errori per processi terminati si propagano ai controlli
+d'identità. Passati 66 test mirati, inclusi 9 nuovi contratti. È riuscito anche un
+campionamento Linux reale con i metodi pubblici `name`, `exe` e `cmdline` sostituiti
+da errori, senza salvare metadati dei processi. Ricostruiti e verificati wheel e
+sdist con il nuovo adapter incluso.
+
+Nel run diagnostico `6cf0a5d`, Linux e Windows/Python 3.13 e 3.14 sono verdi;
+macOS/Python 3.11 ha completato suite, CLI reale in meno di un secondo per comando,
+build e distribuzione, senza riprodurre l'attesa. Windows/Python 3.11 ha rilevato
+una race nel solo test del dialogo: `Button.press()` accoda un evento e l'attesa
+dei worker poteva precederne la registrazione. Il test ora elabora l'evento con
+`pilot.pause()` prima di attendere il worker; cinque ripetizioni locali sono
+passate. Nessuna modifica del flusso di salvataggio applicativo.
+
+La suite completa con l'adapter nativo ha eseguito **226 test in 251,858 secondi:
+223 passati e 3 prove Windows saltate**, senza errori o fallimenti. Sono passati
+anche Ruff `F,E9`, build e verifica della distribuzione installata. Il test del
+dialogo con la sincronizzazione corretta è stato inoltre ripetuto cinque volte.

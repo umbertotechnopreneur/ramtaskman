@@ -31,6 +31,15 @@ La UI usa un worker thread cancellabile e passa il campione al thread principale
 | Breakdown | smaps_rollup della stessa lettura | Pss_Anon/File/Shmem, Private/Shared Clean/Dirty, Anonymous, LazyFree, AnonHugePages |
 | Regioni del processo selezionato | /proc/PID/smaps | lettura su richiesta distinta dal campionamento generale |
 
+Nome ed eseguibile passano da `process_identity.py`: le API pubbliche
+`psutil.Process.name()` e `.exe()` possono ripiegare su `cmdline()` e verifiche
+del percorso. L'adapter isola invece i getter nativi `_proc.name` / `_proc.exe`
+di psutil 7, senza usare le cache pubbliche. Se l'API interna cambia o l'accesso
+è negato, conserva il PID come etichetta e lascia il percorso a None. I nomi
+nativi Linux possono essere troncati dal kernel; non vengono espansi leggendo
+la riga di comando. PID terminati e riutilizzati restano soggetti alle verifiche
+dei chiamanti, anche durante la lettura delle regioni.
+
 ## Fonti Windows/macOS
 
 `psutil.virtual_memory()` per RAM globale, `swap_memory()` per swap/pagefile globale,

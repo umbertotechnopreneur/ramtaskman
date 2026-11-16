@@ -52,3 +52,11 @@ Le prove Textual nelle dieci lingue controllano il footer renderizzato e che
 un'app successiva non modifichi i binding di quelle precedenti. Le asserzioni
 sullo stato devono seguire il catalogo scelto, continuando a verificare lo scarto
 dei dati obsoleti e la copertura parziale quando cambiano le diciture.
+
+## Verificare anche i fallback delle dipendenze
+
+L'assenza di chiamate esplicite a `cmdline()` nel progetto non basta: in psutil 7
+le API pubbliche per nome ed eseguibile possono usarla come fallback. L'adapter
+dei metadati nativi isola questa dipendenza interna, con valori mancanti espliciti
+quando non è disponibile. I test vietano i getter pubblici e i probe sul file
+eseguibile; le cache pubbliche non vengono usate come nuova prova d'identità.

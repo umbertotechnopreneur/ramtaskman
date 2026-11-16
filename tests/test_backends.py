@@ -16,10 +16,12 @@ from test_memory import fixture
 def process():
     p = Mock(pid=42)
     p.create_time.return_value = 100.0
-    p.name.return_value = 'editor.exe'
+    p._proc.name.return_value = 'editor.exe'
     p.username.return_value = 'DOMAIN\\alice'
     p.uids.return_value = NS(real=501)
-    p.exe.return_value = 'C:\\Apps\\Editor.exe'
+    p._proc.exe.return_value = 'C:\\Apps\\Editor.exe'
+    for public in (p.name, p.exe, p.cmdline):
+        public.side_effect = AssertionError('public process metadata fallback is forbidden')
     p.memory_info.return_value = NS(rss=1000, vms=9000, private=8000, pagefile=7000)
     p.memory_full_info.return_value = NS(rss=1000, uss=600, vms=9000, private=8000, pagefile=7000)
     p.is_running.return_value = True
@@ -66,7 +68,7 @@ class BackendTests(unittest.TestCase):
 
     def test_mac_uses_uid_and_retains_missing_metrics(self):
         p = process()
-        p.exe.return_value = '/Applications/Editor.app/Contents/MacOS/Editor'
+        p._proc.exe.return_value = '/Applications/Editor.app/Contents/MacOS/Editor'
         row = PsutilBackend('macos').read_process(p)
         self.assertEqual(row.uid, 501)
         self.assertEqual(row.uss, 600)
@@ -105,7 +107,7 @@ class BackendTests(unittest.TestCase):
     def test_windows_paths_are_case_normalized(self):
         a, b = process(), process()
         b.pid = 43
-        b.exe.return_value = 'c:\\apps\\EDITOR.EXE'
+        b._proc.exe.return_value = 'c:\\apps\\EDITOR.EXE'
         backend = PsutilBackend('windows')
         snap = fixture()
         snap.platform = 'windows'

@@ -7,6 +7,7 @@ import psutil
 
 from ..models import ProcessMemory, SystemMemory
 from ..messages import message
+from ..process_identity import process_executable, process_name
 
 
 class PsutilBackend:
@@ -45,7 +46,7 @@ class PsutilBackend:
 
     def read_identity(self, process: psutil.Process) -> ProcessMemory | None:
         started = process.create_time()
-        name = process.name()
+        name = process_name(process)
         uid = None
         user = None
         if self.name == 'macos':
@@ -58,12 +59,9 @@ class PsutilBackend:
                 user = process.username()
             except psutil.AccessDenied:
                 pass
-        try:
-            executable = process.exe() or None
-            if executable and self.name == 'windows':
-                executable = ntpath.normcase(executable)
-        except psutil.AccessDenied:
-            executable = None
+        executable = process_executable(process)
+        if executable and self.name == 'windows':
+            executable = ntpath.normcase(executable)
         row = ProcessMemory(process.pid, started, name, uid, executable, user=user)
         return row if process.is_running() else None
 

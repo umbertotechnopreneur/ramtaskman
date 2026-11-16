@@ -117,7 +117,9 @@ class ReadRegionsTests(unittest.TestCase):
         self.proc = Mock()
         self.proc.create_time.return_value = 123.0
         self.proc.is_running.return_value = True
-        self.proc.exe.return_value = '/demo/my app'
+        self.proc._proc.exe.return_value = '/demo/my app'
+        for public in (self.proc.name, self.proc.exe, self.proc.cmdline):
+            public.side_effect = AssertionError('public process metadata fallback is forbidden')
         self.psutil = patch('ramtaskman.regions.psutil.Process', return_value=self.proc).start()
         self.addCleanup(patch.stopall)
 
@@ -132,11 +134,11 @@ class ReadRegionsTests(unittest.TestCase):
         self.assertEqual(self.psutil.call_count, 2)
 
     def test_exec_change_or_unreadable_image_does_not_claim_same_identity(self):
-        self.proc.exe.side_effect = ['/demo/my app', '/demo/other']
+        self.proc._proc.exe.side_effect = ['/demo/my app', '/demo/other']
         snap = LinuxRegionReader(self.root).read(identity())
         self.assertFalse(snap.complete)
         self.assertEqual(snap.regions, [])
-        self.proc.exe.side_effect = psutil.AccessDenied(100)
+        self.proc._proc.exe.side_effect = psutil.AccessDenied(100)
         snap = LinuxRegionReader(self.root).read(identity())
         self.assertTrue(snap.complete)
         self.assertIsNone(snap.executable_identity)

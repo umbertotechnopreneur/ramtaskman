@@ -51,6 +51,9 @@ class CaptureDialogTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(path.read_text(), 'original')
                 self.assertTrue(app.screen.query_one('#capture-overwrite').display)
                 app.screen.query_one('#capture-overwrite').press()
+                # Dispatch Button.Pressed so its handler registers the worker
+                # before waiting for that worker and the dismissal callback.
+                await pilot.pause()
                 await app.workers.wait_for_complete()
                 await pilot.pause()
                 self.assertTrue(app.result)

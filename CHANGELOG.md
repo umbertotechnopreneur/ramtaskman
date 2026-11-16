@@ -12,6 +12,8 @@
 - Procedure riproducibili di verifica Windows e macOS, ancora da eseguire sui sistemi nativi.
 - Verifica locale della distribuzione isolata e configurazione CI multipiattaforma;
   nessun rilascio PyPI.
+- Nomi ed eseguibili letti dai metadati nativi, evitando i fallback impliciti di
+  psutil sulla riga di comando e sul percorso del file.
 - README e testi applicativi in dieci lingue, selezionabili con `--language`:
   dashboard, dettagli, regioni, aiuto, footer, CLI e diagnostica dei backend e delle
   acquisizioni. Gli identificatori, i dettagli OS e i testi già salvati restano

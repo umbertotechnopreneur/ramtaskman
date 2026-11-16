@@ -16,6 +16,7 @@ import psutil
 
 from .models import ProcessMemory
 from .messages import error_text, message
+from .process_identity import process_executable
 
 
 @dataclass
@@ -195,10 +196,7 @@ class LinuxRegionReader:
         current = psutil.Process(process.pid)
         if current.create_time() != process.started_at or not current.is_running():
             raise ProcessLookupError(message('tech_process_gone'))
-        try:
-            return current.exe() or None
-        except (psutil.AccessDenied, PermissionError):
-            return None
+        return process_executable(current)
 
     def read(self, process: ProcessMemory,
              cancelled: Callable[[], bool] | None = None) -> RegionSnapshot:

@@ -143,9 +143,9 @@ class BreakdownTests(unittest.TestCase):
     def test_backend_propagates_explicit_app_and_breakdown(self):
         process=Mock(pid=99)
         process.create_time.return_value=1
-        process.name.return_value='renderer'
+        process._proc.name.return_value='renderer'
         process.uids.return_value=Mock(real=1000)
-        process.exe.return_value='/demo/renderer'
+        process._proc.exe.return_value='/demo/renderer'
         process.is_running.return_value=True
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
@@ -161,9 +161,9 @@ class BreakdownTests(unittest.TestCase):
     def test_backend_denied_rollup_does_not_invent_breakdown(self):
         process=Mock(pid=99)
         process.create_time.return_value=1
-        process.name.return_value='protected'
+        process._proc.name.return_value='protected'
         process.uids.return_value=Mock(real=1000)
-        process.exe.return_value='/demo/protected'
+        process._proc.exe.return_value='/demo/protected'
         process.memory_info.return_value=Mock(rss=10)
         process.is_running.return_value=True
         with patch.object(Path,'read_text',side_effect=PermissionError), \

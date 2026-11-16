@@ -102,8 +102,8 @@ class AccountingTests(unittest.TestCase):
     def test_process_exits_during_sample_is_not_retained(self):
         process = Mock(pid=99)
         process.create_time.return_value = 1
-        process.name.return_value = 'gone'
-        process.exe.return_value = '/demo/gone'
+        process._proc.name.return_value = 'gone'
+        process._proc.exe.return_value = '/demo/gone'
         process.uids.return_value = Mock(real=1000)
         process.memory_info.return_value = Mock(rss=10)
         process.is_running.return_value = False
@@ -114,8 +114,8 @@ class AccountingTests(unittest.TestCase):
         from unittest.mock import patch
         process = Mock(pid=99)
         process.create_time.return_value = 1
-        process.name.return_value = 'protected'
-        process.exe.return_value = '/demo/protected'
+        process._proc.name.return_value = 'protected'
+        process._proc.exe.return_value = '/demo/protected'
         process.uids.return_value = Mock(real=0)
         process.memory_info.return_value = Mock(rss=1234)
         process.is_running.return_value = True

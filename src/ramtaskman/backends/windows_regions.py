@@ -19,6 +19,7 @@ from ..models import ProcessMemory
 from ..regions import MemoryRegion, RegionSnapshot
 from ..region_provider import RegionCapabilities
 from ..messages import error_text, message
+from ..process_identity import process_executable
 
 _COMMIT, _RESERVE, _FREE = 0x1000, 0x2000, 0x10000
 _STATES = {_COMMIT: 'MEM_COMMIT', _RESERVE: 'MEM_RESERVE', _FREE: 'MEM_FREE'}
@@ -99,11 +100,8 @@ def _verify(process: ProcessMemory) -> str | None:
     current = psutil.Process(process.pid)
     if current.create_time() != process.started_at or not current.is_running():
         raise ProcessLookupError(message('tech_process_gone'))
-    try:
-        executable = current.exe()
-        return ntpath.normcase(executable) if executable else None
-    except (psutil.AccessDenied, PermissionError):
-        return None
+    executable = process_executable(current)
+    return ntpath.normcase(executable) if executable else None
 
 
 def _protection(value: int) -> str:

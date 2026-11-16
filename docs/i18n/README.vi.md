@@ -13,7 +13,7 @@ ramtaskman là trình theo dõi bộ nhớ thử nghiệm cho Linux, Windows và
 
 ![Multilingual dashboard](../images/multilingual.png)
 
-*Bảng điều khiển được dịch một phần sang sáu ngôn ngữ; chụp trên Linux bằng dữ liệu tổng hợp.*
+*Ảnh từ checkpoint dịch thuật trước, chụp trên Linux bằng dữ liệu tổng hợp. Văn bản của ứng dụng, bao gồm chân trang, CLI và các thông báo kỹ thuật do ứng dụng tạo ra, hiện có bằng mười ngôn ngữ.*
 
 ## Các chức năng chính
 
@@ -50,7 +50,7 @@ Dùng --once để lấy một mẫu hoặc --json để xuất JSON. Không dù
 
 Phím hữu ích: m đổi chế độ, g đổi ứng dụng/tiến trình, / tìm kiếm, f lọc, d xem chi tiết, r mở vùng nhớ, ? giải thích chỉ số và q thoát. Hướng dẫn kỹ thuật đầy đủ hiện bằng tiếng Ý.
 
-Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Bản dịch gồm bảng điều khiển, trợ giúp, chi tiết bộ đếm và so sánh A/B. Chân trang, CLI và một số thông báo kỹ thuật vẫn bằng tiếng Ý hoặc tiếng Anh. Checkpoint này chưa được kiểm thử lại.
+Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Văn bản của ứng dụng hiện có bằng mười ngôn ngữ: `--language` chọn ngôn ngữ cho giao diện, chân trang, trợ giúp, CLI và báo cáo văn bản `--once`. Các thông báo kỹ thuật do ứng dụng tạo ra cũng đã được dịch. Định danh và cấu trúc JSON được giữ ổn định; chi tiết từ hệ điều hành và văn bản trong các bản ghi đã lưu vẫn giữ ngôn ngữ gốc. Không có kiểm thử mới hay xác minh trên phần cứng nào được thực hiện cho checkpoint này. Hành vi và bố cục vẫn cần được kiểm tra; các bản dịch cũng cần người bản ngữ rà soát.
 
 ## Dự án thử nghiệm: hãy đọc số liệu cẩn thận
 

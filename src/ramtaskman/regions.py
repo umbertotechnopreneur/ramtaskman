@@ -15,6 +15,7 @@ import time
 import psutil
 
 from .models import ProcessMemory
+from .messages import error_text, message
 
 
 @dataclass
@@ -120,7 +121,7 @@ class _SmapsParser:
         if region is None:
             return None
         if 'size' in self.values and self.values['size'] != region.size:
-            raise ValueError('Size non coerente con gli indirizzi della regione')
+            raise ValueError(message('tech_smaps_size_mismatch'))
         for key in ('rss', 'pss', 'swap', 'swap_pss'):
             setattr(region, key, self.values.get(key))
         region.breakdown = {key: self.values.get(key) for key in _BREAKDOWN}
@@ -138,7 +139,7 @@ class _SmapsParser:
         if match:
             start, end = int(match[1], 16), int(match[2], 16)
             if start >= end or start < self.previous_end:
-                raise ValueError('intervalli smaps invertiti o sovrapposti')
+                raise ValueError(message('tech_smaps_overlap'))
             done = self.finish()
             path = match[7] or ''
             self.current = MemoryRegion(
@@ -148,17 +149,17 @@ class _SmapsParser:
             self.previous_end = end
             return done
         if self.current is None or _HEADER_START.match(line):
-            raise ValueError('intestazione smaps non valida')
+            raise ValueError(message('tech_smaps_header'))
         source, separator, payload = line.partition(':')
         if source == 'VmFlags' and separator:
             self.current.vm_flags = tuple(payload.split())
         elif source in _FIELDS:
             fields = payload.split()
             if not separator or len(fields) != 2 or not fields[0].isdigit() or fields[1] != 'kB':
-                raise ValueError(f'contatore smaps non valido: {source}')
+                raise ValueError(message('tech_smaps_counter_invalid', counter=source))
             key = _FIELDS[source]
             if key in self.values:
-                raise ValueError(f'contatore smaps duplicato: {source}')
+                raise ValueError(message('tech_smaps_counter_duplicate', counter=source))
             self.values[key] = int(fields[0]) * 1024
         # Other kernel/version-specific counters are deliberately ignored.
         return None
@@ -182,7 +183,7 @@ class LinuxRegionReader:
     def __init__(self, proc_root: Path = Path('/proc'), *, max_bytes: int = 32 << 20,
                  max_regions: int = 32768, max_seconds: float = 3.0) -> None:
         if max_bytes <= 0 or max_regions <= 0 or max_seconds <= 0:
-            raise ValueError('I limiti della scansione devono essere positivi')
+            raise ValueError(message('tech_scan_limits_positive'))
         self.proc_root = Path(proc_root)
         self.max_bytes = max_bytes
         self.max_regions = max_regions
@@ -193,7 +194,7 @@ class LinuxRegionReader:
         # A fresh Process avoids psutil's cached create_time across the read.
         current = psutil.Process(process.pid)
         if current.create_time() != process.started_at or not current.is_running():
-            raise ProcessLookupError('processo terminato o PID riutilizzato')
+            raise ProcessLookupError(message('tech_process_gone'))
         try:
             return current.exe() or None
         except (psutil.AccessDenied, PermissionError):
@@ -208,9 +209,9 @@ class LinuxRegionReader:
 
         def stop_reason() -> str | None:
             if cancelled is not None and cancelled():
-                return 'Scansione annullata'
+                return message('tech_cancelled')
             if time.monotonic() - started >= self.max_seconds:
-                return 'Limite di tempo raggiunto; campione parziale'
+                return message('tech_time_limit')
             return None
 
         try:
@@ -220,7 +221,7 @@ class LinuxRegionReader:
                 return snap
             before_exe = self._verify_identity(process)
             if before_exe and process.executable and before_exe != process.executable:
-                raise ProcessLookupError('immagine eseguibile cambiata')
+                raise ProcessLookupError(message('tech_executable_changed'))
             with (self.proc_root / str(process.pid) / 'smaps').open('rb') as stream:
                 while True:
                     snap.reason = stop_reason()
@@ -232,7 +233,7 @@ class LinuxRegionReader:
                     line = stream.readline(min(self.max_bytes - consumed + 1, 65537))
                     consumed += len(line)
                     if consumed > self.max_bytes or len(line) > 65536:
-                        snap.reason = 'Limite di lettura raggiunto; campione parziale'
+                        snap.reason = message('tech_read_limit')
                         snap.complete = False
                         break
                     if not line:
@@ -244,12 +245,12 @@ class LinuxRegionReader:
                     if region is not None:
                         snap.regions.append(region)
                         if len(snap.regions) >= self.max_regions:
-                            snap.reason = 'Limite di regioni raggiunto; campione parziale'
+                            snap.reason = message('tech_region_limit')
                             snap.complete = False
                             break
             after_exe = self._verify_identity(process)
             if before_exe and after_exe and before_exe != after_exe:
-                raise ProcessLookupError('immagine eseguibile cambiata')
+                raise ProcessLookupError(message('tech_executable_changed'))
             snap.executable_identity = before_exe if before_exe and before_exe == after_exe else None
             # A slow final read/identity check must not claim completion after
             # cancellation or a time-budget overrun.
@@ -257,15 +258,15 @@ class LinuxRegionReader:
             if reason:
                 snap.reason, snap.complete = reason, False
         except (PermissionError, psutil.AccessDenied):
-            snap.reason = 'smaps: accesso negato'
+            snap.reason = message('tech_smaps_denied')
             snap.complete = False
             snap.regions.clear()
         except (ProcessLookupError, FileNotFoundError, psutil.NoSuchProcess):
-            snap.reason = 'Processo terminato, PID riutilizzato o smaps non disponibile'
+            snap.reason = message('tech_process_smaps_missing')
             snap.complete = False
             snap.regions.clear()
         except (OSError, ValueError) as error:
-            snap.reason = f'smaps: {type(error).__name__}: {error}'
+            snap.reason = message('tech_smaps_error', type=type(error).__name__, reason=error_text(error))
             snap.complete = False
             snap.regions.clear()
         finally:

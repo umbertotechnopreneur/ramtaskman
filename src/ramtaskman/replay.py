@@ -3,6 +3,8 @@ from textual.app import App
 
 from .models import ProcessMemory
 from .region_screen import RegionScreen
+from .i18n import translate
+from .localized_screen import LocalizedScreen
 
 
 class ReplayApp(App):
@@ -12,6 +14,10 @@ class ReplayApp(App):
         super().__init__()
         self.current, self.baseline = current, baseline
         self.language = language
+        self.title = translate(language, 'replay_title')
+
+    def get_default_screen(self) -> LocalizedScreen:
+        return LocalizedScreen(id='_default')
 
     def on_mount(self) -> None:
         c = self.current

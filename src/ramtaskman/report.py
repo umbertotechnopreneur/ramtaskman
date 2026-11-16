@@ -2,8 +2,10 @@
 from dataclasses import asdict
 
 from rich.table import Table
+from rich.text import Text
 
 from .models import Snapshot
+from .i18n import translate
 
 METRICS = ('pss', 'uss', 'rss', 'swap', 'swap_pss')
 
@@ -46,15 +48,20 @@ def to_dict(snap: Snapshot) -> dict:
     return result
 
 
-def table(snap: Snapshot) -> Table:
-    result = Table(title=f'ramtaskman · {snap.platform} · applicazioni', highlight=False)
-    for label in ('Applicazione', 'Processi', 'PSS', 'USS', 'RSS', 'Swap', 'Letture', 'Gruppo'):
+def table(snap: Snapshot, language: str = 'it') -> Table:
+    """Display labels are localized; sort fields and JSON identifiers are stable."""
+    def tr(key: str) -> str:
+        return translate(language, key)
+
+    title = f'ramtaskman · {snap.platform} · {tr("applications").lower()}'
+    result = Table(title=title, highlight=False)
+    for label in (tr('report_application'), tr('processes'), 'PSS', 'USS', 'RSS', 'Swap',
+                  tr('readings'), tr('report_group')):
         result.add_column(label)
     sort_metric = 'uss' if 'pss' in snap.unsupported else 'pss'
     for app in sorted(snap.applications, key=lambda a: (a.total(sort_metric) is None, -(a.total(sort_metric) or 0))):
-        from rich.text import Text
         result.add_row(Text(app.name), str(len(app.processes)),
                        *(size(app.total(m)) for m in ('pss', 'uss', 'rss', 'swap')),
                        f'P {app.measured}/{len(app.processes)} U {sum(p.uss is not None for p in app.processes)}/{len(app.processes)}',
-                       app.grouping)
+                       Text(tr('group_' + app.grouping)))
     return result

@@ -13,7 +13,7 @@ ramtaskman é um monitor experimental de memória para Linux, Windows e macOS. N
 
 ![Multilingual dashboard](../images/multilingual.png)
 
-*Tradução parcial do painel em seis idiomas; capturas no Linux com dados sintéticos.*
+*Capturas de um checkpoint anterior de tradução, feitas no Linux com dados sintéticos. Os textos do aplicativo, incluindo o rodapé, a CLI e suas próprias mensagens técnicas, agora estão disponíveis em dez idiomas.*
 
 ## O que você pode fazer
 
@@ -50,7 +50,7 @@ Use --once ou --json para uma leitura única ou saída JSON. Não compartilhe .v
 
 Atalhos: m troca o modo, g alterna aplicativos/processos, / pesquisa, f filtra, d mostra detalhes, r abre regiões, ? explica as métricas e q sai. O guia técnico completo está atualmente em italiano.
 
-A tela principal pode ser aberta com `./run.sh --language pt` (Windows: `.\run.cmd --language pt`). A tradução inclui painel, ajuda, detalhes dos contadores e comparação A/B. O rodapé, a CLI e algumas mensagens técnicas ainda usam italiano ou inglês. Este checkpoint não foi testado novamente.
+Abra a tela principal com `./run.sh --language pt` (Windows: `.\run.cmd --language pt`). Os textos do aplicativo estão disponíveis em dez idiomas: `--language` seleciona o idioma da interface, do rodapé, da ajuda, da CLI e do relatório de texto `--once`. As mensagens técnicas produzidas pelo aplicativo também são traduzidas. Os identificadores e o esquema JSON permanecem estáveis; os detalhes do sistema operacional e os textos das capturas salvas mantêm o idioma original. Não foram executados novos testes nem verificações de hardware neste checkpoint. O comportamento e a disposição visual ainda precisam ser verificados, e as traduções aguardam revisão de falantes nativos.
 
 ## Experimental: interprete os números com cuidado
 

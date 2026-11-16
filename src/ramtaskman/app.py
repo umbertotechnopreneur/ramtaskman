@@ -10,7 +10,6 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Footer, Input, Markdown, Select, Static
 from textual.worker import get_current_worker
 
@@ -24,8 +23,10 @@ from .application_bar import application_uss_bar
 from .region_screen import RegionScreen
 from .widgets import spark
 from .i18n import LANGUAGES, load_help, translate
+from .localized_screen import LocalizedModalScreen, LocalizedScreen
+from .messages import error_text, localize, message
 
-class HelpScreen(ModalScreen):
+class HelpScreen(LocalizedModalScreen):
     BINDINGS = [Binding('escape,q,question_mark', 'app.pop_screen', 'Close')]
     DEFAULT_CSS = """
     HelpScreen { align: center middle; }
@@ -37,7 +38,7 @@ class HelpScreen(ModalScreen):
             yield Markdown(load_help(getattr(self.app, 'language', 'it')))
 
 
-class MemoryDetailScreen(ModalScreen):
+class MemoryDetailScreen(LocalizedModalScreen):
     BINDINGS = [Binding('escape,d,q', 'app.pop_screen', 'Close')]
     DEFAULT_CSS = """
     MemoryDetailScreen { align: center middle; }
@@ -78,7 +79,7 @@ class RamTaskManager(App):
                  language: str = 'it') -> None:
         super().__init__()
         if language not in LANGUAGES:
-            raise ValueError(f'Unsupported language: {language}')
+            raise ValueError(translate('it', 'invalid_language', code=language))
         self.language = language
         self.collector = collector
         self.interval = interval
@@ -104,6 +105,9 @@ class RamTaskManager(App):
 
     def tr(self, key: str, **values: object) -> str:
         return translate(self.language, key, **values)
+
+    def get_default_screen(self) -> LocalizedScreen:
+        return LocalizedScreen(id='_default')
 
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='dashboard'):
@@ -155,7 +159,8 @@ class RamTaskManager(App):
                     # A collector failure must clear stale values, not kill the
                     # worker: the next sampling cycle may recover on its own.
                     if not worker.is_cancelled:
-                        self.call_from_thread(self.show_error, f'{type(error).__name__}: {error}')
+                        reason = message('error_with_type', type=type(error).__name__, reason=error_text(error))
+                        self.call_from_thread(self.show_error, reason)
                 else:
                     if not worker.is_cancelled:
                         self.call_from_thread(self.apply, snap)
@@ -170,7 +175,7 @@ class RamTaskManager(App):
         for history in self.histories.values():
             history.append(None)
         for widget in ('device', 'system', 'charts', 'inspector'):
-            self.query_one(f'#{widget}', Static).update(Text(self.tr('sample_error', reason=reason), style='yellow'))
+            self.query_one(f'#{widget}', Static).update(Text(self.tr('sample_error', reason=localize(reason, self.language)), style='yellow'))
 
     def apply(self, snap: Snapshot) -> None:
         if self.paused:
@@ -222,7 +227,7 @@ class RamTaskManager(App):
                                       limit=size(windows.commit_limit), peak=size(windows.commit_peak)), style='magenta'))
             lines.append(Text(self.tr('windows_memory_note'), style='grey70'))
             if windows.reason:
-                lines.append(Text(windows.reason, style='yellow'))
+                lines.append(Text(localize(windows.reason, self.language), style='yellow'))
         return lines
 
     def render_dashboard(self) -> None:
@@ -242,7 +247,7 @@ class RamTaskManager(App):
         elif snapshot.platform == 'windows' and memory.windows_details is not None and not memory.windows_details.reason:
             content.append(Text(self.tr('ram_overlap_note'), style='grey70'))
         else:
-            reason = memory.segments_reason or self.tr('os_counters_missing')
+            reason = localize(memory.segments_reason, self.language) if memory.segments_reason else self.tr('os_counters_missing')
             content.append(Text(self.tr('os_breakdown_missing', reason=reason), style='yellow'))
 
         if not self.monitoring:
@@ -280,7 +285,7 @@ class RamTaskManager(App):
         if snapshot.unsupported:
             status.append('\n' + self.tr('unsupported_process_counters'), style='yellow')
         for note in memory.notes:
-            status.append('\n' + note, style='grey62')
+            status.append('\n' + localize(note, self.language), style='grey62')
         system.update(status)
         self.render_charts()
 
@@ -349,7 +354,7 @@ class RamTaskManager(App):
                 info = self.tr('group_' + row.grouping)
             else:
                 metric_source = 'smaps_rollup' if self.snap.platform == 'linux' else 'psutil: RSS / USS'
-                info = row.reason or metric_source
+                info = localize(row.reason, self.language) if row.reason else metric_source
             if grouped and not row.membership_complete:
                 info += ' · ' + self.tr('group_incomplete')
 
@@ -368,7 +373,9 @@ class RamTaskManager(App):
         self.selected_key = keys[index] if keys else None
         if keys:
             table.move_cursor(row=index, animate=False)
-        self.sub_title = f'{self.tr("processes" if self.process_view else "applications")} · {metric.upper()} · {self.tr("all") if self.show_all else "Top 30"}'
+        sort_label = self.tr('name_label') if metric == 'name' else metric.upper()
+        limit_label = self.tr('all' if self.show_all else 'top_thirty')
+        self.sub_title = f'{self.tr("processes" if self.process_view else "applications")} · {sort_label} · {limit_label}'
         self.sub_title += f' · {len(rows)}/{matching}/{total}'
         self.query_one('#inspector', Static).border_subtitle = self.sub_title
         status = self.tr('filter_status', shown=len(rows), matching=matching, total=total)
@@ -391,7 +398,7 @@ class RamTaskManager(App):
         counters = '  '.join(f'{m.upper()} {size(self.metric(row, m))}' for m in self.SORTS[:-1])
         processes = row.processes if grouped else [row]
         pids = ', '.join(str(p.pid) for p in processes[:20]) + (' …' if len(processes) > 20 else '')
-        reasons = sorted({p.reason for p in processes if p.reason})
+        reasons = sorted({localize(p.reason, self.language) for p in processes if p.reason})
         panel.update(Group(Text(counters, style='bold'),
                            breakdown_summary(row, self.language),
                            Text(f'PID: {pids} · ' + self.tr('enter_group' if grouped else 'enter_regions')),

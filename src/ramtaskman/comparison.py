@@ -7,6 +7,7 @@ from types import MappingProxyType
 from typing import Mapping
 
 from .capture_models import CaptureSnapshot, FrozenRegion, METRICS
+from .messages import message
 
 
 class ComparisonCancelled(Exception):
@@ -19,7 +20,7 @@ def _validate(regions: tuple[FrozenRegion, ...], cancelled: Callable[[], bool] |
         if index % 256 == 0 and cancelled is not None and cancelled():
             raise ComparisonCancelled()
         if r.start < 0 or r.end <= r.start or r.start < end:
-            raise ValueError('Regioni non ordinate, sovrapposte o non valide')
+            raise ValueError(message('tech_comparison_regions'))
         end = r.end
 
 
@@ -97,13 +98,13 @@ class Comparison:
 
 def _incompatibility(a: CaptureSnapshot, b: CaptureSnapshot) -> str | None:
     if not a.collection_session_id or a.collection_session_id != b.collection_session_id:
-        return 'Origine/sessione non verificabile o differente'
+        return message('tech_origin_mismatch')
     if (a.pid, a.started_at) != (b.pid, b.started_at):
-        return 'Identità del processo differente'
+        return message('tech_identity_mismatch')
     if (a.platform, a.backend_id, a.backend_version) != (b.platform, b.backend_id, b.backend_version):
-        return 'Piattaforma o provider incompatibile'
+        return message('tech_provider_mismatch')
     if not a.executable_identity or not b.executable_identity or a.executable_identity != b.executable_identity:
-        return 'Immagine eseguibile cambiata o non verificabile'
+        return message('tech_executable_mismatch')
     return None
 
 

@@ -8,6 +8,7 @@ import ctypes
 import sys
 
 from ..models import WindowsSystemMemory
+from ..messages import error_text, message
 
 
 class PerformanceInformation(ctypes.Structure):
@@ -21,7 +22,7 @@ class PerformanceInformation(ctypes.Structure):
 
 def read_windows_system() -> WindowsSystemMemory:
     if sys.platform != 'win32':
-        return WindowsSystemMemory(reason='GetPerformanceInfo disponibile solo su Windows')
+        return WindowsSystemMemory(reason=message('tech_windows_only'))
     try:
         api = ctypes.WinDLL('kernel32', use_last_error=True).K32GetPerformanceInfo
         api.argtypes = [ctypes.POINTER(PerformanceInformation), ctypes.c_uint32]
@@ -32,12 +33,12 @@ def read_windows_system() -> WindowsSystemMemory:
             raise ctypes.WinError(ctypes.get_last_error())
         return decode_performance_info(info)
     except (OSError, AttributeError, ValueError) as exc:
-        return WindowsSystemMemory(reason=f'GetPerformanceInfo non disponibile: {exc}')
+        return WindowsSystemMemory(reason=message('tech_performance_unavailable', reason=error_text(exc)))
 
 
 def decode_performance_info(info: PerformanceInformation) -> WindowsSystemMemory:
     if info.PageSize <= 0:
-        raise ValueError('dimensione pagina non valida')
+        raise ValueError(message('tech_page_size'))
     return WindowsSystemMemory(**{
         field: int(getattr(info, native)) * int(info.PageSize)
         for field, native in (

@@ -11,7 +11,6 @@ from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll, Vertical
-from textual.screen import ModalScreen
 from textual.widgets import DataTable, Footer, Input, Select, Static
 from textual.worker import get_current_worker
 
@@ -26,6 +25,8 @@ from .report import size
 from .capture_models import CaptureSnapshot, freeze_snapshot
 from .comparison import ComparisonCancelled, compare_captures
 from .region_provider import make_region_provider
+from .localized_screen import LocalizedModalScreen
+from .messages import error_text, localize, message
 
 COMPARISON_STATES = (
     'same_interval', 'metadata_changed', 'backing_changed', 'backing_unverified',
@@ -66,7 +67,7 @@ def filter_regions(regions: list[MemoryRegion], query: str, category: str, state
     return result
 
 
-class RegionScreen(ModalScreen):
+class RegionScreen(LocalizedModalScreen):
     BINDINGS = [
         Binding('escape', 'back', 'Indietro'), Binding('q', 'close', 'Chiudi'),
         Binding('r', 'refresh_regions', 'Aggiorna'), Binding('v', 'mode', 'RSS/Virtuale'),
@@ -140,6 +141,14 @@ class RegionScreen(ModalScreen):
     def comparison_label(self, status: str) -> str:
         """Translate known states, keeping unknown captured identifiers literal."""
         return self.tr('comparison_' + status) if status in COMPARISON_STATES else status
+
+    def metric_label(self, metric: str) -> str:
+        """Keep counter symbols while translating virtual-size/address labels."""
+        if metric == 'size':
+            return self.tr('region_column_virtual')
+        if metric == 'start':
+            return self.tr('region_column_address')
+        return metric.upper()
 
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='region-dashboard'):
@@ -235,16 +244,16 @@ class RegionScreen(ModalScreen):
             result = self.provider.read(self.process, cancelled=lambda: worker.is_cancelled)
             if (result.pid, result.started_at) != (self.process.pid, self.process.started_at):
                 result = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
-                                        reason='Identità del processo cambiata; campione scartato.', complete=False)
+                                        reason=message('region_identity_changed'), complete=False)
         except Exception as error:
             result = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
-                                    reason=f'Lettura non disponibile: {type(error).__name__}: {error}', complete=False)
+                                    reason=message('region_read_failed', type=type(error).__name__, reason=error_text(error)), complete=False)
         if not worker.is_cancelled:
             try:
                 captured = self._freeze(result, sequence)
             except Exception as error:
                 result = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
-                                        reason=f'Acquisizione non disponibile: {type(error).__name__}', complete=False)
+                                        reason=message('region_capture_failed', type=type(error).__name__), complete=False)
                 captured = self._freeze(result, sequence)
             if worker.is_cancelled:
                 return
@@ -267,7 +276,7 @@ class RegionScreen(ModalScreen):
             return
         if (snapshot.pid, snapshot.started_at) != (self.process.pid, self.process.started_at):
             snapshot = RegionSnapshot(self.process.pid, self.process.started_at, self.process.name, time(),
-                                      reason='Identità del processo cambiata; campione scartato.', complete=False)
+                                      reason=message('region_identity_changed'), complete=False)
             captured = None
         self.loading = False
         if captured is None:
@@ -301,7 +310,7 @@ class RegionScreen(ModalScreen):
             age = self.tr('region_age', age=f'{max(0, time()-snap.taken):.0f}')
             source = self.tr('region_fixed') if self.offline else self.tr('region_live', platform=self.platform)
             panel.update(Group(Text(f'{status} · {date} · {age} · {snap.sample_ms:.0f} ms', style='bold'),
-                               Text(snap.reason or source,
+                               Text(localize(snap.reason, getattr(self.app, 'language', 'it')) if snap.reason else source,
                                     style='yellow' if snap.reason else 'grey70')))
         else:
             panel.update(self.tr('region_none'))
@@ -354,12 +363,12 @@ class RegionScreen(ModalScreen):
             category = (self.tr('category_' + r.category) if r.category in CATEGORIES else r.category)
             table.add_row(f'{r.start:x}–{r.end:x}', Text(category),
                           size(r.size), size(r.rss), size(r.pss), size(r.uss), size(r.swap), Text(r.permissions),
-                          Text(r.path or '[anonima]'), key=f'{self.generation}|{r.key}')
+                          Text(r.path or '[' + self.tr('category_anonymous').lower() + ']'), key=f'{self.generation}|{r.key}')
         if self.selected:
             table.move_cursor(row=self.page_keys.index(self.selected), animate=False)
         partial = ' · ' + self.tr('partial_sample') if self.snapshot and not self.snapshot.complete else ''
         self.query_one('#region-count', Static).update(self.tr('region_count', shown=len(ordered),
-            total=len(regions), sort=sort.upper(), page=self.page + 1, pages=pages, partial=partial))
+            total=len(regions), sort=self.metric_label(sort), page=self.page + 1, pages=pages, partial=partial))
         self.render_map()
         self.render_inspector()
 
@@ -378,7 +387,7 @@ class RegionScreen(ModalScreen):
         title = self.tr('region_virtual' if self.mode == 'virtual' else 'region_resident_title')
         title += ' · ' + self.tr('region_shown', size=size(total))
         if self.zoom_key:
-            title += f' · zoom {len(regions)}/{len(self.rows)}'
+            title += f' · {self.tr("footer_zoom")} {len(regions)}/{len(self.rows)}'
         if self.mode == 'virtual' and regions:
             title += f' · 0x{regions[0].start:x}–0x{regions[-1].end:x} ({self.tr("region_end_exclusive")})'
         self.query_one('#region-map-title', Static).update(Text(title, style='bold'))
@@ -404,20 +413,23 @@ class RegionScreen(ModalScreen):
             panel.border_title = self.tr('region_detail')
             details.update(self.tr('region_no_match'))
             return
-        panel.border_title = Text(row.path or '[anonima]')
-        panel.border_subtitle = 'Tab: focus · ↑/↓/PgDn: scorri dettagli'
-        breakdown = ' · '.join(f'{label} {size(row.breakdown.get(key))}' for key, label in (
-            ('private_clean', 'Privata clean'), ('private_dirty', 'dirty'), ('shared_clean', 'Condivisa clean'), ('shared_dirty', 'dirty')))
+        panel.border_title = Text(row.path or '[' + self.tr('category_anonymous').lower() + ']')
+        panel.border_subtitle = self.tr('region_scroll_hint')
+        breakdown = ' · '.join(f'{self.tr(label)} {size(row.breakdown.get(key))}' for key, label in (
+            ('private_clean', 'detail_private_clean'), ('private_dirty', 'detail_private_dirty'),
+            ('shared_clean', 'detail_shared_clean'), ('shared_dirty', 'detail_shared_dirty')))
         origin = (f'offset 0x{row.offset:x} · inode {row.inode}' if self.platform == 'linux' else
-                  'offset / inode n/a su questo provider')
+                  self.tr('region_origin_missing'))
+        huge_pages = self.tr('region_hugetlb', private=size(row.breakdown.get('private_hugetlb')),
+                             shared=size(row.breakdown.get('shared_hugetlb')))
         details.update(Group(
             Text(f'0x{row.start:x}–0x{row.end:x} · {row.permissions} · {origin}', style='bold'),
-            Text(f'Virtuale {size(row.size)} · RSS {size(row.rss)} · PSS {size(row.pss)} · USS {size(row.uss)}'),
+            Text(f'{self.tr("region_column_virtual")} {size(row.size)} · RSS {size(row.rss)} · PSS {size(row.pss)} · USS {size(row.uss)}'),
             Text(f'Swap {size(row.swap)} · SwapPSS {size(row.swap_pss)} · {breakdown}'),
-            Text(f'Anonima {size(row.breakdown.get("anonymous"))} · THP {size(row.breakdown.get("anon_huge_pages"))} · '
-                 f'HugeTLB priv. {size(row.breakdown.get("private_hugetlb"))} / cond. {size(row.breakdown.get("shared_hugetlb"))}'),
+            Text(f'{self.tr("category_anonymous")} {size(row.breakdown.get("anonymous"))} · '
+                 f'THP {size(row.breakdown.get("anon_huge_pages"))} · {huge_pages}'),
             Text('VmFlags: ' + (' '.join(row.vm_flags) or 'n/a'), style='grey70'),
-            Text('Tipo = origine/euristica; file può includere pagine private CoW. THP incluso; HugeTLB separato. Nessun contenuto letto.', style='grey70')))
+            Text(self.tr('region_type_caution'), style='grey70')))
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         event.stop()
@@ -677,14 +689,15 @@ class RegionScreen(ModalScreen):
             self.render_comparison_inspector()
             return
         if not result.compatible:
-            self.query_one('#region-map-title', Static).update(Text(self.tr('comparison_unavailable', reason=result.reason), style='yellow'))
+            reason = localize(result.reason, getattr(self.app, 'language', 'it'))
+            self.query_one('#region-map-title', Static).update(Text(self.tr('comparison_unavailable', reason=reason), style='yellow'))
             self.query_one('#region-count', Static).update('')
             self.render_comparison_inspector()
             return
         metric = self.comparison_metric
         def signed(value):
             return 'n/a' if value is None else ('+' if value > 0 else '−' if value < 0 else '') + size(abs(value))
-        title = self.tr('comparison_total_delta', metric=metric.upper(), delta=signed(result.totals[metric]))
+        title = self.tr('comparison_total_delta', metric=self.metric_label(metric), delta=signed(result.totals[metric]))
         if result.reverse_order:
             title += ' · ' + self.tr('comparison_reverse')
         self.query_one('#region-map-title', Static).update(Text(title, style='bold'))
@@ -719,10 +732,11 @@ class RegionScreen(ModalScreen):
         for row in page_rows:
             region = (row.after or row.before)[0]
             table.add_row(f'{row.start:x}–{row.end:x}', Text(self.comparison_label(row.status)), size(row.value_a(metric)),
-                          size(row.value_b(metric)), signed(row.delta(metric)), Text(region.path or '[anonima]'),
+                          size(row.value_b(metric)), signed(row.delta(metric)),
+                          Text(region.path or '[' + self.tr('category_anonymous').lower() + ']'),
                           key=f'{self.generation}|{row.key}')
         self.query_one('#region-count', Static).update(self.tr('comparison_count', shown=len(self.comparison_rows),
-            total=len(result.rows), metric=metric.upper(), sort=sort, page=self.page + 1, pages=pages))
+            total=len(result.rows), metric=self.metric_label(metric), sort=sort, page=self.page + 1, pages=pages))
         if self.selected not in self.page_keys:
             self.selected = self.page_keys[0] if self.page_keys else None
         if self.selected:
@@ -741,8 +755,11 @@ class RegionScreen(ModalScreen):
         for metric in ('rss', 'pss', 'uss', 'swap', 'size'):
             delta = row.delta(metric)
             change = 'n/a' if delta is None else ('+' if delta > 0 else '−' if delta < 0 else '') + size(abs(delta))
-            lines.append(Text(f'{metric.upper()} · A {size(row.value_a(metric))} · B {size(row.value_b(metric))} · Δ {change}'))
-        changes = ', '.join(row.changes) or self.tr('comparison_no_changes')
+            lines.append(Text(f'{self.metric_label(metric)} · A {size(row.value_a(metric))} · B {size(row.value_b(metric))} · Δ {change}'))
+        change_labels = {'permissions': 'region_column_permissions', 'path': 'region_column_file',
+                         'category': 'region_column_type'}
+        changes = ', '.join(self.tr(change_labels[name]) if name in change_labels else name for name in row.changes)
+        changes = changes or self.tr('comparison_no_changes')
         lines.append(Text(self.tr('comparison_attributes', changes=changes), style='grey70'))
         lines.append(Text(self.tr('comparison_caution'), style='yellow'))
         details.update(Group(*lines))

@@ -13,7 +13,7 @@ ramtaskman est un moniteur de mémoire expérimental pour Linux, Windows et macO
 
 ![Multilingual dashboard](../images/multilingual.png)
 
-*Localisation partielle du tableau de bord en six langues ; captures Linux avec données fictives.*
+*Captures d’un précédent checkpoint de traduction, réalisées sous Linux avec des données fictives. Les textes de l’application, y compris le pied de page, la CLI et les messages techniques propres à l’application, sont désormais disponibles en dix langues.*
 
 ## Fonctions principales
 
@@ -50,7 +50,7 @@ Utilisez --once ou --json pour une mesure unique ou une sortie JSON. Ne partagez
 
 Touches utiles : m change de mode, g alterne applications/processus, / recherche, f filtre, d affiche les détails, r ouvre les régions, ? explique les métriques et q quitte. Le guide technique complet est actuellement en italien.
 
-Le tableau de bord peut être lancé avec `./run.sh --language fr` (Windows : `.\run.cmd --language fr`). La traduction couvre le tableau de bord, l’aide, les détails des compteurs et la comparaison A/B. Le pied de page, la CLI et certains messages techniques restent en italien ou en anglais. Ce checkpoint n’a pas été retesté.
+Lancez le tableau de bord avec `./run.sh --language fr` (Windows : `.\run.cmd --language fr`). Les textes de l’application sont disponibles en dix langues : `--language` choisit la langue de l’interface, du pied de page, de l’aide, de la CLI et du rapport textuel `--once`. Les messages techniques produits par l’application sont également traduits. Les identifiants et le schéma JSON restent stables ; les détails du système d’exploitation et les textes des captures enregistrées conservent leur langue d’origine. Aucun nouveau test ni contrôle sur matériel réel n’a été effectué pour ce checkpoint. Le comportement et la mise en page restent à vérifier, et les traductions attendent une relecture par des locuteurs natifs.
 
 ## Expérimental : interpréter les chiffres avec prudence
 

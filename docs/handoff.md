@@ -228,14 +228,13 @@ L'utente ha richiesto la pubblicazione GitHub e un README in dieci lingue, inclu
 cinese semplificato, coreano, francese, vietnamita e spagnolo. Le traduzioni sono
 state preparate con assistenza AI e richiedono revisione di madrelingua. Le immagini
 sono catture Textual su Linux con dati sintetici; il banner ritaglia sei dashboard.
-La dashboard ha una prima localizzazione per dieci lingue tramite `--language`;
-la UI non è ancora interamente tradotta: aiuto, dettagli, regioni, messaggi dei
-backend e altre parti richiedono lavoro. Il README dichiara questo limite.
+La dashboard aveva inizialmente una localizzazione parziale per dieci lingue
+tramite `--language`, estesa nei checkpoint successivi descritti sotto.
 
 La revisione successiva è documentata in [review del codice](review-codice-2026-11-16.md).
 I cataloghi sono ora file UTF-8 nel pacchetto, con verifiche delle chiavi e dei
 segnaposto. Tradotte anche le finestre di acquisizione, parti della mappa e del
-dettaglio; la localizzazione completa dell'app rimane aperta. La prima CI GitHub
+dettaglio. La prima CI GitHub
 è fallita nella verifica offline: il problema è stato riprodotto con una cache nuova
 e corretto localmente usando il lockfile per preparare l'ambiente isolato. I risultati
 Linux locali e la simulazione della cache non costituiscono un nuovo esito CI remoto.
@@ -251,6 +250,24 @@ dashboard è stato scomposto con un helper per i contatori OS e variabili interm
 per righe e copertura. Queste ultime modifiche non sono state testate, avviate,
 lintate o compilate: le verifiche precedenti non attestano questo checkpoint.
 I commit di questa consegna contengono `[skip ci]` per rispettare la sospensione
-dei test anche nel push. Restano da tradurre footer, CLI e diversi messaggi tecnici
-dei backend e dell'inspector. La prossima verifica dovrà coprire l'intero incremento,
-tenendo conto che in questa consegna i test sono stati sospesi su richiesta.
+dei test anche nel push.
+
+L'ulteriore richiesta completa footer, CLI e messaggi tecnici applicativi in tutte
+le dieci lingue. Le descrizioni dei binding sono tradotte su copie dei metadati di
+Textual, senza modificare le mappe condivise. `--language` seleziona anche l'aiuto
+della CLI, gli errori degli argomenti e il rapporto `--once`; le opzioni e lo schema
+JSON restano stabili.
+
+`messages.py` conserva chiave e parametri dei messaggi prodotti da collector,
+provider, confronto e lettore delle acquisizioni fino alla presentazione. Il valore
+rimane compatibile con `str`, con testo canonico italiano per modello e JSON. La
+ricostruzione esplicita supporta la copia profonda usata da `dataclasses.asdict`.
+I parametri che sono messaggi applicativi vengono tradotti ricorsivamente; nomi,
+percorsi, identificatori e dettagli delle eccezioni OS rimangono letterali. Il
+formato delle acquisizioni non cambia: un motivo riaperto da JSON resta il testo
+registrato, senza tentare di riconoscerlo o tradurlo retroattivamente.
+
+Anche questo incremento è stato solo riletto nel sorgente: nessun test, lint,
+build, cattura o avvio dell'app. La prossima verifica dovrà coprire l'intero
+incremento, inclusi footer, errori CLI, diagnostica annidata, esportazione JSON e
+risorse nel wheel. Le lingue richiedono ancora revisione di madrelingua.

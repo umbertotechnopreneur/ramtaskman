@@ -13,7 +13,7 @@ ramtaskman ist ein experimenteller Speichermonitor für Linux, Windows und macOS
 
 ![Multilingual dashboard](../images/multilingual.png)
 
-*Teilweise übersetzte Übersicht in sechs Sprachen; unter Linux mit synthetischen Daten aufgenommen.*
+*Aufnahmen eines früheren Übersetzungsstands, unter Linux mit synthetischen Daten erstellt. Die Anwendungstexte einschließlich Fußzeile, CLI und eigener technischer Meldungen sind jetzt in zehn Sprachen verfügbar.*
 
 ## Funktionen
 
@@ -50,7 +50,7 @@ Unter Windows im Projektordner mit Windows Terminal:
 
 Tasten: m wechselt den Modus, g Anwendungen/Prozesse, / sucht, f filtert, d zeigt Details, r öffnet Bereiche, ? erklärt die Werte und q beendet. Die vollständige technische Anleitung ist derzeit auf Italienisch.
 
-Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Übersetzung umfasst Übersicht, Hilfe, Zählerdetails und A/B-Vergleich. Fußzeile, CLI und einige technische Meldungen bleiben italienisch oder englisch. Dieser Checkpoint wurde nicht erneut getestet.
+Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Anwendungstexte sind in zehn Sprachen verfügbar: `--language` wählt die Sprache für Oberfläche, Fußzeile, Hilfe, CLI und den Textbericht `--once`. Auch technische Meldungen der Anwendung werden übersetzt. Kennungen und JSON-Schema bleiben stabil; Betriebssystemdetails und Texte aus gespeicherten Aufnahmen behalten ihre ursprüngliche Sprache. Für diesen Checkpoint wurden keine neuen Tests oder Hardwareprüfungen durchgeführt. Verhalten und Layout müssen noch geprüft werden; auch eine muttersprachliche Prüfung der Übersetzungen steht aus.
 
 ## Experimentell: Messwerte sorgfältig interpretieren
 

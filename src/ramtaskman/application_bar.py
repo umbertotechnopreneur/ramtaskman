@@ -20,7 +20,8 @@ def application_uss_bar(snapshot: Snapshot, language: str = 'it') -> MemoryBreak
     if not complete:
         reason = translate(language, 'uss_identity_incomplete' if not snapshot.enumeration_complete else 'uss_no_apps')
         return MemoryBreakdownBar('USS app', None, reason=coverage + ' · ' + reason, language=language)
-    parts = [MemoryPart(f'{index + 1}. {app.name} ({len(app.processes)} proc.)', str(index + 1), value,
+    process_label = translate(language, 'processes').lower()
+    parts = [MemoryPart(f'{index + 1}. {app.name} ({len(app.processes)} {process_label})', str(index + 1), value,
                         COLORS[index], 'black')
              for index, (app, value) in enumerate(complete[:10])]
     if len(complete) > 10:

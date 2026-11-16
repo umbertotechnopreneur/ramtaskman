@@ -7,6 +7,7 @@ import time
 
 from .models import ProcessMemory
 from .regions import LinuxRegionReader, RegionSnapshot
+from .messages import message
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,7 @@ class LinuxProvider:
 class UnsupportedProvider:
     def __init__(self, platform: str, explanation: str | None = None) -> None:
         self.capabilities = RegionCapabilities(platform, 'n/a', False,
-            explanation=explanation or f'Mappa per regioni non implementata su {platform}.')
+            explanation=explanation or message('tech_region_unsupported', platform=platform))
 
     def read(self, process: ProcessMemory,
              cancelled: Callable[[], bool] | None = None) -> RegionSnapshot:

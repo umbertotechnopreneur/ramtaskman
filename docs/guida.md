@@ -51,6 +51,27 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked ramtaskman
 Non pubblicato su PyPI: non usare `pip install ramtaskman` per ottenere questa copia.
 Non è necessaria l'elevazione dei privilegi; i processi protetti restano parzialmente visibili.
 
+## Lingua dell'interfaccia e dei rapporti
+
+`--language` seleziona italiano (`it`, predefinito), inglese (`en`), cinese
+semplificato (`zh`), coreano (`ko`), francese (`fr`), vietnamita (`vi`), spagnolo
+(`es`), portoghese (`pt`), tedesco (`de`) o giapponese (`ja`). Vale per dashboard,
+dettagli, regioni, footer, aiuto, messaggi applicativi e rapporto testuale:
+
+```bash
+./run.sh --language it
+./run.sh --language fr --help
+./run.sh --language ko --once
+```
+
+Su Windows usa le stesse opzioni con `.\run.cmd`. Le opzioni CLI, i simboli dei
+contatori e lo schema JSON conservano i propri identificatori. Nomi, percorsi e
+dettagli restituiti dal sistema operativo restano letterali. Le acquisizioni
+conservano i motivi nel testo registrato: riaprirle con un'altra lingua traduce
+l'interfaccia, non quei dati. Le traduzioni sono preparate con assistenza AI e
+richiedono revisione di madrelingua; quest'ultimo incremento non è stato eseguito
+né sottoposto a nuovi test, su richiesta dell'utente.
+
 ## Supporto per piattaforma
 
 | Funzione | Linux | Windows | macOS |

@@ -34,16 +34,12 @@ codice e i mock non sostituiscono prove hardware Windows/macOS.
 
 ## Da completare
 
-1. **Localizzazione ancora incompleta.** La richiesta copre tutta l'applicazione.
-   La revisione e il checkpoint successivo estendono la traduzione a barre USS,
-   parti della mappa, ricerca delle categorie, finestre di acquisizione, aiuto
-   esteso, descrizioni e note del dettaglio e gran parte del confronto A/B. Restano
-   testi in italiano o inglese nelle scorciatoie del footer, in alcuni messaggi
-   dell'inspector, nei messaggi di errore e nella CLI. I messaggi
-   generati dai backend e le stringhe di errore dei file di acquisizione richiedono
-   un contratto di codici separato dalla presentazione, per evitare di tradurre dati
-   arbitrari, percorsi o motivazioni provenienti dal sistema operativo. Le lingue
-   devono essere riviste da madrelingua prima di dichiararle complete.
+1. **Verifica della localizzazione.** I checkpoint successivi estendono i cataloghi
+   alle schermate e ai messaggi applicativi, inclusi footer, CLI e diagnostica.
+   Il contratto separa chiavi e parametri dalla presentazione, conservando i dati
+   arbitrari e i dettagli del sistema operativo. L'incremento recente non è stato
+   eseguito: restano da verificare layout, binding, errori CLI, serializzazione e
+   inclusione delle risorse. Le lingue devono essere riviste da madrelingua.
 2. **Prestazioni con carichi molto grandi.** Il confronto viene calcolato in worker,
    ma filtro, ordinamento e parte del rendering della tabella regioni sono ancora
    sincroni. Le misure e i limiti sono in [benchmark.md](benchmark.md); un eventuale
@@ -79,3 +75,10 @@ del confronto usano i cataloghi. L'helper dei contatori di piattaforma riduce il
 metodo principale del dashboard; le righe della tabella usano variabili esplicite
 per valori, copertura e identità. La correttezza di queste ultime modifiche dovrà
 essere verificata successivamente. I commit contengono `[skip ci]`.
+
+L'ultimo incremento completa le descrizioni del footer e i testi applicativi di
+CLI, rapporto `--once`, inspector, collector, provider, confronto e acquisizioni
+nelle dieci lingue. I messaggi strutturati mantengono un testo italiano compatibile
+con modello e JSON e vengono tradotti al confine della UI; i dettagli OS e i motivi
+già registrati nei file rimangono originali. Non sono stati eseguiti nuovi test,
+lint, build, catture o avvii dell'app neppure per questo incremento.

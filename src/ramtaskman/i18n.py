@@ -24,11 +24,11 @@ CATALOG = {language: _load_catalog(language) for language in LANGUAGES}
 def load_help(language: str) -> str:
     """Read the bundled guide for the language chosen by the owning app."""
     if language not in LANGUAGES:
-        raise ValueError(f'Unsupported language: {language}')
+        raise ValueError(translate('it', 'invalid_language', code=language))
     resource = files('ramtaskman').joinpath('locales', f'help.{language}.md')
     return resource.read_text(encoding='utf-8')
 
 
-def translate(language: str, key: str, **values: object) -> str:
+def translate(language: str, key: str, /, **values: object) -> str:
     """Format a translated message without interpreting interpolated data as markup."""
     return CATALOG[language][key].format(**values)

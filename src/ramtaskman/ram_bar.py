@@ -9,6 +9,7 @@ from rich.cells import cell_len
 from .models import SystemMemory
 from .i18n import translate
 from .report import size
+from .messages import message
 
 # key, legend, in-bar label, color, contrasting text
 SEGMENTS = (
@@ -25,12 +26,17 @@ FALLBACK = (
     ('used', 'In uso', 'In uso', '#3b82f6', 'white'),
     ('available', 'Disponibile', 'Disponibile', '#30363d', 'white'),
 )
+_LABEL_KEYS = {
+    'anon': 'anonymous', 'file_cache': 'file_cache_label', 'shmem': 'shared', 'buffers': 'buffers',
+    'slab_reclaimable': 'slab_reclaimable_label', 'slab_unreclaimable': 'slab_unreclaimable_label',
+    'other': 'other', 'free': 'free', 'used': 'in_use', 'available': 'available',
+}
 
 
 def cell_widths(values: list[int], total: int, width: int) -> list[int]:
     """Largest remainders: all columns accounted for, no data renormalization."""
     if total <= 0 or any(value < 0 for value in values) or sum(values) != total:
-        raise ValueError('Partizione RAM incoerente')
+        raise ValueError(message('ram_partition_error'))
     width = max(0, width)
     cells = [value * width // total for value in values]
     order = sorted(range(len(values)), key=lambda i: -(values[i] * width % total))
@@ -66,9 +72,7 @@ class SystemRamBar:
             return result
         for (spec, _), count in zip(parts, cells):
             key, _, short, color, foreground = spec
-            translated_short = {'free': 'free', 'used': 'in_use', 'available': 'available'}
-            if key in translated_short:
-                short = translate(self.language, translated_short[key])
+            short = translate(self.language, _LABEL_KEYS[key])
             label_cells = cell_len(short)
             if count >= label_cells + 2:
                 padding = count - label_cells
@@ -82,10 +86,7 @@ class SystemRamBar:
         result = Text()
         for spec, value in self.parts():
             key, label, _, color, _ = spec
-            labels = {'anon': 'anonymous', 'shmem': 'shared', 'buffers': 'buffers',
-                      'other': 'other', 'free': 'free', 'used': 'in_use', 'available': 'available'}
-            if key in labels:
-                label = translate(self.language, labels[key])
+            label = translate(self.language, _LABEL_KEYS[key])
             if result:
                 result.append('  ')
             result.append('■ ', style=color)

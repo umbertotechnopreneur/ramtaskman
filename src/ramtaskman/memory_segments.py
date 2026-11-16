@@ -8,6 +8,8 @@ https://github.com/torvalds/linux/blob/master/fs/proc/meminfo.c
 """
 from __future__ import annotations
 
+from .messages import message
+
 
 _REQUIRED = ('MemTotal', 'MemFree', 'AnonPages', 'Cached', 'Shmem', 'Buffers',
              'SReclaimable', 'SUnreclaim')
@@ -23,11 +25,11 @@ def partition_meminfo(fields: dict[str, int]) -> tuple[dict[str, int], str | Non
     """
     missing = [name for name in _REQUIRED if name not in fields]
     if missing:
-        return {}, 'Ripartizione RAM non disponibile: campi meminfo assenti (' + ', '.join(missing) + ')'
+        return {}, message('tech_partition_missing', fields=', '.join(missing))
     if any(fields[name] < 0 for name in _REQUIRED) or fields['MemTotal'] == 0:
-        return {}, 'Ripartizione RAM non disponibile: contatori meminfo negativi o totale nullo'
+        return {}, message('tech_partition_bad_totals')
     if fields['Cached'] < fields['Shmem']:
-        return {}, 'Ripartizione RAM non disponibile: campione incoerente (Cached < Shmem)'
+        return {}, message('tech_partition_cached_shmem')
     segments = dict(
         anon=fields['AnonPages'],
         file_cache=fields['Cached'] - fields['Shmem'],
@@ -38,7 +40,7 @@ def partition_meminfo(fields: dict[str, int]) -> tuple[dict[str, int], str | Non
     )
     known = sum(segments.values()) + fields['MemFree']
     if known > fields['MemTotal']:
-        return {}, 'Ripartizione RAM non disponibile: somma dei contatori superiore a MemTotal'
+        return {}, message('tech_partition_excess')
     segments['other'] = fields['MemTotal'] - known
     segments['free'] = fields['MemFree']
     return segments, None

@@ -6,6 +6,7 @@ import ntpath
 import psutil
 
 from ..models import ProcessMemory, SystemMemory
+from ..messages import message
 
 
 class PsutilBackend:
@@ -17,9 +18,9 @@ class PsutilBackend:
         if platform == 'windows':
             self.source += '; Windows GetPerformanceInfo'
         self.unsupported = {
-            'pss': 'PSS non esposta da psutil su questo sistema',
-            'swap': 'swap per processo non esposta; commit/pagefile non equivale a swap residente su disco',
-            'swap_pss': 'SwapPSS non esposta da psutil su questo sistema',
+            'pss': message('tech_pss_unsupported'),
+            'swap': message('tech_swap_unsupported'),
+            'swap_pss': message('tech_swappss_unsupported'),
         }
 
     def read_system(self) -> SystemMemory:
@@ -31,13 +32,13 @@ class PsutilBackend:
             swap_total, swap_used = swap.total, swap.used
         except (OSError, psutil.Error, NotImplementedError):
             swap_total = swap_used = None
-            notes.append('Swap/pagefile globale non disponibile tramite psutil')
+            notes.append(message('tech_global_swap_unavailable'))
         if self.name == 'windows':
             from .windows_system import read_windows_system
             details = read_windows_system()
-            notes.append('Swap globale: pagefile da psutil; non commit privato dei processi')
+            notes.append(message('tech_global_swap_windows'))
         else:
-            notes.append('Disponibile da psutil: free + inactive; diversa da Memory Pressure di Activity Monitor')
+            notes.append(message('tech_available_macos'))
         return SystemMemory(total=m.total, available=m.available, free=m.free,
                             cache=None, slab=None, swap_total=swap_total, swap_used=swap_used,
                             notes=notes, windows_details=details)
@@ -71,16 +72,16 @@ class PsutilBackend:
             basic = process.memory_info()
             row.rss = basic.rss
         except psutil.AccessDenied:
-            row.reason = 'RSS: accesso negato'
+            row.reason = message('tech_rss_denied')
         try:
             full = process.memory_full_info()
             row.rss = full.rss
             row.uss = getattr(full, 'uss', None)
             # A successful full read also recovers RSS after a denied basic read.
-            row.reason = 'USS non disponibile da psutil' if row.uss is None else None
+            row.reason = message('tech_uss_missing') if row.uss is None else None
         except (psutil.AccessDenied, OSError, NotImplementedError):
-            uss_reason = 'USS: accesso negato o lettura non disponibile'
-            row.reason = f'{row.reason}; {uss_reason}' if row.reason else uss_reason
+            uss_reason = message('tech_uss_denied')
+            row.reason = message('tech_reasons_join', first=row.reason, second=uss_reason) if row.reason else uss_reason
         # Do not use full.vms, full.private or full.pagefile as resident private RAM or swap.
         # PSS / Swap / SwapPSS intentionally stay None: backend capabilities explain why.
         return row if process.is_running() else None

@@ -33,9 +33,9 @@ nel lavoro di tutti i giorni.
 
 ![Sei schermate della dashboard in italiano, inglese, cinese, coreano, francese e vietnamita](docs/images/multilingual.png)
 
-*Schermate catturate su Linux con dati sintetici. La localizzazione dell’app è in corso:
-dashboard, aiuto, dettaglio dei contatori e confronto A/B hanno testi nelle dieci lingue.
-Footer, CLI e alcuni messaggi tecnici restano in italiano o inglese.*
+*Schermate di un precedente checkpoint di localizzazione, catturate su Linux con dati
+sintetici. I testi dell’app, inclusi footer, CLI e messaggi tecnici applicativi, sono
+ora disponibili nelle dieci lingue.*
 
 ## Uno sguardo dentro
 
@@ -75,11 +75,15 @@ su Linux/macOS, oppure `.\run.cmd --once` e `.\run.cmd --json` su Windows.
 Il progetto non è pubblicato su PyPI. Non condividere la stessa `.venv` tra sistemi:
 ricreala localmente dopo aver copiato il progetto.
 
-La dashboard supporta una traduzione parziale selezionabile con `--language`, per
-esempio `./run.sh --language zh`. Codici disponibili: `it`, `en`, `zh` (cinese
-semplificato), `ko`, `fr`, `vi`, `es`, `pt`, `de`, `ja`. Su Windows usa ad esempio
-`.\run.cmd --language ko`. Footer, CLI e alcuni messaggi dei backend richiedono
-ancora traduzioni. Questo checkpoint non è stato sottoposto a nuovi test.
+I testi dell’app sono disponibili in dieci lingue: `--language` seleziona la lingua
+dell’interfaccia, del footer, dell’aiuto, della CLI e del report testuale `--once`,
+per esempio `./run.sh --language zh --once`. Codici disponibili: `it`, `en`, `zh`
+(cinese semplificato), `ko`, `fr`, `vi`, `es`, `pt`, `de`, `ja`. Su Windows usa ad
+esempio `.\run.cmd --language ko`. Anche i messaggi tecnici prodotti dall’app sono
+tradotti; identificatori e schema JSON restano stabili, mentre dettagli del sistema
+operativo e testi delle acquisizioni conservano la lingua originale. Per questo
+checkpoint non sono stati eseguiti nuovi test né verifiche hardware. Comportamento
+e layout restano da verificare; le traduzioni attendono una revisione madrelingua.
 
 **Scorciatoie utili:** `m` cambia modalità, `g` alterna app e processi, `/` cerca,
 `f` filtra, `d` mostra i dettagli, `r` apre le regioni, `?` spiega le metriche e

@@ -18,7 +18,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = ('app.tcss', 'capture_io.py', 'capture_models.py', 'comparison.py',
             'delta_bar.py', 'region_provider.py', 'region_screen.py', 'replay.py',
-            'backends/windows_regions.py', *(f'locales/{language}.json' for language in
+            'backends/windows_regions.py', 'messages.py', 'localized_screen.py',
+            *(f'locales/{language}.json' for language in
                 ('it', 'en', 'zh', 'ko', 'fr', 'vi', 'es', 'pt', 'de', 'ja')),
             *(f'locales/help.{language}.md' for language in
                 ('it', 'en', 'zh', 'ko', 'fr', 'vi', 'es', 'pt', 'de', 'ja')))

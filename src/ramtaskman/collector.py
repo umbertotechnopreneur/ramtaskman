@@ -12,6 +12,7 @@ from pathlib import Path
 import psutil
 
 from .models import Snapshot
+from .messages import message
 
 
 def make_backend(platform: str | None = None, proc: Path = Path('/proc')):
@@ -22,7 +23,7 @@ def make_backend(platform: str | None = None, proc: Path = Path('/proc')):
     if platform in ('win32', 'darwin'):
         from .backends.psutil_backend import PsutilBackend
         return PsutilBackend('windows' if platform == 'win32' else 'macos')
-    raise RuntimeError(f'Sistema non supportato: {platform}. Supportati: Linux, Windows, macOS.')
+    raise RuntimeError(message('tech_unsupported_system', platform=platform))
 
 
 class Collector:
@@ -31,16 +32,16 @@ class Collector:
                  slow_seconds: float = .25) -> None:
         if max_measurements is not None and (isinstance(max_measurements, bool) or
                                              not isinstance(max_measurements, int) or max_measurements < 1):
-            raise ValueError('Il budget delle misure deve essere un intero positivo')
+            raise ValueError(message('tech_budget_positive'))
         self.backend = backend if backend is not None else make_backend(proc=proc)
         if max_measurements is not None and not (callable(getattr(self.backend, 'read_identity', None)) and
                                                  callable(getattr(self.backend, 'read_metrics', None))):
-            raise ValueError('Il backend non supporta il campionamento a budget')
+            raise ValueError(message('tech_budget_unsupported'))
         self.max_measurements = max_measurements
         if (selected_priority or measurement_backoff) and max_measurements is None:
-            raise ValueError('Priorità e backoff richiedono un budget di misure')
+            raise ValueError(message('tech_budget_required'))
         if not math.isfinite(slow_seconds) or slow_seconds <= 0:
-            raise ValueError('La soglia lenta deve essere positiva')
+            raise ValueError(message('tech_slow_positive'))
         self.selected_priority = selected_priority
         self.measurement_backoff = measurement_backoff
         self.slow_seconds = slow_seconds
@@ -66,7 +67,7 @@ class Collector:
         streak = self._backoff.get(key, (0, 0, ''))[0] + 1
         delay = 0 if streak < 2 else min(8, 2 ** min(streak - 2, 3))
         self._backoff[key] = (streak, self._cycle + delay + 1,
-                              'accesso negato' if denied else 'lettura lenta')
+                              message('tech_denied') if denied else message('tech_slow_read'))
 
     def sample(self, cancelled: Callable[[], bool] | None = None) -> Snapshot:
         start = time.monotonic()
@@ -170,9 +171,9 @@ class Collector:
                 interrupted = True
             if (row.pid, row.started_at) not in chosen or interrupted:
                 backoff = self._backoff.get((row.pid, row.started_at)) if self.measurement_backoff else None
-                row.reason = ('Misura rinviata: scansione annullata' if interrupted else
-                              f'Misura rinviata: backoff ({backoff[2]})' if backoff and backoff[1] > self._cycle else
-                              'Misura rinviata: budget di campionamento')
+                row.reason = (message('tech_deferred_cancelled') if interrupted else
+                              message('tech_deferred_backoff', reason=backoff[2]) if backoff and backoff[1] > self._cycle else
+                              message('tech_deferred_budget'))
                 rows.append(row)
                 continue
             key = (row.pid, row.started_at)
@@ -191,7 +192,7 @@ class Collector:
                 self._record_cost(key, time.monotonic() - measurement_start, True)
                 row.rss = row.pss = row.uss = row.swap = row.swap_pss = None
                 row.breakdown = {}
-                row.reason = 'Misura: accesso negato'
+                row.reason = message('tech_measurement_denied')
                 rows.append(row)
             except (psutil.NoSuchProcess, psutil.ZombieProcess, FileNotFoundError, ProcessLookupError):
                 skipped += 1

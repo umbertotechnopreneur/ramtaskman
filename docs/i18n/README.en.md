@@ -13,7 +13,7 @@ ramtaskman is an experimental RAM monitor for Linux, Windows and macOS. It grew 
 
 ![Multilingual dashboard](../images/multilingual.png)
 
-*Partial dashboard localization in six languages; captured on Linux with synthetic data.*
+*Screenshots from an earlier localization checkpoint, captured on Linux with synthetic data. App text, including the footer, CLI and app-owned technical messages, is now available in ten languages.*
 
 ## What you can do
 
@@ -50,7 +50,7 @@ Use --once or --json for a single reading or JSON output. Do not share a .venv b
 
 Useful keys: m switches modes, g toggles apps/processes, / searches, f filters, d opens details, r opens regions, ? explains metrics and q quits. The complete technical guide is currently in Italian.
 
-The dashboard can be started with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). Localization includes the dashboard, help, counter details and A/B comparison. Footer labels, CLI and some technical messages still use Italian or English. This checkpoint has not been retested.
+Start the dashboard with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). App text is available in ten languages: `--language` selects the language of the interface, footer, help, CLI and human-readable `--once` report. App-owned technical messages are translated too. Identifiers and the JSON schema remain stable; operating-system details and text from saved captures retain their original language. No new tests or hardware checks were run for this checkpoint. Behavior and layout still need checking, and the translations need native-speaker review.
 
 ## Experimental: read the numbers carefully
 

@@ -89,7 +89,7 @@ def detail_bars(row: ApplicationMemory | ProcessMemory, language: str = 'it') ->
         parts = []
         for key, _, short, color, foreground in specs:
             label = tr(_PART_LABELS[key])
-            short_label = tr(_SHORT_LABELS[key]) if key in _SHORT_LABELS else short
+            short_label = tr(_SHORT_LABELS[key]) if key in _SHORT_LABELS else label
             value = sum(proc.breakdown[key] for proc in complete)
             parts.append(MemoryPart(label, short_label, value, color, foreground))
 

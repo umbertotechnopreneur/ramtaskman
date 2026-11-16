@@ -9,15 +9,16 @@ from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Static
 from textual.worker import get_current_worker
 
 from .capture_io import CaptureFormatError, load_capture, save_capture
 from .i18n import translate
+from .localized_screen import LocalizedModalScreen
+from .messages import error_text, localize
 
 
-class _LocalizedCaptureScreen(ModalScreen):
+class _LocalizedCaptureScreen(LocalizedModalScreen):
     """Use the owning app's language without changing the process locale."""
 
     def tr(self, key: str, **values: object) -> str:
@@ -104,7 +105,7 @@ class CaptureSaveScreen(_LocalizedCaptureScreen):
         except FileExistsError:
             result = 'exists'
         except (CaptureFormatError, OSError, ValueError) as error:
-            result = str(error)
+            result = error_text(error)
         else:
             result = None
         if not worker.is_cancelled:
@@ -122,7 +123,8 @@ class CaptureSaveScreen(_LocalizedCaptureScreen):
             self.query_one('#capture-overwrite', Button).display = True
             self.query_one('#capture-error', Static).update(self.tr('file_exists'))
         elif result is not None:
-            self.query_one('#capture-error', Static).update(Text(result, style='yellow'))
+            language = getattr(self.app, 'language', 'it')
+            self.query_one('#capture-error', Static).update(Text(localize(result, language), style='yellow'))
         else:
             self.dismiss(True)
 
@@ -203,7 +205,8 @@ class CaptureOpenScreen(_LocalizedCaptureScreen):
             return
         self.busy = False
         if isinstance(result, Exception):
-            self.query_one('#capture-open-error', Static).update(Text(str(result), style='yellow'))
+            language = getattr(self.app, 'language', 'it')
+            self.query_one('#capture-open-error', Static).update(Text(localize(error_text(result), language), style='yellow'))
         else:
             self.dismiss(result)
 

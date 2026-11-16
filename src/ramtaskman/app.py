@@ -16,12 +16,14 @@ from textual.worker import get_current_worker
 
 from .collector import Collector
 from .models import ApplicationMemory, ProcessMemory, Snapshot
-from .filters import MEMORY_FILTERS, RowFilter, owner_options
-from .detail import GROUPING_LABELS, breakdown_summary, detail_content
+from .filters import RowFilter, owner_options
+from .detail import breakdown_summary, detail_content
 from .report import size
 from .ram_bar import SystemRamBar
+from .application_bar import application_uss_bar
 from .region_screen import RegionScreen
 from .widgets import spark
+from .i18n import LANGUAGES, translate
 
 HELP_MD = """\
 # ramtaskman · come leggere i numeri
@@ -47,6 +49,11 @@ recuperabile, quindi non è un ulteriore segmento. I dettagli clean/dirty e PSS 
 processo restano nella vista **d**, perché si sovrappongono ai contatori globali.
 Se mancano campi o il campione è incoerente, la barra mostra in uso/disponibile e il
 motivo della ripartizione assente. La legenda riporta anche categorie inferiori a un carattere.
+
+**Barra USS app:** prime 10 app con USS completa e altre app complete. La scala è la
+somma USS delle sole app complete del campione, non la RAM totale. Numeri e colori
+rimandano alla legenda. I gruppi parziali sono esclusi e la copertura è dichiarata.
+Il raggruppamento segue la tabella; i segmenti non indicano indirizzi fisici.
 
 **Windows/macOS:** USS e RSS da psutil; PSS, Swap e SwapPSS per processo non sono
 esposti e restano n/a. Su Windows il private commit/pagefile NON è swap su disco.
@@ -157,8 +164,12 @@ class RamTaskManager(App):
     CHARTS = tuple(CHART_COLORS)
 
     def __init__(self, collector: Collector | None = None, interval: float = 2.0,
-                 processes: bool = False, live: bool = True, region_reader=None) -> None:
+                 processes: bool = False, live: bool = True, region_reader=None, *, slim: bool = True,
+                 language: str = 'it') -> None:
         super().__init__()
+        if language not in LANGUAGES:
+            raise ValueError(f'Unsupported language: {language}')
+        self.language = language
         self.collector = collector
         self.interval = interval
         self.live = live
@@ -171,7 +182,7 @@ class RamTaskManager(App):
         self.chart_idx = -1
         self.paused = False
         self.show_all = False
-        self.monitoring = False
+        self.monitoring = slim
         self.selected_key: str | None = None
         self.rows: dict[str, ProcessMemory | ApplicationMemory] = {}
         self.histories = {name: deque(maxlen=60) for name in self.CHARTS}
@@ -181,26 +192,30 @@ class RamTaskManager(App):
         self._updating_filters = False
         self._row_generation = 0
 
+    def tr(self, key: str, **values: object) -> str:
+        return translate(self.language, key, **values)
+
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='dashboard'):
             yield Static('Sampling RAM counters...', id='device')
             yield Static('Sampling system memory...', id='system')
             with Vertical(id='history'):
                 with Horizontal(id='chart-controls'):
-                    yield Static('Charts', id='chart-label')
-                    yield Select([('All charts', -1), *((n, i) for i, n in enumerate(self.CHARTS))],
+                    yield Static(self.tr('charts'), id='chart-label')
+                    yield Select([(self.tr('all_charts'), -1), *((n, i) for i, n in enumerate(self.CHARTS))],
                                  value=-1, allow_blank=False, compact=True, id='chart-mode')
-                    yield Static('Click to choose · c cycles', id='chart-hint')
+                    yield Static(self.tr('chart_hint'), id='chart-hint')
                 yield Static(id='charts')
                 yield Static(id='chart-note')
         with Vertical(id='filters'):
-            yield Input(placeholder='Cerca nome, eseguibile o PID esatto · Invio: tabella · Esc: reset', id='search')
+            yield Input(placeholder=self.tr('search'), id='search')
             with Horizontal(id='filter-controls'):
-                yield Select([('Tutti gli utenti', 'all')], value='all', allow_blank=False,
+                yield Select([(self.tr('all_users'), 'all')], value='all', allow_blank=False,
                              compact=True, id='user-filter')
-                yield Select(MEMORY_FILTERS, value='all', allow_blank=False,
+                yield Select([(self.tr('all_memory'), 'all'), (self.tr('with_swap'), 'swap'),
+                              (self.tr('partial_data'), 'partial')], value='all', allow_blank=False,
                              compact=True, id='memory-filter')
-                yield Button('Reset', id='reset-filters', compact=True)
+                yield Button(self.tr('reset'), id='reset-filters', compact=True)
             yield Static(id='filter-status')
         yield DataTable(id='procs', cursor_type='row', zebra_stripes=True)
         yield Static('', id='inspector')
@@ -208,8 +223,11 @@ class RamTaskManager(App):
 
     def on_mount(self) -> None:
         table = self.query_one('#procs', DataTable)
-        for col in ('PID / N', 'Application / Process', 'User / UID', 'PSS', 'USS', 'RSS', 'Swap', 'SwapPSS', 'PSS%', 'Letture', "What's inside"):
-            table.add_column(col, key=col)
+        for key, col in (('pid', 'PID / N'), ('app', self.tr('app_process')), ('user', self.tr('user')),
+                         ('pss', 'PSS'), ('uss', 'USS'), ('rss', 'RSS'), ('swap', 'Swap'),
+                         ('swap_pss', 'SwapPSS'), ('pss_pct', 'PSS%'), ('readings', self.tr('readings_col')),
+                         ('inside', self.tr('inside'))):
+            table.add_column(col, key=key)
         table.focus()
         if self.live:
             self.poll()
@@ -264,28 +282,58 @@ class RamTaskManager(App):
         if not self.snap:
             return
         s, m = self.snap, self.snap.system
-        bar = SystemRamBar(m)
-        top = [Text(f'RAM del sistema · {s.platform} · ' + ('Ripartizione OS' if bar.detailed else 'Disponibilità'), style='bold'), bar, bar.legend(),
-               Text(f'Totale {size(m.total)} · Uso netto {size(m.used)} · Disponibile {size(m.available)}', style='bold')]
+        bar = SystemRamBar(m, self.language)
+        top = [Text(f'{self.tr("system_ram")} · {s.platform} · ' + self.tr('os_breakdown' if bar.detailed else 'availability'), style='bold'), bar, bar.legend(),
+               Text(f'{self.tr("total")} {size(m.total)} · {self.tr("net_used")} {size(m.used)} · {self.tr("available")} {size(m.available)}', style='bold')]
         if bar.detailed:
-            top.append(Text('Uso netto = totale − disponibile · Altro = residuo contabile.', style='grey70'))
+            top.append(Text(self.tr('net_explanation'), style='grey70'))
+        elif s.platform == 'windows' and m.windows_details is not None and not m.windows_details.reason:
+            top.append(Text('Barra RAM: in uso / disponibile. Cache, pool e commit sono viste sovrapposte, '
+                            'non segmenti da sommare.', style='grey70'))
         else:
             top.append(Text('Ripartizione OS n/a: ' + (m.segments_reason or 'contatori non esposti da questo backend') +
                             '. Barra: in uso / disponibile.', style='yellow'))
         if not self.monitoring:
+            apps_bar = application_uss_bar(s)
+            top.extend((apps_bar.heading(), apps_bar, apps_bar.legend(),
+                        Text('Scala: sola USS delle app complete; esclude gruppi parziali, memoria condivisa e kernel. '
+                             'Gruppi come in tabella; i blocchi non sono indirizzi fisici.', style='grey70')))
+            if m.linux_details is not None:
+                linux = m.linux_details
+                top.append(Text(f'Cache Linux {size(m.cache)} · Slab kernel {size(m.slab)}', style='cyan'))
+                top.append(Text(f'Commit Linux {size(linux.commit_total)} / limite {size(linux.commit_limit)}', style='magenta'))
+                top.append(Text('Cache e slab si sovrappongono alle categorie della barra. Commit: memoria virtuale '
+                                'impegnata, non RAM residente né swap; il limite dipende dalle impostazioni overcommit.',
+                                style='grey70'))
+                missing = [name for name, value in (('Committed_AS', linux.commit_total),
+                                                      ('CommitLimit', linux.commit_limit),
+                                                      ('cache', m.cache), ('Slab', m.slab)) if value is None]
+                if missing:
+                    top.append(Text('Contatori meminfo non disponibili: ' + ', '.join(missing), style='yellow'))
+            if m.windows_details is not None:
+                w = m.windows_details
+                top.append(Text(f'Cache di sistema {size(w.system_cache)} · Pool kernel paginabile {size(w.kernel_paged)} · '
+                                f'non paginabile {size(w.kernel_nonpaged)}', style='cyan'))
+                top.append(Text(f'Commit {size(w.commit_total)} / {size(w.commit_limit)} · '
+                                f'Picco dal boot {size(w.commit_peak)}', style='magenta'))
+                top.append(Text('Cache include standby e working set di sistema; si sovrappone alla RAM disponibile. '
+                                'Pool paginabile: allocazione, non sola residenza. Commit: impegno di memoria virtuale, '
+                                'non RAM residente né swap. Letture sequenziali.', style='grey70'))
+                if w.reason:
+                    top.append(Text(w.reason, style='yellow'))
             top.append(Text(f'PSS visible {size(s.visible_sum("pss"))}  USS visible {size(s.visible_sum("uss"))}  '
                             f'Swap {size(m.swap_used)} / {size(m.swap_total)}'))
         panel = self.query_one('#device', Static)
-        panel.border_title = ('Slim monitoring' if self.monitoring else 'Full diagnostics') + (' · PAUSED' if self.paused else '')
+        panel.border_title = self.tr('slim' if self.monitoring else 'full') + (f' · {self.tr("paused")}' if self.paused else '')
         panel.update(Group(*top))
         system = self.query_one('#system', Static)
-        system.border_title = 'System (OS-reported)'
+        system.border_title = self.tr('system')
         cpu = 'n/a' if m.cpu_percent is None else f'{m.cpu_percent:.0f}%'
         psi = 'n/a' if m.pressure_percent is None else f'{m.pressure_percent:.2f}%'
         status = Text(f'CPU {cpu}   Memory pressure (PSI some, 10s) {psi}\n')
-        status.append(f'Letture PSS {s.measured}/{len(s.processes)} · USS {s.coverage("uss")}/{len(s.processes)} · {len(s.applications)} gruppi · '
-                      f'non raccolti/terminati {s.skipped} · scan {s.sample_ms:.0f} ms\n')
-        status.append('Totali dei processi visibili parziali. n/a = dato non disponibile.', style='yellow')
+        status.append(f'{self.tr("readings")} PSS {s.measured}/{len(s.processes)} · USS {s.coverage("uss")}/{len(s.processes)} · {len(s.applications)} {self.tr("groups")} · '
+                      f'{self.tr("skipped")} {s.skipped} · {self.tr("scan")} {s.sample_ms:.0f} ms\n')
+        status.append(self.tr('partial'), style='yellow')
         if s.measurement_attempted is not None:
             status.append(f'\nBudget: {s.measurement_attempted} misure tentate · {s.measurement_deferred} rinviate · '
                           f'identità {"complete" if s.enumeration_complete else "incomplete: totali app n/a"}', style='yellow')
@@ -320,7 +368,7 @@ class RamTaskManager(App):
             grid.add_row(*cells[start:start + columns])
         self.query_one('#charts', Static).update(grid)
         self.query_one('#chart-note', Static).update(
-            f'Last 60 samples · 0–100% · blank = no reading · pause between scans {self.interval:g}s')
+            self.tr('chart_note', interval=f'{self.interval:g}'))
 
     @staticmethod
     def metric(row: ProcessMemory | ApplicationMemory, metric: str) -> int | None:
@@ -352,9 +400,9 @@ class RamTaskManager(App):
             pss = self.metric(row, 'pss')
             count = len(row.processes) if grouped else 1
             measured = row.measured if grouped else int(row.pss is not None)
-            info = GROUPING_LABELS[row.grouping] if grouped else (row.reason or ('smaps_rollup' if self.snap.platform == 'linux' else 'psutil: RSS / USS'))
+            info = self.tr('group_' + row.grouping) if grouped else (row.reason or ('smaps_rollup' if self.snap.platform == 'linux' else 'psutil: RSS / USS'))
             if grouped and not row.membership_complete:
-                info += ' · membri incompleti'
+                info += ' · ' + self.tr('group_incomplete')
             table.add_row(str(count) + ' procs' if grouped else str(row.pid), Text(row.name),
                           Text(str(row.uid) if row.uid is not None else (row.user or 'n/a')),
                           *(size(self.metric(row, m)) for m in self.SORTS[:-1]),
@@ -365,10 +413,10 @@ class RamTaskManager(App):
         self.selected_key = keys[index] if keys else None
         if keys:
             table.move_cursor(row=index, animate=False)
-        self.sub_title = f'{"Processes" if self.process_view else "Applications"} · {metric.upper()} · {"All" if self.show_all else "Top 30"}'
+        self.sub_title = f'{self.tr("processes" if self.process_view else "applications")} · {metric.upper()} · {self.tr("all") if self.show_all else "Top 30"}'
         self.sub_title += f' · {len(rows)}/{matching}/{total}'
         self.query_one('#inspector', Static).border_subtitle = self.sub_title
-        status = f'{len(rows)} mostrate · {matching} corrispondenti / {total} righe · grafici: sistema intero'
+        status = self.tr('filter_status', shown=len(rows), matching=matching, total=total)
         if self.row_filter.memory == 'swap' and 'swap' in self.snap.unsupported:
             status = 'Swap per processo non disponibile su questo sistema; filtro senza risultati.'
         self.query_one('#filter-status', Static).update(Text(status))
@@ -381,7 +429,7 @@ class RamTaskManager(App):
         panel = self.query_one('#inspector', Static)
         if row is None:
             panel.border_title = 'Inspector'
-            panel.update('Nessun risultato. /: cerca · f: filtri · Esc: reset o ritorno alle app.' if self.row_filter.active else 'Nessuna riga disponibile.')
+            panel.update('Nessun risultato. /: cerca · f: filtri · Esc: reset o ritorno alle app.' if self.row_filter.active else self.tr('no_rows'))
             return
         grouped = isinstance(row, ApplicationMemory)
         panel.border_title = Text(row.name)
@@ -391,9 +439,9 @@ class RamTaskManager(App):
         reasons = sorted({p.reason for p in processes if p.reason})
         panel.update(Group(Text(counters, style='bold'),
                            breakdown_summary(row),
-                           Text(f'PID: {pids} · ' + ('Invio: esplora i processi del gruppo.' if grouped else 'Invio / r: regioni · Esc: applicazioni.')),
-                           Text((GROUPING_LABELS[row.grouping] + ': ' + (row.grouping_id or 'n/a')) if grouped else ('Eseguibile: ' + (row.executable or 'n/a')), style='grey62'),
-                           Text(' · '.join(reasons) if reasons else 'Fonte: metadati del kernel; nessuna lettura dei contenuti della memoria.',
+                           Text(f'PID: {pids} · ' + self.tr('enter_group' if grouped else 'enter_regions')),
+                           Text((self.tr('group_' + row.grouping) + ': ' + (row.grouping_id or 'n/a')) if grouped else (self.tr('executable') + ': ' + (row.executable or 'n/a')), style='grey62'),
+                           Text(' · '.join(reasons) if reasons else self.tr('source'),
                                 style='yellow' if reasons else 'grey62')))
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
@@ -504,6 +552,7 @@ class RamTaskManager(App):
         if self.snap is None:
             return
         options = owner_options(self.snap.processes)
+        options[0] = (self.tr('all_users'), 'all')
         # Keep a selected user in the selector even if their processes have all exited.
         if self.row_filter.owner != 'all' and self.row_filter.owner not in dict((v, k) for k, v in options):
             old_label = next((label for label, value in self._owner_options if value == self.row_filter.owner),

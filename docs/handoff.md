@@ -17,7 +17,8 @@ risultato del confronto immutabile; la tabella è paginata, con verifiche presta
 Un ramtaskman Python/Textual con la stessa UI terminale di gputaskman di Scott Hanselman,
 ma dedicato a RAM per applicazione, PSS, USS e swap. L’utente ha poi richiesto
 esplicitamente il supporto multipiattaforma: Linux, Windows e macOS. Preparare una base chiara sulla quale
-possa proseguire un agente meno potente. Nessun cambio di framework, nessuna pubblicazione.
+possa proseguire un agente meno potente. Nessun cambio di framework; l'utente ha poi
+richiesto esplicitamente la pubblicazione del repository GitHub.
 
 ## Stato Git alla consegna
 
@@ -152,7 +153,7 @@ originali, perciò font, terminale e tema possono cambiare la resa.
   implementato. In WSL si misura solo la VM Linux, non l’host Windows.
 - Non equiparare somme PSS/RSS alla RAM usata globale o somme swap alla swap globale.
 - Le scansioni non sono atomiche; niente stime presentate come misure.
-- Niente pubblicazione PyPI/GitHub, automazioni release, kill o elevazione automatica.
+- Nessuna pubblicazione PyPI o automazione release richiesta; niente kill o elevazione automatica.
 
 ## Validazione iniziale
 
@@ -207,3 +208,26 @@ Prove native preparate in [verifica Windows](verifica-windows.md) e
 sincrona e i limiti delle misure. Audit psutil in [audit contatori](audit-contatori-piattaforma.md).
 
 Vedi README per i comandi di test, build e cattura e il piano per gli incrementi ancora aperti.
+
+## Allineamento Linux alle modifiche Windows
+
+16 novembre 2026: le modifiche presenti nella copia di lavoro condividono anche su Linux
+la partenza Slim, la barra USS delle app complete e il contesto RAM/USS del PID nella
+mappa live. Full diagnostics Linux espone inoltre `Committed_AS` e `CommitLimit` da
+meminfo, cache e slab, distinguendoli dai contatori Windows. Campi opzionali assenti
+restano n/a/null. Le schermate sono state generate con fixture sintetiche; i test UI
+coprono anche Linux a 160×48 e 80×24. Su Linux sono stati eseguiti i launcher `--once`
+e `--json`, la build e una lettura completa delle regioni del solo processo di prova
+(64 regioni, circa 3,9 ms, misura puntuale). La suite locale ha eseguito 184 test,
+con 3 test nativi Windows saltati. Nessuna nuova verifica hardware Windows o macOS è
+stata eseguita in questa sessione.
+
+## Pubblicazione e lingue
+
+L'utente ha richiesto la pubblicazione GitHub e un README in dieci lingue, inclusi
+cinese semplificato, coreano, francese, vietnamita e spagnolo. Le traduzioni sono
+state preparate con assistenza AI e richiedono revisione di madrelingua. Le immagini
+sono catture Textual su Linux con dati sintetici; il banner ritaglia sei dashboard.
+La dashboard ha una prima localizzazione per dieci lingue tramite `--language`;
+la UI non è ancora interamente tradotta: aiuto, dettagli, regioni, messaggi dei
+backend e altre parti richiedono lavoro. Il README dichiara questo limite.

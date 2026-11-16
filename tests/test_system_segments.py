@@ -93,3 +93,22 @@ class SystemSegmentTests(unittest.TestCase):
         system = SystemMemory(100, 60, 20, None, None, None, None)
         self.assertEqual(system.segments, {})
         self.assertIsNone(system.segments_reason)
+
+    def test_linux_commit_and_missing_optional_fields_remain_distinct(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fields = meminfo_fields()
+            fields.update(Committed_AS=0, CommitLimit=2000*K)
+            def read():
+                (root/'meminfo').write_text(''.join(f'{name}: {value//K} kB\n' for name, value in fields.items()))
+                return read_system(root)
+            system = read()
+            data = to_dict(Snapshot(1, system, []))['system']
+            self.assertEqual(data['linux_details'], {'commit_total': 0, 'commit_limit': 2000*K})
+            del fields['Committed_AS'], fields['CommitLimit'], fields['Slab'], fields['Cached']
+            system = read()
+            self.assertIsNone(system.linux_details.commit_total)
+            self.assertIsNone(system.linux_details.commit_limit)
+            self.assertIsNone(system.cache)
+            self.assertIsNone(system.slab)
+            self.assertEqual(json.loads(json.dumps(to_dict(Snapshot(1, system, []))))['system']['linux_details']['commit_total'], None)

@@ -34,6 +34,7 @@ class UITests(unittest.IsolatedAsyncioTestCase):
 
     async def test_pause_charts_help_and_slim(self):
         app = RamTaskManager(live=False)
+        self.assertTrue(app.monitoring)
         async with app.run_test(size=(160, 48)) as pilot:
             app.apply(fixture())
             await pilot.pause()
@@ -44,7 +45,7 @@ class UITests(unittest.IsolatedAsyncioTestCase):
             await pilot.press('p', 'c', 'm')
             await pilot.pause()
             self.assertFalse(app.paused)
-            self.assertTrue(app.monitoring)
+            self.assertFalse(app.monitoring)
             self.assertEqual(app.query_one('#chart-mode', Select).value, 0)
             await pilot.press('question_mark')
             await pilot.pause()

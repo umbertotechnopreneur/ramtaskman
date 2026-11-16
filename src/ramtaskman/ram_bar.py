@@ -4,8 +4,10 @@ from __future__ import annotations
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.measure import Measurement
 from rich.text import Text
+from rich.cells import cell_len
 
 from .models import SystemMemory
+from .i18n import translate
 from .report import size
 
 # key, legend, in-bar label, color, contrasting text
@@ -39,8 +41,9 @@ def cell_widths(values: list[int], total: int, width: int) -> list[int]:
 
 class SystemRamBar:
     """Rich renderable uses the actual panel width, including after resize."""
-    def __init__(self, memory: SystemMemory) -> None:
+    def __init__(self, memory: SystemMemory, language: str = 'it') -> None:
         self.memory = memory
+        self.language = language
 
     @property
     def detailed(self) -> bool:
@@ -63,14 +66,18 @@ class SystemRamBar:
             return result
         for (spec, _), count in zip(parts, cells):
             _, _, short, color, foreground = spec
-            caption = short.center(count) if count >= len(short) + 2 else ' ' * count
+            caption = short.center(count) if count >= cell_len(short) + 2 else ' ' * count
             result.append(caption, style=f'{foreground} on {color}')
         return result
 
     def legend(self) -> Text:
         result = Text()
         for spec, value in self.parts():
-            _, label, _, color, _ = spec
+            key, label, _, color, _ = spec
+            labels = {'anon': 'anonymous', 'shmem': 'shared', 'buffers': 'buffers',
+                      'other': 'other', 'free': 'free', 'used': 'in_use', 'available': 'available'}
+            if key in labels:
+                label = translate(self.language, labels[key])
             if result:
                 result.append('  ')
             result.append('■ ', style=color)

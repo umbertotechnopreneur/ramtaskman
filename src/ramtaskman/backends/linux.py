@@ -5,7 +5,7 @@ from pathlib import Path
 
 import psutil
 
-from ..models import ProcessMemory, SystemMemory
+from ..models import LinuxSystemMemory, ProcessMemory, SystemMemory
 from ..memory_segments import partition_meminfo
 from ..grouping import CGROUP_LIMIT, application_cgroup
 
@@ -69,14 +69,17 @@ def read_system(proc: Path) -> SystemMemory:
     m = parse_kib((proc / 'meminfo').read_text())
     # Available overlaps reclaimable cache; never draw them as disjoint buckets.
     segments, segments_reason = partition_meminfo(m)
+    cache_fields = ('Cached', 'Buffers', 'SReclaimable', 'Shmem')
+    cache = (max(0, m['Cached'] + m['Buffers'] + m['SReclaimable'] - m['Shmem'])
+             if all(field in m for field in cache_fields) else None)
     return SystemMemory(
         total=m['MemTotal'], available=m['MemAvailable'], free=m['MemFree'],
-        cache=max(0, m.get('Cached', 0) + m.get('Buffers', 0)
-                  + m.get('SReclaimable', 0) - m.get('Shmem', 0)),
-        slab=m.get('Slab', 0), swap_total=m['SwapTotal'],
+        cache=cache, slab=m.get('Slab'), swap_total=m['SwapTotal'],
         swap_used=m['SwapTotal'] - m['SwapFree'],
         pressure_percent=read_pressure(proc / 'pressure' / 'memory'),
         segments=segments, segments_reason=segments_reason,
+        linux_details=LinuxSystemMemory(commit_total=m.get('Committed_AS'),
+                                        commit_limit=m.get('CommitLimit')),
     )
 
 

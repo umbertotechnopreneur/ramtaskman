@@ -14,6 +14,8 @@ class PsutilBackend:
             raise ValueError(platform)
         self.name = platform
         self.source = f'{platform}: psutil virtual_memory, swap_memory, memory_full_info'
+        if platform == 'windows':
+            self.source += '; Windows GetPerformanceInfo'
         self.unsupported = {
             'pss': 'PSS non esposta da psutil su questo sistema',
             'swap': 'swap per processo non esposta; commit/pagefile non equivale a swap residente su disco',
@@ -22,6 +24,7 @@ class PsutilBackend:
 
     def read_system(self) -> SystemMemory:
         m = psutil.virtual_memory()
+        details = None
         notes = []
         try:
             swap = psutil.swap_memory()
@@ -30,12 +33,14 @@ class PsutilBackend:
             swap_total = swap_used = None
             notes.append('Swap/pagefile globale non disponibile tramite psutil')
         if self.name == 'windows':
+            from .windows_system import read_windows_system
+            details = read_windows_system()
             notes.append('Swap globale: pagefile da psutil; non commit privato dei processi')
         else:
             notes.append('Disponibile da psutil: free + inactive; diversa da Memory Pressure di Activity Monitor')
         return SystemMemory(total=m.total, available=m.available, free=m.free,
                             cache=None, slab=None, swap_total=swap_total, swap_used=swap_used,
-                            notes=notes)
+                            notes=notes, windows_details=details)
 
     def read_identity(self, process: psutil.Process) -> ProcessMemory | None:
         started = process.create_time()

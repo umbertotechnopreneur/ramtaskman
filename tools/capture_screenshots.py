@@ -1,6 +1,7 @@
 """Capture deterministic SYNTHETIC fixtures; no local process names or paths."""
 import asyncio
 import os
+from time import time
 
 # CI/tool shells may disable color; captures intentionally show the terminal palette.
 os.environ.pop("NO_COLOR", None)
@@ -9,6 +10,7 @@ import sys
 from pathlib import Path
 
 from ramtaskman.app import RamTaskManager
+from ramtaskman.models import LinuxSystemMemory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tests'))
 from test_memory import fixture
@@ -25,6 +27,8 @@ class DemoReader(FakeReader):
 
 def demo_snapshot():
     snap = fixture()
+    snap.taken = time()
+    snap.system.linux_details = LinuxSystemMemory(commit_total=7 << 30, commit_limit=20 << 30)
     for proc in snap.processes[:2]:
         proc.app_id = '/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.example.Browser-42.scope'
         proc.app_name = 'org.example.Browser'
@@ -46,6 +50,11 @@ async def main():
             app.apply(demo_snapshot())
         await pilot.pause()
         app.save_screenshot('overview.svg', path=str(output))
+        await pilot.press('m')
+        await pilot.pause()
+        app.save_screenshot('full-diagnostics.svg', path=str(output))
+        await pilot.press('m')
+        await pilot.pause()
         await pilot.press('enter')
         await pilot.pause()
         app.save_screenshot('processes.svg', path=str(output))
@@ -79,6 +88,13 @@ async def main():
         await pilot.press('escape', 'question_mark')
         await pilot.pause()
         app.save_screenshot('help.svg', path=str(output))
+    # Each panel is a real Textual render of the same synthetic sample in its locale.
+    for language in ('it', 'en', 'zh', 'ko', 'fr', 'vi'):
+        localized = RamTaskManager(live=False, language=language)
+        async with localized.run_test(size=(160, 48)) as pilot:
+            localized.apply(demo_snapshot())
+            await pilot.pause()
+            localized.save_screenshot(f'language-{language}.svg', path=str(output))
     print('Synthetic screenshots: captures/ (not live measurements).')
 
 

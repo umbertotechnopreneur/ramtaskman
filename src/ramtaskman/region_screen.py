@@ -16,6 +16,8 @@ from textual.widgets import DataTable, Footer, Input, Select, Static
 from textual.worker import get_current_worker
 
 from .models import ProcessMemory
+from .application_bar import process_uss_bar
+from .ram_bar import SystemRamBar
 from .region_map import CATEGORIES, RegionMap
 from .delta_bar import DeltaBar
 from .regions import LinuxRegionReader, MemoryRegion, RegionSnapshot
@@ -75,8 +77,9 @@ class RegionScreen(ModalScreen):
     PAGE_SIZE = 250
     DEFAULT_CSS = """
     RegionScreen { layout: vertical; background: $background; }
-    #region-dashboard { height: auto; max-height: 38%; }
+    #region-dashboard { height: auto; max-height: 50%; }
     #region-summary { height: auto; border: round $accent; padding: 0 1; }
+    #region-memory { height: auto; border: round $success; padding: 0 1; }
     #region-map-panel { height: auto; border: round $secondary; padding: 0 1; }
     #region-map-title, #region-legend, #region-map-note { height: auto; }
     #region-map-note { color: $text-muted; }
@@ -116,8 +119,8 @@ class RegionScreen(ModalScreen):
         self.snapshot: RegionSnapshot | None = None
         self.rows: dict[str, MemoryRegion] = {}
         self.selected: str | None = None
-        self.mode = 'resident'
-        self.sort_index = 0
+        self.mode = 'virtual' if platform == 'windows' else 'resident'
+        self.sort_index = 3 if platform == 'windows' else 0
         self.zoom_key: str | None = None
         self.generation = 0
         self.request_id = 0
@@ -129,6 +132,7 @@ class RegionScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with VerticalScroll(id='region-dashboard'):
             yield Static(id='region-summary')
+            yield Static(id='region-memory')
             with Vertical(id='region-map-panel'):
                 yield Static(id='region-map-title')
                 yield RegionMap(id='region-map')
@@ -260,6 +264,7 @@ class RegionScreen(ModalScreen):
     def render_summary(self) -> None:
         if not self.is_mounted:
             return
+        self.render_memory_context()
         panel = self.query_one('#region-summary', Static)
         panel.border_title = Text(f'Regioni · {self.process.name} · PID {self.process.pid}')
         if self.loading:
@@ -280,6 +285,27 @@ class RegionScreen(ModalScreen):
                                     style='yellow' if snap.reason else 'grey70')))
         else:
             panel.update('Nessun campione disponibile.')
+
+    def render_memory_context(self) -> None:
+        panel = self.query_one('#region-memory', Static)
+        panel.display = not self.offline
+        if self.offline:
+            return
+        panel.border_title = Text(f'RAM del sistema e consumo · {self.process.name} · PID {self.process.pid}')
+        snap = getattr(self.app, 'snap', None)
+        if snap is None:
+            panel.update(Text('Campione RAM non disponibile.', style='yellow'))
+            return
+        bar = SystemRamBar(snap.system)
+        process_bar = process_uss_bar(snap, self.process)
+        current = next((p for p in snap.processes if p.key == self.process.key), None)
+        panel.update(Group(bar, bar.legend(), process_bar, process_bar.legend(),
+                           Text(f'PID {self.process.pid} · USS {size(current.uss if current else None)} · '
+                                f'RSS {size(current.rss if current else None)} · '
+                                f'campione RAM: età {max(0, time() - snap.taken):.0f}s', style='bold'),
+                           Text(process_bar.reason or process_bar.note, style='yellow' if process_bar.reason else 'grey70'),
+                           Text('Quote di consumo, non indirizzi fisici. Sotto: intervalli virtuali del solo PID; '
+                                'campione separato su richiesta.', style='grey70')))
 
     def render_regions(self) -> None:
         if not self.is_mounted:
@@ -330,6 +356,8 @@ class RegionScreen(ModalScreen):
         title = ('Spazio virtuale mappato' if self.mode == 'virtual' else 'RAM residente RSS') + f' · {size(total)} nelle regioni mostrate'
         if self.zoom_key:
             title += f' · zoom {len(regions)}/{len(self.rows)}'
+        if self.mode == 'virtual' and regions:
+            title += f' · 0x{regions[0].start:x}–0x{regions[-1].end:x} (fine esclusa)'
         self.query_one('#region-map-title', Static).update(Text(title, style='bold'))
         legend = Text()
         for category in dict.fromkeys(r.category for r in regions):
@@ -339,6 +367,9 @@ class RegionScreen(ModalScreen):
         self.query_one('#region-legend', Static).update(legend)
         note = ('Indirizzi virtuali crescenti · │ buchi esclusi dalla scala.' if self.mode == 'virtual' else
                 'Area proporzionale a RSS · ordine virtuale; le pagine condivise possono ripetersi.')
+        selected = self.rows.get(self.selected)
+        if selected is not None:
+            note += f' ◆ PID {self.process.pid}: 0x{selected.start:x}–0x{selected.end:x} (fine esclusa).'
         self.query_one('#region-map-note', Static).update(note + ' ◆ selezione · regioni <1 cella: tabella.')
 
     def render_inspector(self) -> None:

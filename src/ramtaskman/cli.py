@@ -9,6 +9,7 @@ from rich.console import Console
 from . import __version__
 from .collector import Collector
 from .report import size, table, to_dict
+from .i18n import LANGUAGES
 
 
 def interval(value: str) -> float:
@@ -38,6 +39,8 @@ def main() -> int:
     output.add_argument('--compare', nargs=2, metavar=('A', 'B'), help='confronta due file, ciascuno con una rilevazione')
     parser.add_argument('--interval', type=interval, default=2.0, help='pausa tra rilevazioni (default: 2 s)')
     parser.add_argument('--processes', action='store_true', help='apri la UI sui singoli processi')
+    parser.add_argument('--language', choices=LANGUAGES, default='it', metavar='LINGUA',
+                        help='lingua della dashboard: it, en, zh, ko, fr, vi, es, pt, de, ja (traduzione parziale)')
     parser.add_argument('--max-measurements', type=positive_integer, default=None,
                         help='budget opzionale: numero massimo di processi misurati per ciclo')
     parser.add_argument('--selected-priority', action='store_true',
@@ -94,7 +97,7 @@ def main() -> int:
                     console.print(note)
         else:
             from .app import RamTaskManager
-            RamTaskManager(collector, args.interval, args.processes).run()
+            RamTaskManager(collector, args.interval, args.processes, language=args.language).run()
     except (RuntimeError, OSError, KeyError) as error:
         print(f'ramtaskman: {error}', file=sys.stderr)
         return 1

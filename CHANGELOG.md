@@ -1,6 +1,6 @@
 # Modifiche
 
-## Non ancora pubblicato — 0.1.0
+## In sviluppo — 0.1.0
 
 - Derivazione terminale RAM da gputaskman, con contatori di sistema e processi e
   raggruppamento applicativo; attribuzione e licenza upstream nel README.
@@ -11,7 +11,10 @@
 - Budget opzionale di campionamento, paginazione delle tabelle e benchmark locali.
 - Procedure riproducibili di verifica Windows e macOS, ancora da eseguire sui sistemi nativi.
 - Verifica locale della distribuzione isolata e configurazione CI multipiattaforma;
-  nessuna pubblicazione o esecuzione remota implicita.
+  nessun rilascio PyPI.
+- README in dieci lingue e localizzazione iniziale della dashboard selezionabile con
+  `--language`. La traduzione della UI è parziale: dettagli, regioni e messaggi
+  richiedono ulteriori traduzioni e verifiche.
 
 Stato e limiti delle misure, della compatibilità e delle prove si trovano nel README
-e nel piano di sviluppo. La versione 0.1.0 è sperimentale e rimane locale.
+e nel piano di sviluppo. La versione 0.1.0 è sperimentale.

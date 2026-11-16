@@ -9,7 +9,7 @@
 
 Il repository è stato clonato con la cronologia completa. Il lavoro RAM si trova sul
 branch `codex/ramtaskman-foundation`. Il remote `upstream` identifica soltanto l'origine
-pubblica; il push è disabilitato. Non è stato creato un repository GitHub per ramtaskman.
+pubblica; il push è disabilitato.
 
 ## Riutilizzo concreto
 

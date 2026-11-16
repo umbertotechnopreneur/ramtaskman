@@ -52,6 +52,23 @@ class ApplicationMemory:
 
 
 @dataclass
+class WindowsSystemMemory:
+    system_cache: int | None = None
+    kernel_paged: int | None = None
+    kernel_nonpaged: int | None = None
+    commit_total: int | None = None
+    commit_limit: int | None = None
+    commit_peak: int | None = None
+    reason: str | None = None
+
+
+@dataclass
+class LinuxSystemMemory:
+    commit_total: int | None = None
+    commit_limit: int | None = None
+
+
+@dataclass
 class SystemMemory:
     total: int
     available: int
@@ -65,6 +82,8 @@ class SystemMemory:
     notes: list[str] = field(default_factory=list)
     segments: dict[str, int] = field(default_factory=dict)
     segments_reason: str | None = None
+    windows_details: WindowsSystemMemory | None = None
+    linux_details: LinuxSystemMemory | None = None
 
     @property
     def used(self) -> int:

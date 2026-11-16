@@ -81,9 +81,10 @@ per esempio `./run.sh --language zh --once`. Codici disponibili: `it`, `en`, `zh
 (cinese semplificato), `ko`, `fr`, `vi`, `es`, `pt`, `de`, `ja`. Su Windows usa ad
 esempio `.\run.cmd --language ko`. Anche i messaggi tecnici prodotti dall’app sono
 tradotti; identificatori e schema JSON restano stabili, mentre dettagli del sistema
-operativo e testi delle acquisizioni conservano la lingua originale. Per questo
-checkpoint non sono stati eseguiti nuovi test né verifiche hardware. Comportamento
-e layout restano da verificare; le traduzioni attendono una revisione madrelingua.
+operativo e testi delle acquisizioni conservano la lingua originale. La verifica
+locale riguarda Linux con Python 3.14.4: UI sintetica a 160×48 e 80×24, CLI, build,
+installazione isolata e replay. Non sono state svolte nuove verifiche su hardware
+Windows/macOS; le traduzioni attendono ancora una revisione madrelingua.
 
 **Scorciatoie utili:** `m` cambia modalità, `g` alterna app e processi, `/` cerca,
 `f` filtra, `d` mostra i dettagli, `r` apre le regioni, `?` spiega le metriche e

@@ -50,7 +50,7 @@ Use --once or --json for a single reading or JSON output. Do not share a .venv b
 
 Useful keys: m switches modes, g toggles apps/processes, / searches, f filters, d opens details, r opens regions, ? explains metrics and q quits. The complete technical guide is currently in Italian.
 
-Start the dashboard with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). App text is available in ten languages: `--language` selects the language of the interface, footer, help, CLI and human-readable `--once` report. App-owned technical messages are translated too. Identifiers and the JSON schema remain stable; operating-system details and text from saved captures retain their original language. No new tests or hardware checks were run for this checkpoint. Behavior and layout still need checking, and the translations need native-speaker review.
+Start the dashboard with `./run.sh --language en` (on Windows: `.\run.cmd --language en`). App text is available in ten languages: `--language` selects the language of the interface, footer, help, CLI and human-readable `--once` report. App-owned technical messages are translated too. Identifiers and the JSON schema remain stable; operating-system details and text from saved captures retain their original language. Local verification covers Linux with Python 3.14.4: synthetic UI at 160×48 and 80×24, CLI, builds, isolated installation and replay. No new hardware verification on Windows or macOS was performed. The translations still need native-speaker review.
 
 ## Experimental: read the numbers carefully
 

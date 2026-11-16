@@ -50,7 +50,7 @@ Dùng --once để lấy một mẫu hoặc --json để xuất JSON. Không dù
 
 Phím hữu ích: m đổi chế độ, g đổi ứng dụng/tiến trình, / tìm kiếm, f lọc, d xem chi tiết, r mở vùng nhớ, ? giải thích chỉ số và q thoát. Hướng dẫn kỹ thuật đầy đủ hiện bằng tiếng Ý.
 
-Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Văn bản của ứng dụng hiện có bằng mười ngôn ngữ: `--language` chọn ngôn ngữ cho giao diện, chân trang, trợ giúp, CLI và báo cáo văn bản `--once`. Các thông báo kỹ thuật do ứng dụng tạo ra cũng đã được dịch. Định danh và cấu trúc JSON được giữ ổn định; chi tiết từ hệ điều hành và văn bản trong các bản ghi đã lưu vẫn giữ ngôn ngữ gốc. Không có kiểm thử mới hay xác minh trên phần cứng nào được thực hiện cho checkpoint này. Hành vi và bố cục vẫn cần được kiểm tra; các bản dịch cũng cần người bản ngữ rà soát.
+Chạy bảng điều khiển bằng `./run.sh --language vi` (Windows: `.\run.cmd --language vi`). Văn bản của ứng dụng hiện có bằng mười ngôn ngữ: `--language` chọn ngôn ngữ cho giao diện, chân trang, trợ giúp, CLI và báo cáo văn bản `--once`. Các thông báo kỹ thuật do ứng dụng tạo ra cũng đã được dịch. Định danh và cấu trúc JSON được giữ ổn định; chi tiết từ hệ điều hành và văn bản trong các bản ghi đã lưu vẫn giữ ngôn ngữ gốc. Phạm vi xác minh cục bộ là Linux với Python 3.14.4: giao diện dữ liệu tổng hợp ở 160×48 và 80×24, CLI, dựng gói, cài đặt biệt lập và phát lại. Không có xác minh mới trên phần cứng Windows/macOS. Các bản dịch vẫn cần người bản ngữ rà soát.
 
 ## Dự án thử nghiệm: hãy đọc số liệu cẩn thận
 

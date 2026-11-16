@@ -37,9 +37,9 @@ codice e i mock non sostituiscono prove hardware Windows/macOS.
 1. **Verifica della localizzazione.** I checkpoint successivi estendono i cataloghi
    alle schermate e ai messaggi applicativi, inclusi footer, CLI e diagnostica.
    Il contratto separa chiavi e parametri dalla presentazione, conservando i dati
-   arbitrari e i dettagli del sistema operativo. L'incremento recente non è stato
-   eseguito: restano da verificare layout, binding, errori CLI, serializzazione e
-   inclusione delle risorse. Le lingue devono essere riviste da madrelingua.
+   arbitrari e i dettagli del sistema operativo. La verifica locale successiva
+   copre layout, binding, errori CLI, serializzazione e inclusione delle risorse
+   su Linux con Python 3.14.4. Le lingue devono essere riviste da madrelingua.
 2. **Prestazioni con carichi molto grandi.** Il confronto viene calcolato in worker,
    ma filtro, ordinamento e parte del rendering della tabella regioni sono ancora
    sincroni. Le misure e i limiti sono in [benchmark.md](benchmark.md); un eventuale
@@ -82,3 +82,14 @@ nelle dieci lingue. I messaggi strutturati mantengono un testo italiano compatib
 con modello e JSON e vengono tradotti al confine della UI; i dettagli OS e i motivi
 già registrati nei file rimangono originali. Non sono stati eseguiti nuovi test,
 lint, build, catture o avvii dell'app neppure per questo incremento.
+
+## Verifica successiva autorizzata
+
+L'utente ha poi chiesto di eseguire i test. Aggiunti 22 test dedicati a CLI,
+diagnostica strutturata e UI nelle dieci lingue. Due asserzioni della suite
+precedente cercavano vecchie diciture: sono state aggiornate ai messaggi del
+catalogo, conservando le verifiche sui dati scartati e sui campioni parziali.
+Le esecuzioni mirate sono passate senza richiedere modifiche al codice applicativo.
+Sono riusciti anche launcher Linux, catture sintetiche, build, installazione isolata,
+replay e controllo Ruff `F,E9`. Dettagli e risultato complessivo sono nel
+[passaggio di consegne](handoff.md#verifica-richiesta-dopo-il-checkpoint-multilingua).

@@ -7,6 +7,7 @@ import unittest
 from textual.widgets import DataTable, Input, Select, Static
 
 from ramtaskman.app import RamTaskManager
+from ramtaskman.i18n import translate
 from ramtaskman.region_map import RegionMap, region_cells
 from ramtaskman.region_screen import RegionScreen, filter_regions
 from ramtaskman.regions import MemoryRegion, RegionSnapshot
@@ -184,7 +185,8 @@ class RegionUITests(unittest.IsolatedAsyncioTestCase):
             screen.accept_snapshot(old_request, replace(region_fixture(), complete=False, reason='Limite'))
             await pilot.pause()
             self.assertEqual(len(screen.rows), 4)
-            self.assertIn('incompleta', str(screen.query_one('#region-count', Static).content))
+            self.assertIn(translate('it', 'partial_sample'),
+                          str(screen.query_one('#region-count', Static).content))
 
     async def test_closing_cancels_only_region_worker_and_keeps_app_worker(self):
         started, stopped = threading.Event(), threading.Event()

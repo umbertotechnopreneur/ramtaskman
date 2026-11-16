@@ -50,7 +50,7 @@ Unter Windows im Projektordner mit Windows Terminal:
 
 Tasten: m wechselt den Modus, g Anwendungen/Prozesse, / sucht, f filtert, d zeigt Details, r öffnet Bereiche, ? erklärt die Werte und q beendet. Die vollständige technische Anleitung ist derzeit auf Italienisch.
 
-Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Anwendungstexte sind in zehn Sprachen verfügbar: `--language` wählt die Sprache für Oberfläche, Fußzeile, Hilfe, CLI und den Textbericht `--once`. Auch technische Meldungen der Anwendung werden übersetzt. Kennungen und JSON-Schema bleiben stabil; Betriebssystemdetails und Texte aus gespeicherten Aufnahmen behalten ihre ursprüngliche Sprache. Für diesen Checkpoint wurden keine neuen Tests oder Hardwareprüfungen durchgeführt. Verhalten und Layout müssen noch geprüft werden; auch eine muttersprachliche Prüfung der Übersetzungen steht aus.
+Die Übersicht startet mit `./run.sh --language de` (Windows: `.\run.cmd --language de`). Die Anwendungstexte sind in zehn Sprachen verfügbar: `--language` wählt die Sprache für Oberfläche, Fußzeile, Hilfe, CLI und den Textbericht `--once`. Auch technische Meldungen der Anwendung werden übersetzt. Kennungen und JSON-Schema bleiben stabil; Betriebssystemdetails und Texte aus gespeicherten Aufnahmen behalten ihre ursprüngliche Sprache. Die lokale Überprüfung umfasst Linux mit Python 3.14.4: synthetische Oberfläche mit 160×48 und 80×24, CLI, Paketbau, isolierte Installation und Replay. Neue Hardwareprüfungen unter Windows/macOS wurden nicht durchgeführt. Eine muttersprachliche Prüfung der Übersetzungen steht weiterhin aus.
 
 ## Experimentell: Messwerte sorgfältig interpretieren
 

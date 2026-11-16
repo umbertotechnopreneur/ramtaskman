@@ -69,8 +69,9 @@ contatori e lo schema JSON conservano i propri identificatori. Nomi, percorsi e
 dettagli restituiti dal sistema operativo restano letterali. Le acquisizioni
 conservano i motivi nel testo registrato: riaprirle con un'altra lingua traduce
 l'interfaccia, non quei dati. Le traduzioni sono preparate con assistenza AI e
-richiedono revisione di madrelingua; quest'ultimo incremento non è stato eseguito
-né sottoposto a nuovi test, su richiesta dell'utente.
+richiedono revisione di madrelingua. Sono state eseguite verifiche locali Linux
+con Python 3.14.4 su CLI, UI sintetica a 160×48 e 80×24, build, installazione
+isolata e replay. Queste prove non attestano i backend su hardware Windows/macOS.
 
 ## Supporto per piattaforma
 

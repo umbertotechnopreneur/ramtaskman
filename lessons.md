@@ -42,3 +42,13 @@ interromperebbe anche il monitoraggio principale. Il test di chiusura in
 test_region_ui.py verifica che il worker dell'app resti attivo mentre quello delle
 regioni riceve l'annullamento. Per dettagli scorrevoli da tastiera usare un
 VerticalScroll: rendere focusabile un semplice Static non lo rende scorrevole.
+
+## Localizzare la presentazione senza riscrivere i dati
+
+I messaggi prodotti dall'app conservano chiave e parametri fino alla UI. I test
+verificano annidamento, copia profonda di `dataclasses.asdict` e JSON canonico;
+nomi, percorsi, dettagli OS e testi riaperti da acquisizioni restano letterali.
+Le prove Textual nelle dieci lingue controllano il footer renderizzato e che
+un'app successiva non modifichi i binding di quelle precedenti. Le asserzioni
+sullo stato devono seguire il catalogo scelto, continuando a verificare lo scarto
+dei dati obsoleti e la copertura parziale quando cambiano le diciture.

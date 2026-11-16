@@ -50,7 +50,7 @@ Use --once ou --json para uma leitura única ou saída JSON. Não compartilhe .v
 
 Atalhos: m troca o modo, g alterna aplicativos/processos, / pesquisa, f filtra, d mostra detalhes, r abre regiões, ? explica as métricas e q sai. O guia técnico completo está atualmente em italiano.
 
-Abra a tela principal com `./run.sh --language pt` (Windows: `.\run.cmd --language pt`). Os textos do aplicativo estão disponíveis em dez idiomas: `--language` seleciona o idioma da interface, do rodapé, da ajuda, da CLI e do relatório de texto `--once`. As mensagens técnicas produzidas pelo aplicativo também são traduzidas. Os identificadores e o esquema JSON permanecem estáveis; os detalhes do sistema operacional e os textos das capturas salvas mantêm o idioma original. Não foram executados novos testes nem verificações de hardware neste checkpoint. O comportamento e a disposição visual ainda precisam ser verificados, e as traduções aguardam revisão de falantes nativos.
+Abra a tela principal com `./run.sh --language pt` (Windows: `.\run.cmd --language pt`). Os textos do aplicativo estão disponíveis em dez idiomas: `--language` seleciona o idioma da interface, do rodapé, da ajuda, da CLI e do relatório de texto `--once`. As mensagens técnicas produzidas pelo aplicativo também são traduzidas. Os identificadores e o esquema JSON permanecem estáveis; os detalhes do sistema operacional e os textos das capturas salvas mantêm o idioma original. A verificação local abrange Linux com Python 3.14.4: interface sintética em 160×48 e 80×24, CLI, construção de pacotes, instalação isolada e replay. Não foram realizadas novas verificações em hardware Windows/macOS. As traduções ainda aguardam revisão de falantes nativos.
 
 ## Experimental: interprete os números com cuidado
 

@@ -271,3 +271,34 @@ Anche questo incremento è stato solo riletto nel sorgente: nessun test, lint,
 build, cattura o avvio dell'app. La prossima verifica dovrà coprire l'intero
 incremento, inclusi footer, errori CLI, diagnostica annidata, esportazione JSON e
 risorse nel wheel. Le lingue richiedono ancora revisione di madrelingua.
+
+## Verifica richiesta dopo il checkpoint multilingua
+
+L'utente ha successivamente autorizzato i test. Su Linux con Python 3.14.4 sono
+stati aggiunti 22 test di regressione: 19 per CLI, messaggi strutturati e acquisizioni,
+tre flussi UI che percorrono le dieci lingue a 160×48 e 80×24. Verificano anche i
+footer renderizzati, i binding originali immutati fra app, il recupero dopo errori,
+il replay senza provider live e la conservazione letterale dei dettagli OS.
+
+La prima suite ha eseguito 195 test, con due fallimenti per diciture attese ormai
+superate e tre prove native Windows saltate. Aggiornate le due asserzioni senza
+cambiare il comportamento dell'app; il confronto non disponibile e il campione
+parziale restano verificati esplicitamente. I due test corretti e i 22 nuovi sono
+passati nelle esecuzioni mirate.
+
+La suite completa successiva ha eseguito **217 test in 246,539 secondi: 214
+passati e 3 prove native Windows saltate**, senza fallimenti o errori. Comando:
+
+```bash
+UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tests -v
+```
+
+Sono riusciti i launcher `--once --language fr` e `--json --language ko`, la cattura
+di schermate sintetiche, `uv build` e `tools/verify_distribution.py`. Quest'ultimo
+verifica gli archivi e l'installazione isolata offline, le dipendenze, CLI e replay
+sintetico; nei pacchetti sono presenti i dieci cataloghi e aiuti Markdown, i nuovi
+moduli e il CSS. I dati dei processi reali raccolti dai launcher di verifica non
+sono stati salvati. Controllati visivamente alcuni render sintetici, inclusi cinese,
+coreano, aiuto, confronto e regioni nel terminale piccolo. Anche Ruff isolato per
+`F,E9` è passato. Nessuna nuova prova hardware Windows/macOS; nessuna revisione
+madrelingua. Le prove simulate non sostituiscono queste verifiche.

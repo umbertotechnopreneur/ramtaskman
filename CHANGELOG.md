@@ -15,8 +15,8 @@
 - README e testi applicativi in dieci lingue, selezionabili con `--language`:
   dashboard, dettagli, regioni, aiuto, footer, CLI e diagnostica dei backend e delle
   acquisizioni. Gli identificatori, i dettagli OS e i testi già salvati restano
-  originali. L'ultimo incremento è stato preparato senza nuovi test su richiesta;
-  restano da verificare il comportamento e le traduzioni con revisori madrelingua.
+  originali. Verifiche locali Linux su CLI, UI multilingua, serializzazione e
+  distribuzione; le traduzioni richiedono ancora revisione di madrelingua.
 
 Stato e limiti delle misure, della compatibilità e delle prove si trovano nel README
 e nel piano di sviluppo. La versione 0.1.0 è sperimentale.

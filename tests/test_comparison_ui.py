@@ -5,6 +5,7 @@ from unittest.mock import patch
 from textual.widgets import DataTable, Input, Select, Static
 from ramtaskman.app import RamTaskManager
 from ramtaskman.capture_models import freeze_snapshot
+from ramtaskman.i18n import translate
 from ramtaskman.region_screen import RegionScreen
 from ramtaskman.regions import RegionSnapshot
 from test_memory import fixture
@@ -85,7 +86,9 @@ class ComparisonUI(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(table.row_count, 0)  # failed identity: no inferred disappearances
             self.assertEqual(screen.baseline.regions[1].rss, 128 << 20)
             self.assertIn('accesso negato', screen.snapshot.reason)
-            self.assertIn('n/a', str(screen.query_one('#region-map-title', Static).content))
+            unavailable = translate('it', 'comparison_unavailable',
+                                    reason=translate('it', 'tech_executable_mismatch'))
+            self.assertEqual(str(screen.query_one('#region-map-title', Static).content), unavailable)
             await pilot.press('ctrl+b')
             await pilot.pause()
             self.assertFalse(screen.comparison_mode)

@@ -111,7 +111,9 @@ class ReadRegionsTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root / '100').mkdir()
         self.path = self.root / '100' / 'smaps'
-        self.path.write_text(FIRST + SECOND)
+        # Byte budgets describe procfs bytes, including its LF line endings.
+        # Binary writes keep the fixture identical on Windows and Unix hosts.
+        self.path.write_bytes((FIRST + SECOND).encode('utf-8'))
         self.proc = Mock()
         self.proc.create_time.return_value = 123.0
         self.proc.is_running.return_value = True
@@ -210,14 +212,14 @@ class ReadRegionsTests(unittest.TestCase):
         self.assertFalse(snap.complete)
         self.assertIn('Limite di tempo', snap.reason)
         self.assertEqual(snap.regions, [])
-        self.path.write_text(FIRST + SECOND.replace('Rss: 0 kB', 'Rss: bad kB'))
+        self.path.write_bytes((FIRST + SECOND.replace('Rss: 0 kB', 'Rss: bad kB')).encode('utf-8'))
         snap = LinuxRegionReader(self.root).read(identity())
         self.assertFalse(snap.complete)
         self.assertEqual(snap.regions, [])
         self.assertIn('contatore smaps non valido', snap.reason)
 
     def test_empty_maps_and_missing_procfs_are_distinct(self):
-        self.path.write_text('')
+        self.path.write_bytes(b'')
         snap = LinuxRegionReader(self.root).read(identity())
         self.assertTrue(snap.complete)
         self.assertEqual(snap.regions, [])

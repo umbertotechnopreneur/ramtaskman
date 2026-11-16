@@ -302,3 +302,14 @@ sono stati salvati. Controllati visivamente alcuni render sintetici, inclusi cin
 coreano, aiuto, confronto e regioni nel terminale piccolo. Anche Ruff isolato per
 `F,E9` è passato. Nessuna nuova prova hardware Windows/macOS; nessuna revisione
 madrelingua. Le prove simulate non sostituiscono queste verifiche.
+
+La CI del commit `63ebf0f` ha poi completato tutti i controlli sui tre Python Linux.
+Su Windows le tre prove native sono passate, ma due test dei limiti smaps fallivano:
+`Path.write_text` convertiva LF in CRLF e i budget contavano invece i byte LF.
+La fixture viene ora scritta in binario UTF-8; tutti i 13 test delle regioni sono
+passati nuovamente su Linux. Su macOS/Python 3.13 la suite ha completato 217 test
+con 5 skip, mentre `--once` è rimasto senza output per circa 178 secondi, fino
+all'annullamento del run obsoleto. Il log non identificava la chiamata in attesa.
+Gli smoke CLI della CI hanno ora un limite di due minuti e dump periodici dello
+stack Python per diagnosticare eventuali attese native; il job ha un limite di
+15 minuti. Questi limiti riguardano il runner CI, non il monitor avviato dall'utente.

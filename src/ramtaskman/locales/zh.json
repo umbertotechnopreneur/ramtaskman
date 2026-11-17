@@ -394,5 +394,10 @@
   "tech_executable_mismatch": "可执行映像已更改或无法验证",
   "name_label": "名称",
   "top_thirty": "前 30 项",
-  "invalid_language": "不支持的语言：{code}"
+  "invalid_language": "不支持的语言：{code}",
+  "ram_value": "RAM 价值",
+  "ram_monthly": "RAM/月",
+  "ram_value_note": "硬件成本分摊，不是账单。PSS 按比例分摊共享内存；USS 不包含共享内存。",
+  "about_title": "关于",
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\n感谢 **Scott Hanselman** 的 GPU Taskman 及其启发。Ram Taskman 将部分界面和辅助函数改用于 RAM 监测。这是独立项目，保留原始 MIT 许可和署名。\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
 }

@@ -394,5 +394,10 @@
   "tech_executable_mismatch": "Ảnh thực thi đã thay đổi hoặc không thể xác minh",
   "name_label": "Tên",
   "top_thirty": "30 mục đầu",
-  "invalid_language": "Ngôn ngữ không được hỗ trợ: {code}"
+  "invalid_language": "Ngôn ngữ không được hỗ trợ: {code}",
+  "ram_value": "Giá trị RAM",
+  "ram_monthly": "RAM/tháng",
+  "ram_value_note": "Phân bổ phần cứng, không phải hóa đơn. PSS chia bộ nhớ chung; USS loại trừ.",
+  "about_title": "Giới thiệu",
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nCảm ơn **Scott Hanselman** vì GPU Taskman và nguồn cảm hứng. Ram Taskman điều chỉnh một phần giao diện và hàm hỗ trợ để theo dõi RAM. Dự án độc lập; giữ nguyên giấy phép MIT và ghi nhận tác giả gốc.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
 }

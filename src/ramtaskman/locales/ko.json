@@ -394,5 +394,10 @@
   "tech_executable_mismatch": "실행 이미지가 변경되었거나 확인할 수 없습니다",
   "name_label": "이름",
   "top_thirty": "상위 30개",
-  "invalid_language": "지원하지 않는 언어: {code}"
+  "invalid_language": "지원하지 않는 언어: {code}",
+  "ram_value": "RAM 가치",
+  "ram_monthly": "RAM/월",
+  "ram_value_note": "하드웨어 비용 배분이며 청구서가 아닙니다. PSS는 공유 메모리를 배분하고 USS는 제외합니다.",
+  "about_title": "정보",
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nGPU Taskman과 영감을 제공한 **Scott Hanselman**께 감사드립니다. Ram Taskman은 인터페이스와 도우미 함수 일부를 RAM 모니터링에 맞게 조정했습니다. 독립 프로젝트이며 원래 MIT 라이선스와 저작자 표시를 유지합니다.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
 }

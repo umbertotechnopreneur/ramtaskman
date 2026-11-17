@@ -14,6 +14,7 @@ from textual.widgets import Button, DataTable, Footer, Input, Markdown, Select, 
 from textual.worker import get_current_worker
 
 from .collector import Collector
+from .valuation import RamPrice, value_text
 from .models import ApplicationMemory, ProcessMemory, Snapshot, SystemMemory
 from .filters import RowFilter, owner_options
 from .detail import breakdown_summary, detail_content
@@ -38,6 +39,25 @@ class HelpScreen(LocalizedModalScreen):
             yield Markdown(load_help(getattr(self.app, 'language', 'it')))
 
 
+class AboutScreen(LocalizedModalScreen):
+    BINDINGS = [Binding('escape,q,f1', 'app.pop_screen', 'Close')]
+    DEFAULT_CSS = """
+    AboutScreen { align: center middle; }
+    AboutScreen > VerticalScroll { width: 86; max-width: 95%; height: 85%; border: round $accent; background: $surface; padding: 1 2; }
+    """
+
+    def compose(self) -> ComposeResult:
+        from . import __version__
+        with VerticalScroll():
+            yield Static("┌─────────┐\n│ ▄▄▄▄▄▄▄ │\n│ V W   ▣ │\n│ ▄▄▄▄▄▄▄ │\n└─────────┘  VibeWare", markup=False)
+            yield Markdown(f"# Ram Taskman {__version__}\n\n" + self.app.tr('about_body'))
+            yield Button(self.app.tr('footer_close'), id='close-about')
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == 'close-about':
+            self.app.pop_screen()
+
+
 class MemoryDetailScreen(LocalizedModalScreen):
     BINDINGS = [Binding('escape,d,q', 'app.pop_screen', 'Close')]
     DEFAULT_CSS = """
@@ -58,6 +78,7 @@ class RamTaskManager(App):
     TITLE = 'ramtaskman'
     CSS_PATH = 'app.tcss'
     BINDINGS = [
+        Binding('f1', 'about', 'About'),
         Binding('q', 'quit', 'Quit'), Binding('s', 'cycle_sort', 'Sort'),
         Binding('c', 'cycle_chart', 'Chart'), Binding('a', 'toggle_all', 'All/Top'),
         Binding('g', 'toggle_group', 'Apps/PIDs'), Binding('m', 'toggle_monitoring', 'Slim/Full'),
@@ -76,8 +97,9 @@ class RamTaskManager(App):
 
     def __init__(self, collector: Collector | None = None, interval: float = 2.0,
                  processes: bool = False, live: bool = True, region_reader=None, *, slim: bool = True,
-                 language: str = 'it') -> None:
+                 language: str = 'it', ram_price: RamPrice | None = None) -> None:
         super().__init__()
+        self.ram_price = ram_price
         if language not in LANGUAGES:
             raise ValueError(translate('it', 'invalid_language', code=language))
         self.language = language
@@ -102,6 +124,9 @@ class RamTaskManager(App):
         self._owner_options: list[tuple[str, str]] = []
         self._updating_filters = False
         self._row_generation = 0
+
+    def action_about(self) -> None:
+        self.push_screen(AboutScreen())
 
     def tr(self, key: str, **values: object) -> str:
         return translate(self.language, key, **values)
@@ -142,6 +167,8 @@ class RamTaskManager(App):
                          ('swap_pss', 'SwapPSS'), ('pss_pct', 'PSS%'), ('readings', self.tr('readings_col')),
                          ('inside', self.tr('inside'))):
             table.add_column(col, key=key)
+            if key == 'app' and self.ram_price:
+                table.add_column(self.tr('ram_monthly' if self.ram_price.months else 'ram_value'), key='ram_value')
         table.focus()
         if self.live:
             self.poll()
@@ -366,8 +393,9 @@ class RamTaskManager(App):
             pss_percent = f'{100 * pss / system_total:.1f}' if pss is not None and system_total else 'n/a'
             coverage = f'P {measured}/{count} U {uss_measured}/{count}'
             row_key = f'{generation}|{row.key}'
-            table.add_row(identity, Text(row.name), Text(owner), *memory_values,
-                          pss_percent, coverage, Text(info), key=row_key)
+            table.add_row(identity, Text(row.name),
+                          *([value_text(row, self.snap, self.ram_price)] if self.ram_price else []),
+                          Text(owner), *memory_values, pss_percent, coverage, Text(info), key=row_key)
         keys = list(self.rows)
         index = keys.index(selected) if selected in self.rows else 0
         self.selected_key = keys[index] if keys else None
@@ -396,6 +424,10 @@ class RamTaskManager(App):
         grouped = isinstance(row, ApplicationMemory)
         panel.border_title = Text(row.name)
         counters = '  '.join(f'{m.upper()} {size(self.metric(row, m))}' for m in self.SORTS[:-1])
+        if self.ram_price:
+            basis = 'PSS' if self.snap.platform == 'linux' else 'USS'
+            counters += '\n' + self.tr('ram_monthly' if self.ram_price.months else 'ram_value') + ': ' + value_text(row, self.snap, self.ram_price) + ' · ' + basis
+            counters += '\n' + self.tr('ram_value_note')
         processes = row.processes if grouped else [row]
         pids = ', '.join(str(p.pid) for p in processes[:20]) + (' …' if len(processes) > 20 else '')
         reasons = sorted({localize(p.reason, self.language) for p in processes if p.reason})

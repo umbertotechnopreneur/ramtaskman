@@ -9,7 +9,7 @@ from textual.screen import ModalScreen, Screen
 from .i18n import translate
 
 _BINDING_MESSAGES = {
-    'quit': 'footer_quit', 'cycle_sort': 'footer_sort', 'sort': 'footer_sort',
+    'about': 'about_title', 'quit': 'footer_quit', 'cycle_sort': 'footer_sort', 'sort': 'footer_sort',
     'cycle_chart': 'footer_chart', 'toggle_all': 'footer_all_top',
     'toggle_group': 'footer_apps_pids', 'toggle_monitoring': 'footer_slim_full',
     'pause': 'footer_pause', 'help': 'footer_help', 'search': 'footer_search',

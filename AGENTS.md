@@ -1,8 +1,14 @@
 # Istruzioni per ramtaskman
 
 Scrivi in italiano. Leggi README.md, lessons.md e docs/handoff.md prima di modificare.
+README principale e documentazione pubblica sono in inglese; conserva i README localizzati.
 Controlla `git status` e preserva il lavoro esistente. Non pubblicare, creare remote di
 pubblicazione o inviare contenuti senza richiesta dell'utente.
+
+Per orientarti usa docs/README.md. CONTRIBUTING.md guida i contributori umani;
+THIRD_PARTY_NOTICES.md raccoglie le attribuzioni. docs/handoff.md descrive lo stato
+attuale; docs/history/ conserva la cronologia e non concede autorizzazioni correnti.
+La procedura delle immagini è in docs/images/README.md: solo catture sintetiche.
 
 ## Piattaforme verificate
 

@@ -1,370 +1,143 @@
-# Passaggio al prossimo agente
-
-> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
-> validato dal progetto perché non abbiamo un Mac a disposizione. Le prove macOS
-> citate nella cronologia sotto non costituiscono una validazione della piattaforma.
-
-## Piano di prosecuzione
-
-Il riferimento per il lavoro successivo è il [piano di sviluppo dettagliato](piano-sviluppo.md),
-preparato su richiesta dell'utente per continuare nella stessa chat. Copre F1 confronto,
-F2 acquisizioni/replay, F3 piattaforme, F4 prestazioni e F5 consolidamento/distribuzione,
-preceduti da F0 per i contratti comuni. La sequenza iniziale prevista è F0 → F1 → F2.
-Il documento contiene criteri di accettazione, verifiche e registro. L'utente ha poi
-autorizzato l'esecuzione del piano: controllare il registro e i test prima di ripartire.
-Confronto e acquisizioni offline sono implementati; restano le prove manuali su PC
-Windows, distinte dalla CI. macOS e la sua eventuale mappa sono fuori dal perimetro
-di verifica interno. Il budget generale è opzionale e la UI conserva il
-risultato del confronto immutabile; la tabella è paginata, con verifiche prestazionali in corso.
-
-## Obiettivo dell'utente
-
-Un ramtaskman Python/Textual con la stessa UI terminale di gputaskman di Scott Hanselman,
-ma dedicato a RAM per applicazione, PSS, USS e swap. L’utente ha poi richiesto
-inizialmente il supporto multipiattaforma, poi limitato sviluppo e verifiche a Linux
-e Windows: macOS resta sperimentale e non validato. Preparare una base chiara sulla quale
-possa proseguire un agente meno potente. Nessun cambio di framework; l'utente ha poi
-richiesto esplicitamente la pubblicazione del repository GitHub.
-
-## Stato Git alla consegna
-
-La base RAM e i primi incrementi sono nei commit locali del branch
-`codex/ramtaskman-foundation`. L'identità Git locale è configurata con i dati forniti
-dall'utente; verificare lo stato corrente prima di modificare il repository. La rimozione
-dei moduli GPU è intenzionale e la provenienza resta nella cronologia upstream.
-
-## Come ripartire
-
-1. Leggi [README](../README.md), [AGENTS](../AGENTS.md), [architettura](architecture.md)
-   e [lessons](../lessons.md).
-2. Controlla `git status`, branch corrente e ultimo commit. Il branch di lavoro è
-   `codex/ramtaskman-foundation`; l'upstream GPU resta nella cronologia.
-3. Avvia `./run.sh` (Linux) o `.\run.cmd` (Windows) dalla radice. Per una verifica rapida usa `./run.sh --once`.
-4. Esegui i test indicati nel README prima e dopo una modifica funzionale.
-5. Segui i blocchi del piano autorizzati dall'utente, in incrementi piccoli; non riscrivere tutto insieme.
-
-## Già implementato
-
-- Selettore backend: Linux con meminfo/smaps_rollup/PSI; Windows con psutil RSS/USS;
-  backend macOS presente come esperimento non validato.
-- PSS/swap per processo dichiarate non disponibili su Windows/macOS; nessuna stima sostitutiva.
-- Modelli con None per dati sconosciuti, aggregati completi o null e copertura PSS.
-- Raggruppamento Linux per istanza applicativa cgroup systemd esplicita con UID coerente,
-  anche con helper diversi. Fallback utente/eseguibile o utente/nome, dichiarato;
-  proprietario sconosciuto separato. Provenienza UI/JSON grouping/grouping_id.
-- Ricerca nome/eseguibile/PID con `/`; filtri utente, con swap e dati parziali con `f`.
-  Gli aggregati conservano tutti i membri; filtri prima del Top30 e durante drilldown.
-- Dettaglio `d`: PSS anon/file/shmem, clean/dirty privata e condivisa, anonima, LazyFree, THP;
-  campi Linux, letture parziali n/a, campione fissato all’apertura. Inspector con riepilogo.
-- Barre separate PSS/RSS in `d`, a tutta larghezza; swap separata. Coerenza per PID;
-  residuo PSS di troncamento ai kB esplicito, non usato per nascondere incoerenze.
-- Lettura Linux smaps su richiesta per il PID scelto, con identità prima/dopo, limiti,
-  cancellazione, campioni parziali dichiarati e valori mancanti None.
-- Esploratore `r`/Invio sul processo: mappa RSS/virtuale, tabella, inspector scorrevole,
-  ricerca/filtri, selezione sincronizzata, zoom e aggiornamento manuale con età/durata.
-- Barra RAM a tutta larghezza, segmentata per categorie OS Linux. `memory_segments.py`
-  produce i byte, `ram_bar.py` li rende senza doppie contabilizzazioni. Fallback esplicito
-  con motivo, Altro residuo derivato. Non è una mappa degli indirizzi fisici.
-- Vista applicazioni, processi, Invio per entrare in un gruppo, Esc per tornare.
-- PSS, USS, RSS, Swap, SwapPSS, percentuale PSS e ragioni dei dati mancanti.
-- UI derivata dall'originale: CSS e helper copiati; struttura dei pannelli e grafici adattata.
-- Sort, tutti/top 30, slim/full, pausa, aiuto, ridimensionamento e recupero dopo errori.
-- CLI, output JSON con backend/capacità/copertura, lockfile, launcher Unix e Windows,
-  CI configurata Linux/Windows e suite di test locale.
-- Catture SVG sintetiche riproducibili, escluse da Git.
-
-## Verifica Windows reale da programmare con F3
-
-La parte Windows è coperta da simulazioni e prove native sui runner CI; manca il
-confronto manuale su un PC Windows personale. Su quel PC con Python e uv:
-
-```powershell
-.\run.cmd --once
-.\run.cmd --json
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-.\run.cmd
-```
-
-Verifica RSS/working set e USS/private working set con contatori equivalenti, non con
-commit. Documenta versione Windows, Python, numero di processi, copertura e sample_ms.
-Controlla processi protetti, uscita e resize. Non pianificare prove interne macOS.
-Non dichiarare completata la
-validazione hardware finché non è stata eseguita. Nessun riavvio/logout necessario.
-
-## Incrementi consigliati, indipendenti
-
-### 1. Estendere il riconoscimento delle app su Windows/macOS
-
-I due backend hanno ancora il fallback eseguibile/nome. Prima di modificarli, verifica
-su hardware e scegli metadati espliciti equivalenti: non dedurre identità da nomi generici
-né usare cmdline/environ. Mantieni utenti e istanze separati. Su Linux cgroup già presente.
-
-### 2. Ricerca, filtri e dettaglio: già completati
-
-Non reimplementare queste funzioni. File: `filters.py`, `detail.py`, `app.py`, `app.tcss`.
-Test in `test_filters.py`, `test_detail.py`, `test_ui.py`. Mantieni aggregati interi,
-contatori globali non filtrati e n/a per totali incompleti. Dettaglio e aiuto non devono
-interrompere l'aggiornamento della tabella sottostante. Le chiavi DataTable includono
-la generazione per ignorare eventi di highlight obsoleti.
-
-### 3. Regioni Linux: completate; prossimi incrementi separati
-
-Non reimplementare le prime tre fasi richieste: barre di dettaglio, lettura Linux delle
-regioni e mappa navigabile sono presenti. File: `memory_bars.py`, `detail.py`, `regions.py`,
-`region_map.py`, `region_screen.py`; integrazione in `app.py`. Test dedicati: `test_detail.py`,
-`test_regions.py`, `test_region_ui.py`.
-
-Percorso: app → Invio → PID → r/Invio. `v` cambia RSS/virtuale; `s` cambia ordine della
-tabella; `/` ricerca path/tipo/permessi o indirizzo 0x; `f` filtra tipo/stato; z/Invio
-ingrandisce la regione con fino a due vicini per lato; `r` rilegge; Esc resetta filtri,
-esce dallo zoom e torna ai processi. Tab permette di raggiungere l'inspector scorrevole.
-La mappa resta in ordine virtuale e indica i buchi compressi; nessuna lettura dei frame fisici.
-
-Il reader limita 32 MiB, 32.768 regioni e 3 s in modo cooperativo fra letture. I limiti
-producono campioni parziali espliciti; errori e cambio identità cancellano i dati. La UI
-invalida i valori vecchi all'inizio di ogni richiesta e scarta risposte obsolete. L'età
-si aggiorna, ma le misure si rileggono soltanto all'apertura o con `r`. Non spostare smaps
-completo nel campionamento normale. Non leggere mem/cmdline/environ o file mappati.
-
-Il confronto A/B e il salvataggio offline sono implementati: `b` fissa A, `r` raccoglie B,
-`c` apre la comparazione, `v` cambia metrica, `s` ordinamento, Ctrl+S salva e Ctrl+O
-apre un file. CLI `--open`/`--compare` non costruiscono il collector. La specifica del
-formato è in [schema capture](schema-capture.md). Il provider Windows virtuale è
-sperimentale e attende prove hardware, quello macOS resta da implementare.
-La mappa fisica privilegiata è un progetto separato. Non presentare crescita come prova
-automatica di leak né attribuire regioni a oggetti, immagini o schede del browser.
-
-### 4. Prestazioni con molti processi
-
-File: `collector.py`, `models.py`, `test_memory.py`, `report.py`.
-Prima misura: mostra già sample_ms. Se serve un budget, progetta età dei valori e copertura
-prima della cache. Accettazione: nessuna misura scaduta mostrata come attuale, nessuna
-starvation dei processi piccoli, uscita rapida, motivi delle letture mancanti conservati.
-
-### 5. Rifinitura visiva con confronto originale
-
-File: `app.py`, `app.tcss`, `widgets.py`, `tools/capture_screenshots.py`.
-Usa il sorgente originale al commit in [upstream](upstream.md) e lo screenshot fornito
-dall'utente come riferimento. Conserva le metriche RAM e le avvertenze di copertura.
-Accettazione: stessi pannelli, spaziature e interazioni comparabili; nessuna regressione
-su terminale stretto; screenshot dichiarati sintetici. Il tema usa i token Textual
-originali, perciò font, terminale e tema possono cambiare la resa.
-
-## Cosa non promettere
-
-- Non è un debugger del contenuto della RAM.
-- Riconosce gli helper nella stessa istanza applicativa systemd esplicita; il fallback
-  non identifica tutte le app desktop. Cgroup mancanti o non convenzionali restano fallback.
-- I contatori generali Windows/macOS sono implementati ma non verificati su hardware;
-  il provider Windows delle regioni virtuali è sperimentale, quello macOS non è ancora
-  implementato. In WSL si misura solo la VM Linux, non l’host Windows.
-- Non equiparare somme PSS/RSS alla RAM usata globale o somme swap alla swap globale.
-- Le scansioni non sono atomiche; niente stime presentate come misure.
-- Nessuna pubblicazione PyPI o automazione release richiesta; niente kill o elevazione automatica.
-
-## Validazione iniziale
-
-16 novembre 2026: Linux locale, Python 3.14.4, Textual 8.2.8, psutil 7.2.2.
-Verifica della base prima dell'esploratore delle regioni: contabilità, dati mancanti, gruppi, PID riutilizzati/terminati,
-CLI, UI 160x48 e 80x24, pausa, drilldown, aiuto, errore e recupero; selezione backend,
-identità Windows, USS distinta dal commit, null per PSS/swap e resa UI Windows simulata;
-cgroup/escaping/UID/istanze, breakdown, filtri combinati e totali integri, ricerca per helper/PID,
-input senza attivare scorciatoie, dettaglio con refresh del campione principale;
-partizione OS, campioni mancanti/incoerenti, larghezza barra 20/74/154/314 colonne e resize UI.
-Una rilevazione reale ha visto 668 processi, 193 con PSS leggibile, circa 610 ms di scansione;
-sono una misura puntuale, non una garanzia di prestazioni. RAM OS circa 30.26 GiB.
-La GPU rilevata era RTX 4060 ma non viene utilizzata dal programma.
-
-Build wheel/sdist completata; installazione del wheel in un ambiente separato e
-avvio di `ramtaskman --once` verificati. Pacchetti controllati: CSS incluso, nessuna
-cache o cattura locale inclusa. UI verificata visivamente con schermate sintetiche a colori.
-
-Durante l’incremento, una verifica Linux ha raccolto circa 680 processi in 619 ms: 11
-gruppi cgroup, di cui 2 con helper diversi, 192 processi con breakdown leggibile. È una
-misura puntuale, non un benchmark garantito.
-
-Per l'incremento delle regioni sono passati **93 test** complessivi. La suite comprende: barre PSS/RSS e troncamento ai KiB,
-campioni incompleti, parser smaps/permessi/identità/limiti, ricerca e filtri delle regioni,
-mappa RSS/virtuale, selezione/zoom/resize, aggiornamenti manuali e scarto delle risposte
-obsolete, campionamento principale non interrotto dalla mappa. Le schermate Textual
-sintetiche a 160×48 e 80×24 sono state controllate visivamente, incluso l'inspector
-scorrevole. L'aggiornamento manuale conserva selezione e zoom quando ancora validi.
-Build wheel/sdist riuscite; nuovi moduli e CSS inclusi, cache/catture escluse.
-
-La prova Linux sul processo della verifica ha letto 63 regioni, campione completo in
-6,65 ms. La CLI JSON ha raccolto 784 processi in circa 869 ms. Sono misure puntuali,
-non garanzie di prestazioni. Le simulazioni non costituiscono verifica dei backend
-nativi Windows/macOS.
-
-Per l'incremento A/B, replay e prestazioni sono passati 149 test locali su Linux (Python 3.14.4).
-Un processo di prova ha allocato e toccato 8 MiB: delta RSS complessivo osservato
-+8.572.928 byte, con campioni completi. Wheel/sdist ricostruiti e installati in
-ambiente isolato locale; verificate CLI e apertura offline di un file sintetico.
-Confronto e salvataggio usano metadati, non contenuti della memoria. Windows resta
-simulato, macOS per regione non implementato; CI remota non eseguita.
-La tabella delle regioni è paginata a 250 righe con Ctrl+U/D o Ctrl+frecce, mantenendo
-la mappa e i totali sulle regioni filtrate. Nel budget sono disponibili priorità e
-backoff opzionali; il comportamento predefinito rimane senza budget.
-
-Incremento successivo: 171 test eseguiti su Linux, 170 passati e uno Windows nativo
-saltato; verifica distribuzione, screenshot sintetici e confronto del processo di prova
-riusciti. Il confronto e la copia immutabile vengono preparati in worker cancellabili.
-Prove native preparate in [verifica Windows](verifica-windows.md) e
-[verifica macOS](verifica-macos.md), non eseguite sui sistemi rispettivi. Il
-[rapporto benchmark](benchmark.md) riporta anche la parte di elaborazione ancora
-sincrona e i limiti delle misure. Audit psutil in [audit contatori](audit-contatori-piattaforma.md).
-
-Vedi README per i comandi di test, build e cattura e il piano per gli incrementi ancora aperti.
-
-## Allineamento Linux alle modifiche Windows
-
-16 novembre 2026: le modifiche presenti nella copia di lavoro condividono anche su Linux
-la partenza Slim, la barra USS delle app complete e il contesto RAM/USS del PID nella
-mappa live. Full diagnostics Linux espone inoltre `Committed_AS` e `CommitLimit` da
-meminfo, cache e slab, distinguendoli dai contatori Windows. Campi opzionali assenti
-restano n/a/null. Le schermate sono state generate con fixture sintetiche; i test UI
-coprono anche Linux a 160×48 e 80×24. Su Linux sono stati eseguiti i launcher `--once`
-e `--json`, la build e una lettura completa delle regioni del solo processo di prova
-(64 regioni, circa 3,9 ms, misura puntuale). La suite locale ha eseguito 184 test,
-con 3 test nativi Windows saltati. Nessuna nuova verifica hardware Windows o macOS è
-stata eseguita in questa sessione.
-
-## Pubblicazione e lingue
-
-L'utente ha richiesto la pubblicazione GitHub e un README in dieci lingue, inclusi
-cinese semplificato, coreano, francese, vietnamita e spagnolo. Le traduzioni sono
-state preparate con assistenza AI e richiedono revisione di madrelingua. Le immagini
-sono catture Textual su Linux con dati sintetici; il banner ritaglia sei dashboard.
-La dashboard aveva inizialmente una localizzazione parziale per dieci lingue
-tramite `--language`, estesa nei checkpoint successivi descritti sotto.
-
-La revisione successiva è documentata in [review del codice](review-codice-2026-11-16.md).
-I cataloghi sono ora file UTF-8 nel pacchetto, con verifiche delle chiavi e dei
-segnaposto. Tradotte anche le finestre di acquisizione, parti della mappa e del
-dettaglio. La prima CI GitHub
-è fallita nella verifica offline: il problema è stato riprodotto con una cache nuova
-e corretto localmente usando il lockfile per preparare l'ambiente isolato. I risultati
-Linux locali e la simulazione della cache non costituiscono un nuovo esito CI remoto.
-
-## Checkpoint richiesto senza nuovi test
-
-L'utente ha poi chiesto esplicitamente di sistemare ancora codice e traduzioni,
-fare commit e push subito e **non eseguire test adesso**. Il lavoro precedente è
-stato salvato e pubblicato nel checkpoint `529e95a`. L'incremento successivo traduce
-anche l'aiuto esteso (file Markdown per lingua), diagnostica Linux/Windows,
-descrizioni e note del dettaglio e gran parte del confronto A/B. Il rendering della
-dashboard è stato scomposto con un helper per i contatori OS e variabili intermedie
-per righe e copertura. Queste ultime modifiche non sono state testate, avviate,
-lintate o compilate: le verifiche precedenti non attestano questo checkpoint.
-I commit di questa consegna contengono `[skip ci]` per rispettare la sospensione
-dei test anche nel push.
-
-L'ulteriore richiesta completa footer, CLI e messaggi tecnici applicativi in tutte
-le dieci lingue. Le descrizioni dei binding sono tradotte su copie dei metadati di
-Textual, senza modificare le mappe condivise. `--language` seleziona anche l'aiuto
-della CLI, gli errori degli argomenti e il rapporto `--once`; le opzioni e lo schema
-JSON restano stabili.
-
-`messages.py` conserva chiave e parametri dei messaggi prodotti da collector,
-provider, confronto e lettore delle acquisizioni fino alla presentazione. Il valore
-rimane compatibile con `str`, con testo canonico italiano per modello e JSON. La
-ricostruzione esplicita supporta la copia profonda usata da `dataclasses.asdict`.
-I parametri che sono messaggi applicativi vengono tradotti ricorsivamente; nomi,
-percorsi, identificatori e dettagli delle eccezioni OS rimangono letterali. Il
-formato delle acquisizioni non cambia: un motivo riaperto da JSON resta il testo
-registrato, senza tentare di riconoscerlo o tradurlo retroattivamente.
-
-Anche questo incremento è stato solo riletto nel sorgente: nessun test, lint,
-build, cattura o avvio dell'app. La prossima verifica dovrà coprire l'intero
-incremento, inclusi footer, errori CLI, diagnostica annidata, esportazione JSON e
-risorse nel wheel. Le lingue richiedono ancora revisione di madrelingua.
-
-## Verifica richiesta dopo il checkpoint multilingua
-
-L'utente ha successivamente autorizzato i test. Su Linux con Python 3.14.4 sono
-stati aggiunti 22 test di regressione: 19 per CLI, messaggi strutturati e acquisizioni,
-tre flussi UI che percorrono le dieci lingue a 160×48 e 80×24. Verificano anche i
-footer renderizzati, i binding originali immutati fra app, il recupero dopo errori,
-il replay senza provider live e la conservazione letterale dei dettagli OS.
-
-La prima suite ha eseguito 195 test, con due fallimenti per diciture attese ormai
-superate e tre prove native Windows saltate. Aggiornate le due asserzioni senza
-cambiare il comportamento dell'app; il confronto non disponibile e il campione
-parziale restano verificati esplicitamente. I due test corretti e i 22 nuovi sono
-passati nelle esecuzioni mirate.
-
-La suite completa successiva ha eseguito **217 test in 246,539 secondi: 214
-passati e 3 prove native Windows saltate**, senza fallimenti o errori. Comando:
-
-```bash
-UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tests -v
-```
-
-Sono riusciti i launcher `--once --language fr` e `--json --language ko`, la cattura
-di schermate sintetiche, `uv build` e `tools/verify_distribution.py`. Quest'ultimo
-verifica gli archivi e l'installazione isolata offline, le dipendenze, CLI e replay
-sintetico; nei pacchetti sono presenti i dieci cataloghi e aiuti Markdown, i nuovi
-moduli e il CSS. I dati dei processi reali raccolti dai launcher di verifica non
-sono stati salvati. Controllati visivamente alcuni render sintetici, inclusi cinese,
-coreano, aiuto, confronto e regioni nel terminale piccolo. Anche Ruff isolato per
-`F,E9` è passato. Nessuna nuova prova hardware Windows/macOS; nessuna revisione
-madrelingua. Le prove simulate non sostituiscono queste verifiche.
-
-La CI del commit `63ebf0f` ha poi completato tutti i controlli sui tre Python Linux.
-Su Windows le tre prove native sono passate, ma due test dei limiti smaps fallivano:
-`Path.write_text` convertiva LF in CRLF e i budget contavano invece i byte LF.
-La fixture viene ora scritta in binario UTF-8; tutti i 13 test delle regioni sono
-passati nuovamente su Linux. Su macOS/Python 3.13 la suite ha completato 217 test
-con 5 skip, mentre `--once` è rimasto senza output per circa 178 secondi, fino
-all'annullamento del run obsoleto. Il log non identificava la chiamata in attesa.
-Gli smoke CLI della CI hanno ora un limite di due minuti e dump periodici dello
-stack Python per diagnosticare eventuali attese native; il job ha un limite di
-15 minuti. Questi limiti riguardano il runner CI, non il monitor avviato dall'utente.
-
-La diagnosi del sorgente ha inoltre individuato un fallback implicito di
-`psutil.Process.name()` / `.exe()` su `cmdline()`, contrario al contratto del
-progetto. `process_identity.py` isola ora i getter nativi di psutil 7; tutti i
-backend e i lettori delle regioni li usano senza espandere nomi, indovinare percorsi
-o riusare le cache pubbliche. API assente o accesso negato producono un'etichetta
-PID e percorso None; gli errori per processi terminati si propagano ai controlli
-d'identità. Passati 66 test mirati, inclusi 9 nuovi contratti. È riuscito anche un
-campionamento Linux reale con i metodi pubblici `name`, `exe` e `cmdline` sostituiti
-da errori, senza salvare metadati dei processi. Ricostruiti e verificati wheel e
-sdist con il nuovo adapter incluso.
-
-Nel run diagnostico `6cf0a5d`, Linux e Windows/Python 3.13 e 3.14 sono verdi;
-macOS/Python 3.11 ha completato suite, CLI reale in meno di un secondo per comando,
-build e distribuzione, senza riprodurre l'attesa. Windows/Python 3.11 ha rilevato
-una race nel solo test del dialogo: `Button.press()` accoda un evento e l'attesa
-dei worker poteva precederne la registrazione. Il test ora elabora l'evento con
-`pilot.pause()` prima di attendere il worker; cinque ripetizioni locali sono
-passate. Nessuna modifica del flusso di salvataggio applicativo.
-
-La suite completa con l'adapter nativo ha eseguito **226 test in 251,858 secondi:
-223 passati e 3 prove Windows saltate**, senza errori o fallimenti. Sono passati
-anche Ruff `F,E9`, build e verifica della distribuzione installata. Il test del
-dialogo con la sincronizzazione corretta è stato inoltre ripetuto cinque volte.
-
-Windows/Python 3.11 ha poi rilevato la stessa classe di race nei setup che
-inviavano due Invio consecutivi dopo `apply()`: la rigenerazione delle righe non
-era ancora conclusa e l'app scartava correttamente gli eventi della generazione
-precedente. `tests/ui_helpers.py` attende ora il rendering dopo `apply()` e fra
-app, processi e regioni. Non attende i worker, così i test di annullamento possono
-continuare a usare lettori bloccati. Aggiornati i cinque moduli interessati e
-verificati tutti i loro 30 test locali. Il comportamento applicativo resta invariato.
-
-## Politica macOS stabilita dall'utente
-
-L'utente ha richiesto di interrompere le verifiche macOS e di dichiarare questa
-regola in tutte le pagine e nei README: non abbiamo un Mac a disposizione, quindi
-macOS è sperimentale, non testato né validato dal progetto. Il backend rimane per
-eventuali contributi esterni; non va presentato come piattaforma verificata.
-Nessun ulteriore inseguimento di errori, runner o prove native macOS senza nuova
-istruzione. I tentativi e i problemi descritti sopra restano soltanto cronologia.
-
-Nel run `6b757d4` tutti i **sei job Linux/Windows sono riusciti**: Python 3.11,
-3.13 e 3.14 su entrambi i sistemi, con 226 test per job, CLI, build, archivi,
-installazione isolata e replay. Le tre prove native Windows sono passate su tutte
-le versioni. Le verifiche macOS rimaste sono state interrotte su richiesta.
-La matrice CI ora comprende esclusivamente Ubuntu e Windows; la policy è anche
-in AGENTS.md, nei dieci README, nelle pagine tecniche e nei dieci aiuti dell'app.
+# Stato attuale e passaggio di consegne
+
+Aggiornato il 17 novembre 2026. Sviluppo e verifiche: Linux e Windows.
+macOS è sperimentale, non testato né validato dal progetto perché non abbiamo un Mac;
+non avviare o pianificare prove native macOS e non aggiungerlo alla CI.
+
+## Ripartire
+
+1. Leggi [README](../README.md), [AGENTS](../AGENTS.md), [lessons](../lessons.md)
+   e [CONTRIBUTING](../CONTRIBUTING.md).
+2. Controlla `git status` e preserva le modifiche presenti. Il branch di lavoro
+   attuale è `codex/ramtaskman-foundation`; non presumere una copia pulita.
+3. Usa l'[indice dei documenti](README.md) e l'[architettura](architecture.md).
+4. Esegui controlli pertinenti alla modifica e documenta gli esiti realmente osservati.
+
+**Richiesta attuale:** sistemare testi, organizzazione, attribuzioni e immagini,
+e tradurre README principale e documentazione pubblica in inglese, conservando
+MIT e crediti originali. Il 17 novembre 2026 l’utente ha poi autorizzato commit e push
+di tutto e la prima release portable: ZIP Linux/Windows x64 e pacchetto Debian amd64.
+Questa autorizzazione sostituisce il precedente vincolo di lasciare tutto locale.
+
+## Funzioni presenti
+
+- Python/Textual; backend Linux e Windows, macOS solo sperimentale.
+- RAM globale, RSS/USS, PSS e swap per processo dove disponibili; dati mancanti
+  espliciti, copertura e verifica PID + create_time.
+- Gruppi Linux per istanza systemd esplicita; fallback utente/eseguibile o nome.
+- Filtri, ordinamento, dettaglio, modalità Slim/Full e dieci lingue per UI e CLI.
+- Regioni Linux su richiesta, provider virtuale Windows sperimentale;
+  confronto A/B, salvataggio e replay offline, tabella paginata.
+- Budget opzionale e annullamento cooperativo; nessuna lettura del contenuto della memoria.
+- Valore della RAM (`valuation.py`, opzioni CLI, colonna UI, cataloghi e test)
+  e About con F1 sono inclusi nella prima release; conservati dal lavoro preesistente.
+
+Non reimplementare queste funzioni. Consulta [guida](guida.md), [schema delle
+acquisizioni](schema-capture.md) e [piano con registro](piano-sviluppo.md).
+La sequenza iniziale del piano è storica: confronto e replay sono già realizzati.
+
+## Documentazione e immagini
+
+- README principale e guide pubbliche sono in inglese; `docs/i18n/README.it.md`
+  conserva la versione italiana. `docs/i18n/README.en.md` rimanda alla versione canonica.
+  I nomi dei file esistenti restano stabili; indice e selettori delle lingue sono aggiornati.
+  AGENTS, handoff, piano di lavoro e archivio storico restano note interne in italiano.
+- [CONTRIBUTING](../CONTRIBUTING.md): ingresso per contributori, traduzioni e verifiche.
+- [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md): provenienza, dipendenze e licenze.
+- [Upstream](upstream.md): parti riutilizzate di GPU Taskman; `LICENSE` conserva la MIT originale.
+- [Galleria](images/README.md): immagini sintetiche e procedura riproducibile.
+- `tools/capture_screenshots.py` esporta l'app reale in SVG e misura i ritagli;
+  `tools/render_readme_images.py` compone le tavole con resvg-py, gruppo opzionale `images`.
+  La galleria pubblica usa la UI inglese; il default italiano dell'app non cambia.
+- Le lingue richiedono ancora revisione madrelingua.
+
+## Verifiche e limiti
+
+L'ultima suite completa registrata prima di questo riordino è di **226 test locali
+Linux: 223 passati e 3 prove native Windows saltate**. La CI storica del commit
+`22e45d5` ha completato i sei job Linux/Windows, Python 3.11, 3.13 e 3.14,
+con le prove native Windows. Dettagli nella [cronologia](history/2026-11-16.md).
+Questi risultati appartengono ai rispettivi checkpoint, non a ogni modifica successiva.
+
+Restano da eseguire le prove manuali su un PC Windows personale descritte nella
+[procedura Windows](verifica-windows.md). I contratti simulati non attestano
+l'hardware. macOS e la sua eventuale mappa rimangono fuori dal perimetro interno.
+
+Per questo riordino, su Linux con Python 3.14.4 sono passati **6 test mirati**:
+tre di distribuzione e tre di cataloghi/UI multilingua, con `run_test` a 160×48
+e 80×24. Sono riusciti cattura sintetica completa, rendering delle sei immagini,
+build wheel/sdist e verifica degli archivi, installazione isolata, CLI e replay
+offline. Controllati visivamente i sei PNG e verificati 352 riferimenti locali
+nei 39 Markdown, senza destinazioni mancanti; `git diff --check` pulito.
+La MIT originale è identica byte per byte. L'archivio sorgente include anche
+documentazione, immagini, strumenti, test e lockfile; la wheel include gli avvisi.
+Le dipendenze runtime non sono cambiate. Non è stata rieseguita la suite completa
+né una nuova verifica Windows; macOS non è stato verificato. Nessuna pubblicazione.
+
+Le prove asincrone e la cattura sono state eseguite fuori dalla sandbox locale:
+qui la chiusura dell'executor di Python restava in attesa anche con una prova
+minima indipendente da ramtaskman, mentre fuori sandbox terminava regolarmente.
+Non è stato introdotto un workaround nel codice applicativo.
+
+### Traduzione pubblica in inglese — 17 novembre 2026
+
+Tradotti README principale, guida, architettura, schema, audit, benchmark,
+procedure Windows/macOS, revisione storica, lessons, changelog, provenienza,
+CONTRIBUTING, attribuzioni e galleria. Conservati risultati storici, contratti,
+limiti e crediti. Corretto il paragrafo dell'architettura che presentava il budget
+già implementato come sviluppo futuro e un'ancora della revisione verso il vecchio handoff.
+
+Rigenerate le catture sintetiche con galleria inglese e i sei PNG, controllati
+visivamente. Verificati 365 riferimenti locali e 5 ancore in 40 file Markdown,
+senza destinazioni mancanti. Build wheel/sdist, verifica degli archivi,
+installazione isolata, CLI e replay sintetico offline riusciti; `git diff --check`
+pulito e MIT identica a HEAD. La cattura usa `run_test`, include 160×48 e 80×24
+e tutte le dieci lingue. Nessuna nuova suite applicativa completa, prova nativa
+Windows o prova macOS: questo incremento riguarda documenti e lingua della galleria.
+Le modifiche applicative preesistenti sono conservate. Nessuna pubblicazione.
+
+### Presentazione, branding e disponibilità dei download
+
+Su richiesta dell'utente: README inglese e italiano con stima del costo RAM
+per app in evidenza, prezzo corrente inserito dall'utente, badge CI/Windows-Linux/MIT,
+primo riferimento VibeWare collegato al manifesto sul sito e footer sul modello
+VoiceDucker. Logo originale e sua MIT copiati senza modifiche da AgentInbox;
+attribuzioni e archivio sorgente includono l'avviso del logo. Semplificati i passaggi
+più burocratici nelle introduzioni pubbliche, mantenendo la politica macOS.
+
+Il 17 novembre 2026 sono state lette release, esecuzioni e artifact GitHub sia
+di `ramtaskman` sia di `VibeKit`: nessuna release e nessun pacchetto portable
+Ram Taskman disponibile. La CI specifica esegue `uv build` e verifiche, senza
+upload degli archivi. I pacchetti Windows/Linux di VibeKit appartengono ad altre app.
+Il README collega quindi sorgente ZIP e pagina CI; non contiene finti download portable.
+Ultima CI del repo autonomo riuscita: run `43895631787`, commit `22e45d5`;
+il precedente riferimento a `6b757d4` era errato (run cancellata) ed è corretto sopra.
+Non sono stati avviati workflow, caricati artifact o pubblicati contenuti.
+
+Per prestazioni future misura prima di introdurre cache o controlli aggiuntivi;
+conserva età, copertura e motivi delle letture mancanti. Non presentare una
+crescita A/B come prova automatica di leak. Nessuna elevazione, kill o riavvio automatico.
+
+## Cronologia
+
+Il vecchio handoff completo è nell'[archivio del 16–17 novembre](history/2026-11-16.md).
+Lezioni durature in [lessons](../lessons.md), cambiamenti per gli utenti in
+[CHANGELOG](../CHANGELOG.md), stato operativo in questa pagina.
+
+## Prima release portable — autorizzata il 17 novembre 2026
+
+L'utente ha chiesto commit/push di tutte le modifiche e la prima release.
+Workflow `release.yml` su tag `v0.1.0`: suite Linux/Windows su Python 3.11/3.13/3.14,
+build nativi x64 PyInstaller con Python 3.13, ZIP Linux e Windows e `.deb` amd64.
+Pubblicazione automatica soltanto dopo test e pacchetti riusciti. Nessun job macOS.
+Ogni ZIP include Python, dipendenze e avvisi; controlli CLI e UI sintetica
+(10 lingue, help, About, 160×48/80×24, replay offline) sullo ZIP estratto.
+Il job Linux installa, verifica e rimuove anche il Debian su Ubuntu 22.04.
+Checksum SHA-256, wheel e sdist allegati; nessuna pubblicazione PyPI.
+
+Verifica pre-release locale Linux Python 3.14.4: **233 test, 230 passati e 3
+nativi Windows saltati**, inclusi valore RAM e About. ZIP Linux estratto verificato.
+Il filesystem portatile espone permessi 777: lo staging Debian usa una directory
+temporanea con permessi normalizzati; i file ZIP ricevono permessi espliciti.
+I pacchetti pubblicati sono costruiti dalla CI, non dal PC di sviluppo.
+I link README puntano agli asset v0.1.0 e alla pagina dell'ultima release.

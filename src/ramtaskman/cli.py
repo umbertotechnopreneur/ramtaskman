@@ -16,6 +16,7 @@ from .collector import Collector
 from .i18n import LANGUAGES, translate
 from .messages import error_text, localize
 from .models import Snapshot
+from .valuation import RamPrice, price_report, value_text
 from .report import size, table, to_dict
 
 
@@ -137,6 +138,10 @@ def _parser(language: str) -> LocalizedArgumentParser:
                         help=tr('cli_help_budget'))
     parser.add_argument('--selected-priority', action='store_true', help=tr('cli_help_priority'))
     parser.add_argument('--measurement-backoff', action='store_true', help=tr('cli_help_backoff'))
+    parser.add_argument('--ram-price', type=float, help='Total price of installed RAM (not a live quote)')
+    parser.add_argument('--ram-currency', default='EUR', help='Three-letter uppercase currency code')
+    parser.add_argument('--ram-months', type=int, help='Optional months over which to allocate hardware value')
+    parser.add_argument('--ram-capacity-gib', type=float, help='Optional nominal installed capacity; defaults to OS-visible RAM')
     return parser
 
 
@@ -169,6 +174,16 @@ def main() -> int:
     parser = _parser(language)
     args = parser.parse_args(arguments)
     tr = parser.tr
+    price = None
+    if args.ram_price is not None:
+        try:
+            price = RamPrice(args.ram_price, args.ram_currency, args.ram_months, args.ram_capacity_gib)
+        except ValueError as error:
+            parser.error(str(error))
+    elif args.ram_months is not None or args.ram_capacity_gib is not None or args.ram_currency != 'EUR':
+        parser.error('--ram-price is required for RAM valuation options')
+    if price and (args.open or args.compare):
+        parser.error('RAM valuation requires a live system sample, not a region capture')
     if (args.selected_priority or args.measurement_backoff) and args.max_measurements is None:
         parser.error(tr('cli_policy_requires_budget'))
     if args.selected_priority and (args.once or args.json or args.open or args.compare):
@@ -200,12 +215,20 @@ def main() -> int:
         if args.once or args.json:
             snap = collector.sample()
             if args.json:
-                print(json.dumps(to_dict(snap), ensure_ascii=False, indent=2))
+                data = to_dict(snap)
+                if price:
+                    data['ram_valuation'] = price_report(snap, price)
+                print(json.dumps(data, ensure_ascii=False, indent=2))
             else:
                 _print_sample(snap, language)
+                if price:
+                    console = Console()
+                    console.print(Text(tr('ram_value_note')))
+                    for row in snap.applications:
+                        console.print(Text(row.name + ': ' + value_text(row, snap, price)))
         else:
             from .app import RamTaskManager
-            RamTaskManager(collector, args.interval, args.processes, language=language).run()
+            RamTaskManager(collector, args.interval, args.processes, language=language, ram_price=price).run()
     except (RuntimeError, OSError, KeyError) as error:
         print('ramtaskman: ' + localize(error_text(error), language), file=sys.stderr)
         return 1

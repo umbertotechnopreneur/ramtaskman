@@ -1,68 +1,70 @@
-# Guida a ramtaskman
+# ramtaskman user guide
 
-Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
-sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
-dell'utente, macOS è escluso dalle verifiche interne.
+We develop and test ramtaskman on Linux and Windows. The macOS backend is
+experimental: we don't have a Mac, so we haven't tested or validated it.
+Our own testing and CI cover Linux and Windows.
 
-Task manager **per la RAM su Linux e Windows**, con un backend macOS sperimentale,
-scritto in Python e Textual. Riprende layout,
-widget, colori e scorciatoie di [gputaskman di Scott Hanselman](https://github.com/shanselman/gputaskman),
-con un collector dedicato a memoria per applicazione, **PSS, USS, RSS, swap e SwapPSS**.
+A **RAM task manager for Linux and Windows**, with an experimental macOS backend,
+written in Python and Textual. It adapts the layout, widgets, colors and shortcuts
+of [Scott Hanselman's gputaskman](https://github.com/shanselman/gputaskman), with a
+collector dedicated to application memory, **PSS, USS, RSS, swap and SwapPSS**.
 
-Prima versione funzionante, ancora sperimentale. Interfaccia terminale con pannelli
-Full diagnostics → System → Charts → tabella → inspector → footer, come gputaskman.
-Le metriche e le etichette sono adattate alla RAM; non è una copia pixel per pixel di ogni stato GPU.
+This is the first working version and remains experimental. The terminal interface
+uses Full diagnostics → System → Charts → table → inspector → footer panels,
+as in gputaskman. Metrics and labels are adapted to RAM; this is not a
+pixel-for-pixel copy of every GPU state.
 
-## Avvio
+## Start the app
 
-Servono Python >=3.11 e `uv`. Linux richiede `/proc` e `smaps_rollup`.
-Su Windows usa Windows Terminal. Per un eventuale contributo esterno su macOS,
-consulta la [procedura indicativa non verificata](verifica-macos.md).
-La versione minima è dichiarata in pyproject.toml; non viene imposto Python 3.14
-su Windows o macOS. La macchina di sviluppo usa Python 3.14.4.
+Requires Python >=3.11 and `uv`. Linux requires `/proc` and `smaps_rollup`.
+On Windows, use Windows Terminal. External macOS contributors can consult the
+[unverified guidance](verifica-macos.md). The minimum version is declared in
+pyproject.toml; Python 3.14 is not required on Windows or macOS.
+The development machine uses Python 3.14.4.
 
 Linux:
 
 ```bash
-./run.sh
-./run.sh --once
+./run.sh --language en
+./run.sh --once --language en
 ./run.sh --json
-./run.sh --processes --interval 2
+./run.sh --processes --interval 2 --language en
 ```
 
-Windows, da PowerShell o Prompt dei comandi:
+Windows, from PowerShell or Command Prompt:
 
 ```powershell
-.\run.cmd
-.\run.cmd --once
+.\run.cmd --language en
+.\run.cmd --once --language en
 .\run.cmd --json
 ```
 
-`run.sh` e `run.cmd` possono essere eseguiti da qualsiasi directory. Ambiente e cache delle dipendenze
-restano nella cartella del progetto (`.venv`, `.uv-cache`, esclusi da Git).
-Il primo avvio installa le dipendenze bloccate in `uv.lock` e richiede rete.
-I launcher non scaricano Python automaticamente. Per selezionare esplicitamente un interprete già
-installato: `UV_PYTHON=python3.13 ./run.sh`; in PowerShell imposta
-`$env:UV_PYTHON = "3.13"` prima di `.\run.cmd`. Non condividere la stessa `.venv` tra
-sistemi operativi: ricreala localmente dopo aver copiato il progetto.
-La UI non usa GPU, API cloud, servizi esterni o telemetria.
+`run.sh` and `run.cmd` can be launched from any directory. The environment and
+dependency cache stay inside the project (`.venv` and `.uv-cache`, excluded from Git).
+The first run installs the dependencies pinned in `uv.lock` and requires network access.
+The launchers do not download Python automatically. To select an interpreter
+already installed, use `UV_PYTHON=python3.13 ./run.sh`; in PowerShell, set
+`$env:UV_PYTHON = "3.13"` before running `.\run.cmd`. Do not share `.venv` between
+operating systems: recreate it locally after copying the project.
+The UI uses no GPU, cloud APIs, external services or telemetry.
 
-In alternativa, dalla radice del progetto:
+Alternatively, from the repository root:
 
 ```bash
 UV_CACHE_DIR="$PWD/.uv-cache" uv sync --locked
-UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked ramtaskman
+UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked ramtaskman --language en
 ```
 
-Non pubblicato su PyPI: non usare `pip install ramtaskman` per ottenere questa copia.
-Non è necessaria l'elevazione dei privilegi; i processi protetti restano parzialmente visibili.
+This project is not published on PyPI: do not use `pip install ramtaskman` to obtain
+this copy. Elevated privileges are not required; protected processes remain
+partially visible.
 
-## Lingua dell'interfaccia e dei rapporti
+## Interface and report language
 
-`--language` seleziona italiano (`it`, predefinito), inglese (`en`), cinese
-semplificato (`zh`), coreano (`ko`), francese (`fr`), vietnamita (`vi`), spagnolo
-(`es`), portoghese (`pt`), tedesco (`de`) o giapponese (`ja`). Vale per dashboard,
-dettagli, regioni, footer, aiuto, messaggi applicativi e rapporto testuale:
+`--language` selects Italian (`it`, the default), English (`en`), Simplified
+Chinese (`zh`), Korean (`ko`), French (`fr`), Vietnamese (`vi`), Spanish (`es`),
+Portuguese (`pt`), German (`de`) or Japanese (`ja`). It applies to the dashboard,
+details, regions, footer, help, application messages and text report:
 
 ```bash
 ./run.sh --language it
@@ -70,354 +72,392 @@ dettagli, regioni, footer, aiuto, messaggi applicativi e rapporto testuale:
 ./run.sh --language ko --once
 ```
 
-Su Windows usa le stesse opzioni con `.\run.cmd`. Le opzioni CLI, i simboli dei
-contatori e lo schema JSON conservano i propri identificatori. Nomi, percorsi e
-dettagli restituiti dal sistema operativo restano letterali. Le acquisizioni
-conservano i motivi nel testo registrato: riaprirle con un'altra lingua traduce
-l'interfaccia, non quei dati. Le traduzioni sono preparate con assistenza AI e
-richiedono revisione di madrelingua. Sono state eseguite verifiche locali Linux
-con Python 3.14.4 su CLI, UI sintetica a 160×48 e 80×24, build, installazione
-isolata e replay. Sono passate anche le verifiche native Windows in CI; le prove
-manuali sul PC Windows personale restano da eseguire. macOS non è testato né validato.
+On Windows, use the same options with `.\run.cmd`. CLI options, counter symbols
+and the JSON schema keep their identifiers. Names, paths and details returned by
+the OS remain literal. Captures preserve reasons as recorded text: reopening them
+in another language translates the interface, not that data. Translations were
+prepared with AI assistance and need native-speaker review.
+Local Linux checks with Python 3.14.4 covered CLI, synthetic UI at 160×48 and 80×24,
+builds, isolated installation and replay. Native Windows CI checks have also passed;
+manual testing on a personal Windows PC is still pending. macOS is untested and unvalidated.
 
-## Supporto per piattaforma
+## Platform support
 
-| Funzione | Linux | Windows | macOS |
+| Feature | Linux | Windows | macOS |
 |---|---|---|---|
-| UI Textual, app/processi, grafici, JSON | Implementata | Implementata | Codice sperimentale, non verificato |
-| RAM globale e RSS | procfs / psutil | psutil / working set | psutil |
-| USS | Private_Clean + Private_Dirty | psutil, memoria residente privata | psutil, memoria privata |
+| Textual UI, applications/processes, charts, JSON | Implemented | Implemented | Experimental code, unverified |
+| System RAM and RSS | procfs / psutil | psutil / working set | psutil |
+| USS | Private_Clean + Private_Dirty | psutil, private resident memory | psutil, private memory |
 | PSS | smaps_rollup | n/a | n/a |
-| Swap e SwapPSS per processo | smaps_rollup | n/a | n/a |
-| Swap globale | meminfo | pagefile tramite psutil | psutil |
-| Cache, slab, PSI Linux | Disponibili | n/a | n/a |
-| Regioni del processo e mappa navigabile | smaps su richiesta | Solo intervalli virtuali, sperimentale | Non implementate |
-| Validazione effettuata | Test e prova locale | CI nativa passata; prova manuale su PC personale da eseguire | Non testato né validato; nessun Mac disponibile |
+| Per-process Swap and SwapPSS | smaps_rollup | n/a | n/a |
+| System swap | meminfo | pagefile through psutil | psutil |
+| Linux cache, slab, PSI | Available | n/a | n/a |
+| Process regions and navigable map | smaps on demand | Virtual ranges only, experimental | Not implemented |
+| Verification performed | Local tests and checks | Native CI passed; manual personal-PC check pending | Untested and unvalidated; no Mac available |
 
-Su Windows/macOS l'ordinamento iniziale è USS, su Linux PSS. La stessa UI mantiene
-le colonne non disponibili a n/a e spiega il limite. La CI attuale copre Ubuntu e
-Windows con Python 3.11, 3.13 e 3.14: sei job complessivi passati. macOS è escluso
-dalla matrice e dalle verifiche interne. Consulta GitHub Actions per gli esiti successivi.
+Initial sorting uses USS on Windows/macOS and PSS on Linux. The same UI keeps
+unsupported columns at n/a and explains the limitation. Current CI covers Ubuntu
+and Windows with Python 3.11, 3.13 and 3.14; all six jobs passed at the recorded
+checkpoint. macOS is excluded from the matrix and internal verification.
+Consult GitHub Actions for subsequent results.
 
-Le API native sono gestite da `psutil`: per questa base non occorrono pywin32 o WMI.
-PSS non è esposta da psutil su Windows/macOS; il private commit/PagefileUsage Windows
-non rappresenta la RAM privata residente né la swap effettiva di un processo.
-Fonti: [psutil 7.2](https://psutil.io/7.2/#psutil.Process.memory_full_info),
+`psutil` handles native APIs; this implementation does not need pywin32 or WMI.
+psutil does not expose PSS on Windows/macOS. Windows private commit/PagefileUsage
+is neither private resident RAM nor a process's actual swap use.
+Sources: [psutil 7.2](https://psutil.io/7.2/#psutil.Process.memory_full_info),
 [Microsoft PROCESS_MEMORY_COUNTERS_EX](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters_ex).
 
-## Controlli
+## Controls
 
-| Tasto | Azione |
+| Key | Action |
 |---|---|
-| ↑ / ↓ | Seleziona una riga |
-| Invio su un'applicazione | Mostra solo i processi del gruppo |
-| Invio su un processo / r | Apre la mappa delle regioni; su un'app r mostra prima i suoi processi |
-| Esc | Dalla tabella processi torna alle app; nei controlli ricerca cancella i filtri |
-| g | Alterna applicazioni e tutti i processi |
-| s | Ordina per PSS, USS, RSS, Swap, SwapPSS, nome |
-| c / selettore Charts | Alterna grafici |
-| a | Tutti / primi 30 secondo l'ordinamento |
+| ↑ / ↓ | Select a row |
+| Enter on an application | Show only processes in that group |
+| Enter on a process / r | Open the region map; on an application, r first shows its processes |
+| Esc | Return from processes to applications; clear filters when search controls have focus |
+| g | Toggle applications / all processes |
+| s | Sort by PSS, USS, RSS, Swap, SwapPSS or name |
+| c / Charts selector | Switch charts |
+| a | All / top 30 in the current sort order |
 | m | Slim / Full diagnostics |
-| / | Cerca nome, percorso eseguibile o PID esatto |
-| f | Apri i filtri per utente e stato memoria |
-| d | Dettaglio della memoria del gruppo o processo selezionato |
-| p | Pausa / riprendi |
-| ? | Spiegazione delle metriche |
-| q | Esci dal programma |
+| / | Search name, executable path or exact PID |
+| f | Open user and memory-state filters |
+| d | Memory details for the selected group or process |
+| p | Pause / resume |
+| ? | Explain metrics |
+| F1 | About, author and original credits; Esc returns to monitoring |
+| q | Quit the program |
 
-La chiusura del programma non chiude la sessione desktop.
-L'interfaccia parte in modalità Slim; premi `m` per passare a Full diagnostics.
-Il dashboard e l'inspector scorrono nei terminali piccoli; la tabella scorre orizzontalmente.
+Quitting the program does not close the desktop session.
+The interface starts in Slim mode; press `m` for Full diagnostics.
+The dashboard and inspector scroll in small terminals; the table scrolls horizontally.
 
-## Barra RAM del sistema
+## RAM value and monthly allocation
 
-La riga RAM si estende fino al bordo destro del pannello e mostra segmenti proporzionali
-colorati. Le etichette compaiono dentro i segmenti quando lo spazio basta; la legenda
-riporta tutte le categorie e i valori, comprese quelle inferiori a un carattere.
-
-Su Linux la barra descrive la RAM utilizzabile riportata in `MemTotal`:
-
-| Segmento | Contatore |
-|---|---|
-| Anonima | AnonPages |
-| File cache | Cached − Shmem |
-| Condivisa/tmpfs | Shmem |
-| Buffer | Buffers |
-| Slab ric. | SReclaimable |
-| Slab non ric. | SUnreclaim |
-| Altro | residuo calcolato: MemTotal meno gli altri segmenti |
-| Libera | MemFree |
-
-La somma dei segmenti è `MemTotal`. Altro è memoria non classificata dai contatori scelti,
-non una misura esclusiva del kernel. `MemTotal` non è necessariamente tutta la RAM fisica
-installata: alcune riserve hardware/kernel sono escluse dal totale utilizzabile.
-Non si aggiungono di nuovo `Slab`, `Mapped`, PSS/RSS o i contatori clean/dirty dei processi:
-si sovrappongono alle categorie già rappresentate.
-
-**Disponibile** resta un indicatore separato: comprende memoria recuperabile, inclusa
-parte della cache. **Uso netto** è `totale − disponibile`, lo stesso indicatore del grafico
-RAM; non è la somma di tutte le categorie non libere. Le misure sono sequenziali.
-Se mancano campi o il campione è incoerente, il motivo è mostrato e si usa la barra più
-semplice in uso/disponibile. Questo è anche il fallback Windows/macOS attuale; non vengono
-inventate categorie. Non si normalizzano valori incoerenti per farli rientrare nel totale.
-
-È una **mappa dei consumi per categoria OS**, non una disposizione per indirizzo fisico.
-Su Linux, Full diagnostics mostra anche la cache calcolata per il grafico, lo slab e
-`Committed_AS` / `CommitLimit` da `meminfo`. Cache e slab si sovrappongono alle
-categorie della barra; il commit rappresenta memoria virtuale impegnata, non RAM
-residente o swap. Il limite dipende dalla configurazione dell'overcommit e non è
-un limite sempre applicato. I campi assenti restano n/a. Le categorie slab Linux
-recuperabile e non recuperabile non equivalgono ai pool paginabile e non paginabile
-di Windows.
-Su Windows, Full diagnostics aggiunge cache di sistema, pool kernel paginabile e non
-paginabile, commit corrente/limite e picco dal boot tramite
-[GetPerformanceInfo](https://learn.microsoft.com/windows/win32/api/psapi/ns-psapi-performance_information).
-La cache comprende standby e working set di sistema e si sovrappone alla memoria
-disponibile. Il pool paginabile misura un'allocazione, non solo pagine residenti;
-il commit è impegno di memoria virtuale, non RAM residente o swap. Queste viste non
-sono segmenti della barra da sommare. Le letture sono sequenziali; in caso di errore
-i dettagli diventano n/a con motivo e vengono riletti al campione successivo.
-
-Per un processo, `d` mostra la ripartizione aggregata e `r` apre la mappa delle regioni
-Linux da `smaps`: indirizzi virtuali, file, permessi e residenza. Gli indirizzi virtuali
-non sono posizioni fisiche contigue nella RAM.
-Fonti: [procfs Linux](https://docs.kernel.org/filesystems/proc.html#meminfo),
-[sorgente meminfo](https://github.com/torvalds/linux/blob/master/fs/proc/meminfo.c).
-
-## Significato e limiti dei numeri
-
-In Full diagnostics, sotto la RAM generale, la barra **USS app** mostra le prime
-10 applicazioni con USS completa, con segmenti numerati e legenda colorata; le altre
-applicazioni complete sono riunite in un segmento. La scala è la somma USS delle sole
-app complete del campione, non la RAM totale o utilizzata. I gruppi parziali restano
-esclusi con copertura esplicita. La barra segue il raggruppamento della tabella e
-descrive l'intero campione anche con ricerca, filtri o drilldown attivi. Le posizioni
-dei blocchi non corrispondono a intervalli di RAM fisica. Le app con lo stesso nome
-possono essere gruppi distinti; numeri e legenda identificano i segmenti.
-
-- **PSS**: memoria privata più quota proporzionale della memoria condivisa.
-- **USS**: `Private_Clean + Private_Dirty` da `smaps_rollup`.
-- **RSS**: memoria residente, comprese pagine condivise. Una somma può duplicarle.
-- **Swap**: campo `Swap` di `smaps_rollup`; non include la swap shmem e può duplicare
-  pagine condivise. **SwapPSS** ripartisce proporzionalmente la swap condivisa contabilizzata.
-- **RAM used**: `total - available`; su Linux `MemTotal - MemAvailable`. Non è la somma
-  di PSS/RSS. Su macOS available segue psutil (free + inactive), non la Memory Pressure
-  di Activity Monitor. Su Windows free e available da psutil coincidono.
-- **Cache**: `Cached + Buffers + SReclaimable - Shmem`, minimo zero, nel grafico storico.
-  Si sovrappone alla memoria disponibile. Nella barra RAM file cache, buffer e slab
-  recuperabile sono rappresentati separatamente, senza aggiungere questo totale una seconda volta.
-- **Slab**: memoria del kernel da `meminfo`, non tutto il consumo del kernel.
-- **PSI some**: percentuale di tempo con almeno un task in attesa di memoria,
-  media su 10 secondi. Non è percentuale di RAM occupata.
-- **n/a / null**: lettura non disponibile; zero è riservato a uno zero misurato.
-  Il totale di un gruppo è sconosciuto se manca un solo valore della metrica.
-  `Letture` indica le coperture PSS e USS del gruppo. Il dashboard mostra somme **visibili parziali**.
-- Le pagine HugeTLB non sono incluse nei normali contatori qui mostrati.
-
-**Applicazione:** su Linux viene usata l'istanza applicativa systemd quando il cgroup
-utente la identifica esplicitamente (`app-*.scope` o `app-*.service` sotto `app.slice`).
-Gli helper con eseguibili differenti della stessa istanza si uniscono; istanze e utenti
-diversi restano separati. Non vengono aggregati intere sessioni o servizi generici.
-Il nome visualizzato deriva dall'identità systemd, con eventuale escaping decodificato.
-Il percorso completo dell'istanza resta consultabile nell'inspector e nel JSON.
-
-Senza identità esplicita, anche su Windows/macOS, si usa `(utente, eseguibile)` o
-`(utente, nome)` se il percorso manca: è un fallback dichiarato. Utente = UID su Unix,
-dominio/nome su Windows. Con proprietario sconosciuto il processo resta separato.
-Nel fallback, più programmi Python con lo stesso eseguibile possono ancora essere uniti.
-L'inspector e il campo JSON `grouping` indicano il criterio (`cgroup`, `executable`, `name`).
-Fonte per la convenzione: [systemd Desktop Integration](https://systemd.io/DESKTOP_ENVIRONMENTS/).
-
-## Ricerca e filtri
-
-Premi `/` per aprire la barra. La ricerca è una sottostringa letterale senza distinzione
-maiuscole/minuscole su nome app, nome dei processi ed eseguibili. Una stringa di sole cifre
-cerca invece un **PID esatto**. Non usa espressioni regolari. `Invio` riporta il focus alla
-tabella, mantenendo la ricerca. Le lettere scritte nel campo non attivano le scorciatoie.
-
-Con `f` apri i selettori:
-
-- **Utente:** tutti oppure un UID/account tra quelli raccolti.
-- **Con swap:** almeno un processo con swap misurata maggiore di zero; n/a non corrisponde.
-- **Dati parziali:** manca una lettura fra le metriche supportate dal sistema. PSS e swap
-  non supportate da Windows/macOS non rendono da sole tutte le righe parziali.
-
-Ricerca, utente e stato memoria si combinano. Il filtro agisce **prima** del limite Top 30.
-In vista app seleziona gruppi interi: tutti i processi rimangono nei totali, anche se solo
-un helper corrisponde. In vista processi seleziona i singoli processi del contesto corrente.
-Entrando in un'app con Invio e tornando con Esc i filtri vengono conservati. `Reset` o
-`Esc` con focus nei controlli cancella tutti i filtri; Esc dalla tabella app li cancella
-quando la barra è aperta. Grafici e dashboard continuano a descrivere l'intero sistema.
-La barra indica righe mostrate, corrispondenti e totali; nessun risultato è segnalato.
-
-## Memoria più granulare
-
-Seleziona un'app o un processo e premi **d**. La finestra scorrevole mostra:
-
-- **Barra PSS:** anonima, file e shmem, proporzionali alla PSS totale.
-- **Barra RSS:** privata clean/dirty e condivisa clean/dirty, proporzionali alla RSS totale.
-- **Swap e SwapPSS separate:** non entrano nelle barre della RAM residente.
-- **PSS anonima, file e shmem:** ripartizione proporzionale per tipo di pagina.
-- **Privata clean/dirty:** le due componenti di USS.
-- **Condivisa clean/dirty:** pagine residenti condivise; nei gruppi possono essere contate più volte.
-- **Anonymous, LazyFree e AnonHugePages:** altre viste sulle pagine anonime, recuperabili e THP.
-
-Questi dettagli provengono dalla stessa lettura Linux `smaps_rollup`; non aggiungono una
-scansione delle singole mappature. Sono **viste sovrapposte**, non componenti da sommare tutte.
-Un campo mancante resta n/a con la copertura delle letture: un totale parziale non viene
-mostrato come completo. Su Windows/macOS il dettaglio riporta i contatori generali disponibili
-e indica n/a per la ripartizione Linux. La finestra fissa il campione all'apertura; chiudila
-e riaprila per aggiornarla. `Esc` o `d` chiude. Il campionamento principale continua.
-Fonte: [documentazione procfs del kernel Linux](https://docs.kernel.org/filesystems/proc.html).
-
-Le barre usano tutta la larghezza disponibile e mantengono in legenda anche componenti
-inferiori a un carattere. La coerenza viene verificata per ogni processo prima di sommare
-un'applicazione; errori opposti non si compensano. RSS richiede la somma esatta. I tre
-contatori PSS sono troncati separatamente ai kB da procfs: un residuo di 0, 1 o 2 KiB per
-processo è rappresentato esplicitamente come **Arrotondamento procfs**, senza riscalare
-le componenti. Altre incoerenze producono `n/a` con motivo.
-Fonte: [kernel Linux, __show_smap](https://github.com/torvalds/linux/blob/v6.17/fs/proc/task_mmu.c).
-
-## Mappa delle regioni Linux
-
-In modalità live la card superiore ripete la barra RAM del sistema e mostra la quota
-USS del PID selezionato sulla scala della RAM totale. Il resto comprende anche la RAM
-disponibile; non è il consumo delle sole altre app. Questi contatori seguono il campione
-RAM corrente, con età esplicita, separato dalla lettura delle regioni su richiesta.
-La card non viene mostrata nel replay offline. Su Windows la mappa parte dagli
-indirizzi virtuali in ordine crescente; estremi e intervallo selezionato sono mostrati
-in cima, con fine esclusa e buchi esclusi dalla scala. Le posizioni nella barra di consumo
-non indicano indirizzi fisici. La vista descrive un singolo PID, non tutti gli helper del gruppo.
-
-Seleziona un'app, premi `Invio` per scegliere uno dei suoi processi, poi premi **r** o
-**Invio** sul processo. Ogni PID ha uno spazio virtuale distinto: non vengono unite le
-mappe dei processi di un gruppo. La vista conserva pannelli, bordi, colori e tabella
-dell'interfaccia terminale. Su Windows il provider sperimentale mostra intervalli virtuali,
-senza contatori residenti per regione; su macOS la funzione non è ancora disponibile.
-Il provider Windows è coperto da simulazioni e verifiche native in CI Windows;
-le prove manuali sul PC Windows personale restano da eseguire.
-
-La mappa ha due modalità, selezionabili con **v**:
-
-- **RAM residente RSS:** la larghezza dei blocchi è proporzionale alla memoria residente
-  delle regioni mostrate. Le pagine condivise possono ricorrere in più mappature.
-- **Spazio virtuale:** la larghezza segue la dimensione virtuale delle regioni. L'ordine
-  è quello degli indirizzi crescenti; i buchi sono esclusi dalla scala e le transizioni
-  visibili sono segnate con `│`. Non è una rappresentazione dei frame fisici.
-
-I colori distinguono eseguibile, librerie, file, heap/stack riconosciuti, anonima, shmem
-e regioni speciali. Il tipo descrive l'origine della mappatura, con euristiche dichiarate:
-un file può contenere anche pagine private modificate tramite copy-on-write. La memoria
-anonima non viene chiamata automaticamente heap, né identificata come oggetti dell'app.
-
-La tabella mostra indirizzi, tipo, dimensione virtuale, RSS, PSS, USS, swap, permessi e nome.
-Il pannello inferiore aggiunge offset, inode, clean/dirty, SwapPSS, pagine anonime, THP,
-HugeTLB e VmFlags. THP è già incluso nei contatori ordinari; HugeTLB rimane separato.
-La selezione sulla barra e sulla tabella è sincronizzata. Le regioni troppo piccole per
-una cella restano sempre selezionabili dalla tabella.
-
-| Tasto nella mappa | Azione |
-|---|---|
-| ↑ / ↓, oppure clic sulla barra | Seleziona una regione |
-| v | Alterna RSS e spazio virtuale |
-| s | Ordina la tabella per RSS, PSS, dimensione virtuale, indirizzo; la mappa resta in ordine virtuale |
-| / | Cerca nome/percorso, tipo, permessi o indirizzo esadecimale `0x…` contenuto nella regione |
-| f | Filtra tipo e stato: residente, con swap, con pagine RSS condivise |
-| Invio dalla ricerca | Riporta il focus alla tabella |
-| z / Invio sulla tabella | Zoom sulla regione con fino a due regioni vicine per lato; ripeti per uscire |
-| Tab, poi ↑ / ↓ / PgDn | Porta il focus al pannello dettagli e scorri il contenuto |
-| r | Legge un nuovo campione del processo |
-| b / Ctrl+B | Fissa il campione A / rimuove A |
-| c | Alterna vista corrente e confronto A→B |
-| Ctrl+S / Ctrl+O | Salva / apre un'acquisizione locale |
-| Esc | Prima cancella i filtri aperti, poi esce dallo zoom, poi torna ai processi |
-| q | Chiude la mappa e torna ai processi |
-
-Ricerca e filtri si combinano; la mappa e il suo totale descrivono le regioni mostrate,
-anche durante lo zoom. L'aggiornamento è **su richiesta**, all'apertura o con `r`: il
-campionamento generale continua a usare `smaps_rollup`. Il pannello indica orario, età,
-durata e completezza della lettura. Durante un nuovo caricamento o dopo un errore non
-restano visualizzati vecchi valori come se fossero attuali.
-
-La scansione ha limiti di 32 MiB di metadati, 32.768 regioni e 3 secondi, controllati
-fra le letture. Cancellazione e tempo sono cooperativi: non interrompono una chiamata
-procfs già in corso. Raggiungere un limite conserva soltanto le regioni già completate
-e segnala il campione parziale. Permessi negati, processo terminato, PID riutilizzato o
-dati malformati producono un motivo esplicito. Nessuna elevazione automatica.
-
-Ogni processo è identificato da PID e data di creazione per evitare di riutilizzare
-una selezione su un nuovo processo con lo stesso PID. Le letture sono sequenziali,
-non atomiche; i totali globali e quelli per processo non sono tenuti artificialmente uguali.
-I dati possono essere limitati da UID, namespace e permessi procfs. La UI espone le
-letture mancanti senza elevazione automatica. Nessuna lettura di `/proc/PID/mem`,
-cmdline, environment o contenuti delle applicazioni.
-
-Il worker rileva in background e aspetta `--interval` secondi **dopo** ogni scansione;
-il periodo effettivo include `sample_ms`. Default 2 s. I grafici conservano 60 campioni,
-non necessariamente 60 secondi. Alla prima lettura la CPU è n/a.
-
-## Confronto A/B e acquisizioni
-
-Nella mappa, premi **b** per fissare A, esegui l'azione da osservare e premi **r** per
-raccogliere B. Con **c** apri il confronto; `v` cambia la metrica e `s` cambia
-l'ordinamento delle variazioni. Gli intervalli riorganizzati o i campioni incompleti
-non producono delta inventati. A rimane fissato anche se B non è disponibile. Le letture
-sono sequenziali: la crescita osservata non dimostra da sola una perdita di memoria.
-
-Con **Ctrl+S** salva su un percorso scelto esplicitamente; **Ctrl+O** apre una lettura
-salvata. Il file può contenere percorsi e nomi dei processi: controllalo prima di
-condividerlo. Per aprire da terminale senza avviare rilevazioni live:
+Enter today's price for your RAM to see a simple estimate of each app's share
+of that hardware cost. You can update the price whenever you want to compare
+usage against a different purchase price or current quote.
 
 ```bash
-./run.sh --open acquisizione.rtm.json
-./run.sh --compare prima.rtm.json dopo.rtm.json
+./run.sh --language en --ram-price 320 --ram-currency EUR
+./run.sh --language en --ram-price 320 --ram-currency EUR --ram-months 36
+./run.sh --json --ram-price 320 --ram-months 36
 ```
 
-`--compare` richiede un campione per file; `--open` apre anche un file con A e B.
-Un confronto richiede sessione di raccolta, identità del processo e definizioni
-compatibili. Un intervallo uguale non dimostra che sia rimasta la stessa allocazione.
-Il formato è descritto in [schema capture](schema-capture.md).
+You supply the price of all RAM in the machine: there is no automatic price lookup
+or network request. Capacity defaults to RAM visible to the operating system,
+which may be lower than the nominal installed capacity. For a nominal 32 GiB kit,
+you can specify `--ram-capacity-gib 32`.
 
-Il budget facoltativo `--max-measurements N` limita il numero di letture costose dei
-processi per ciclo e le ruota tra i processi. Le letture rinviate restano n/a; il numero
-di tentativi e rinvii è visibile. Il budget non è un limite di tempo sulle chiamate OS.
-Il default continua a raccogliere tutti i processi.
+Value = price × attributable bytes / capacity. `--ram-months` divides this value
+by the chosen number of months. This allocates hardware cost; it is not a bill,
+energy consumption or guaranteed savings. The current allocation is not a monthly average.
 
-Con un budget, `--measurement-backoff` rinvia temporaneamente letture ripetutamente negate
-o lente (almeno 250 ms): il rinvio dura al massimo otto cicli, poi rientrano nella rotazione
-e vengono riprovate quando il budget lo consente. Il motivo
-del rinvio è nella riga e i contatori restano n/a. Con `--selected-priority`, disponibile
-solo nella UI live, un PID selezionato ottiene al massimo uno slot per ciclo; con budget 1
-ottiene priorità solo un ciclo su tre, lasciando spazio alla rotazione. La selezione di un
-gruppo non privilegia alcun PID. Entrambe le opzioni sono disattivate per default.
+Linux uses PSS, which apportions shared pages. Windows uses USS, so only private
+resident memory is valued; shared memory is excluded. There is no RSS fallback.
+Incomplete or unmeasurable groups remain n/a (`null` in JSON). Do not add application
+values to those of their member processes or to system memory. Cache, kernel
+memory and inaccessible processes are not arbitrarily attributed to Windows or
+other applications. Samples are sequential, not atomic.
 
-## Struttura
+The value column follows current measurements during monitoring; the inspector
+identifies the metric used. JSON adds `ram_valuation` only when requested.
+
+Press **F1** for About: VibeWare, Umberto Giacobbi, website, thanks to Scott Hanselman
+and references to the MIT provenance. Esc closes About without stopping monitoring.
+
+## System RAM bar
+
+The RAM row extends to the right edge of its panel, showing proportional colored
+segments. Labels appear inside segments when space allows; the legend lists all
+categories and values, including those smaller than one terminal cell.
+
+On Linux, the bar describes usable RAM reported in `MemTotal`:
+
+| Segment | Counter |
+|---|---|
+| Anonymous | AnonPages |
+| File cache | Cached − Shmem |
+| Shared/tmpfs | Shmem |
+| Buffers | Buffers |
+| Reclaimable slab | SReclaimable |
+| Unreclaimable slab | SUnreclaim |
+| Other | Calculated remainder: MemTotal minus the other segments |
+| Free | MemFree |
+
+The segments sum to `MemTotal`. Other is memory not classified by the chosen
+counters, not a kernel-only measurement. `MemTotal` is not necessarily all installed
+physical RAM: some hardware/kernel reservations are excluded from the usable total.
+Do not add `Slab`, `Mapped`, PSS/RSS or process clean/dirty counters again: they
+overlap categories already represented.
+
+**Available** remains a separate indicator: it includes reclaimable memory,
+including some cache. **Net used** is `total − available`, the same indicator as
+the RAM chart; it is not the sum of all non-free categories. Readings are sequential.
+If fields are missing or a sample is inconsistent, the reason is shown and the
+simpler used/available bar is used. This is also the current Windows/macOS fallback;
+no categories are invented. Inconsistent values are not normalized to fit the total.
+
+This is a **map of consumption by OS category**, not a physical-address layout.
+On Linux, Full diagnostics also shows the cache value used in the chart, slab,
+and `Committed_AS` / `CommitLimit` from `meminfo`. Cache and slab overlap the bar's
+categories. Commit is committed virtual memory, not resident RAM or swap. Its
+limit depends on overcommit configuration and is not always enforced. Missing
+fields remain n/a. Linux reclaimable/unreclaimable slab categories are not
+Windows paged/nonpaged kernel pools.
+
+On Windows, Full diagnostics adds system cache, paged and nonpaged kernel pools,
+current commit, commit limit and peak since boot through
+[GetPerformanceInfo](https://learn.microsoft.com/windows/win32/api/psapi/ns-psapi-performance_information).
+Cache includes standby and system working set and overlaps available memory.
+Paged pool measures an allocation, not only resident pages. Commit is a virtual
+memory commitment, not resident RAM or swap. These views are not additional bar
+segments to sum. Readings are sequential; on error, details become n/a with a
+reason and are retried at the next sample.
+
+For a process, `d` shows the aggregate breakdown and `r` opens the Linux `smaps`
+region map: virtual addresses, files, permissions and residency. Virtual addresses
+are not contiguous physical positions in RAM.
+Sources: [Linux procfs](https://docs.kernel.org/filesystems/proc.html#meminfo),
+[meminfo source](https://github.com/torvalds/linux/blob/master/fs/proc/meminfo.c).
+
+## What the numbers mean and their limitations
+
+In Full diagnostics, below system RAM, the **application USS** bar shows the top
+10 applications with complete USS readings using numbered segments and a colored
+legend; other complete applications share one segment. Its scale is the sum of
+USS for complete applications in the sample, not total or used RAM. Partial groups
+are excluded with explicit coverage. The bar follows the table's grouping and
+describes the full sample even with search, filters or drilldown active. Block
+positions are not physical RAM ranges. Applications with identical names may be
+separate groups; numbers and the legend identify their segments.
+
+- **PSS:** private memory plus a proportional share of shared memory.
+- **USS:** `Private_Clean + Private_Dirty` from Linux `smaps_rollup`.
+- **RSS:** resident memory, including shared pages. Summing it may double-count them.
+- **Swap:** the `Swap` field in `smaps_rollup`; excludes shmem swap and may count
+  shared pages more than once. **SwapPSS** proportionally apportions accounted shared swap.
+- **RAM used:** `total - available`; on Linux, `MemTotal - MemAvailable`. It is not
+  the sum of PSS/RSS. On macOS, available follows psutil (free + inactive), not
+  Activity Monitor's Memory Pressure. On Windows, psutil free and available coincide.
+- **Cache:** `Cached + Buffers + SReclaimable - Shmem`, floored at zero, in the
+  history chart. It overlaps available memory. The RAM bar represents file cache,
+  buffers and reclaimable slab separately, without adding this total a second time.
+- **Slab:** kernel memory from `meminfo`, not all kernel consumption.
+- **PSI some:** percentage of time with at least one task waiting for memory,
+  averaged over 10 seconds. It is not the percentage of occupied RAM.
+- **n/a / null:** unavailable reading; zero is reserved for a measured zero.
+  A group's total is unknown if even one value for that metric is missing.
+  `Readings` shows group PSS and USS coverage. The dashboard displays **partial visible sums**.
+- HugeTLB pages are not included in the ordinary counters shown here.
+
+**Application:** on Linux, the systemd application instance is used when explicitly
+identified by the user's cgroup (`app-*.scope` or `app-*.service` under `app.slice`).
+Helpers with different executables in the same instance are grouped together;
+different instances and users remain separate. Entire sessions and generic services
+are not aggregated. The displayed name comes from the systemd identity, decoding
+escaping where applicable. The full instance path remains available in the inspector
+and JSON.
+
+Without an explicit identity, including on Windows/macOS, grouping uses
+`(user, executable)` or `(user, name)` when the path is missing: this is a declared
+fallback. User means UID on Unix and domain/name on Windows. An unknown owner
+keeps the process separate. The fallback can still combine multiple Python programs
+using the same executable. The inspector and JSON `grouping` field identify the
+criterion (`cgroup`, `executable`, `name`).
+Convention source: [systemd Desktop Integration](https://systemd.io/DESKTOP_ENVIRONMENTS/).
+
+## Search and filters
+
+Press `/` to open the search bar. Search is a literal, case-insensitive substring
+match on application name, process names and executable paths. A digits-only query
+instead finds an **exact PID**. It does not use regular expressions. Enter returns
+focus to the table while keeping the query. Typing in the field does not trigger shortcuts.
+
+Press `f` to open the selectors:
+
+- **User:** everyone or a collected UID/account.
+- **With swap:** at least one process has measured swap greater than zero; n/a does not match.
+- **Partial data:** a reading is missing among the metrics supported by the OS.
+  Unsupported PSS/swap on Windows/macOS do not by themselves mark every row as partial.
+
+Search, user and memory-state criteria combine. Filtering runs **before** the
+Top 30 limit. In application view it selects whole groups: all processes remain
+in their totals even if only one helper matches. In process view it selects
+individual processes within the current context. Filters survive entering an
+application with Enter and returning with Esc. Reset, or Esc with focus in the
+controls, clears all filters. Esc from the application table also clears them when
+the bar is open. Charts and dashboard continue to describe the whole system.
+The bar reports displayed, matching and total rows, including an explicit no-results state.
+
+## Detailed memory breakdown
+
+Select an application or process and press **d**. The scrollable window shows:
+
+- **PSS bar:** anonymous, file and shmem, proportional to total PSS.
+- **RSS bar:** private clean/dirty and shared clean/dirty, proportional to total RSS.
+- **Separate Swap and SwapPSS:** neither is included in resident RAM bars.
+- **Anonymous, file and shmem PSS:** proportional breakdown by page type.
+- **Private clean/dirty:** the two USS components.
+- **Shared clean/dirty:** shared resident pages; groups may count these more than once.
+- **Anonymous, LazyFree and AnonHugePages:** other views of anonymous, reclaimable and THP pages.
+
+These details come from the same Linux `smaps_rollup` read; they add no scan of
+individual mappings. They are **overlapping views**, not components to sum together.
+A missing field remains n/a with reading coverage: a partial total is not presented
+as complete. On Windows/macOS, details show the available general counters and n/a
+for the Linux breakdown. The window pins its sample when opened; close and reopen
+it to update. Esc or d closes it. Main sampling continues.
+Source: [Linux kernel procfs documentation](https://docs.kernel.org/filesystems/proc.html).
+
+Bars use the full available width and keep sub-cell components in the legend.
+Consistency is checked per process before aggregating an application, so opposite
+errors cannot cancel out. RSS requires an exact sum. procfs truncates the three
+PSS counters separately to kB: a remainder of 0, 1 or 2 KiB per process is explicitly
+shown as **procfs rounding**, without rescaling components. Other inconsistencies
+produce n/a with a reason.
+Source: [Linux kernel, __show_smap](https://github.com/torvalds/linux/blob/v6.17/fs/proc/task_mmu.c).
+
+## Linux region map
+
+In live mode, the top card repeats the system RAM bar and shows the selected PID's
+USS share on a total-RAM scale. The remainder includes available RAM; it is not
+just other applications' consumption. These counters follow the current RAM sample,
+with explicit age, separately from on-demand region reads. The card is not shown
+in offline replay. On Windows the map starts with virtual addresses in ascending
+order; boundaries and the selected range appear at the top, with an exclusive end
+and holes excluded from the scale. Positions in the consumption bar are not
+physical addresses. The view describes one PID, not all helpers in its group.
+
+Select an application, press Enter to choose one of its processes, then **r** or
+**Enter** on that process. Each PID has a distinct virtual address space; maps
+for processes in a group are not combined. The view preserves the terminal UI's
+panels, borders, colors and table. The experimental Windows provider shows virtual
+ranges without per-region resident counters. The feature is not available on macOS.
+The Windows provider has simulated tests and native Windows CI checks; manual
+checks on a personal Windows PC remain pending.
+
+Press **v** to switch between two map modes:
+
+- **Resident RAM, RSS:** block widths are proportional to resident memory in the
+  displayed regions. Shared pages may appear in multiple mappings.
+- **Virtual space:** widths follow region virtual sizes, ordered by ascending
+  address. Holes are excluded from the scale; visible transitions are marked `│`.
+  This is not a representation of physical frames.
+
+Colors distinguish executables, libraries, files, recognized heap/stack mappings,
+anonymous memory, shmem and special regions. Type describes mapping origin using
+declared heuristics: a file mapping can also contain private pages modified through
+copy-on-write. Anonymous memory is not automatically called heap or identified as
+application objects.
+
+The table shows addresses, type, virtual size, RSS, PSS, USS, swap, permissions and
+name. The lower panel adds offset, inode, clean/dirty, SwapPSS, anonymous pages,
+THP, HugeTLB and VmFlags. THP is already included in ordinary counters; HugeTLB
+remains separate. Bar and table selection are synchronized. Regions smaller than
+one cell remain selectable in the table.
+
+| Key in the map | Action |
+|---|---|
+| ↑ / ↓, or click the bar | Select a region |
+| v | Toggle RSS / virtual space |
+| s | Sort table by RSS, PSS, virtual size or address; map stays in virtual order |
+| / | Search name/path, type, permissions or a hexadecimal `0x…` address inside a region |
+| f | Filter type and state: resident, with swap, with shared RSS pages |
+| Enter in search | Return focus to the table |
+| z / Enter on the table | Zoom to the region with up to two neighbors on each side; repeat to exit |
+| Tab, then ↑ / ↓ / PgDn | Focus and scroll the details panel |
+| r | Read a new process sample |
+| b / Ctrl+B | Pin sample A / remove A |
+| c | Toggle current view / A→B comparison |
+| Ctrl+S / Ctrl+O | Save / open a local capture |
+| Esc | Clear open filters, then leave zoom, then return to processes |
+| q | Close the map and return to processes |
+
+Search and filters combine; the map and its total describe the displayed regions,
+including while zoomed. Updates are **on demand**, at opening or with `r`; general
+sampling continues to use `smaps_rollup`. The panel shows time, age, duration and
+completeness. Loading a new sample or encountering an error does not leave old
+values displayed as current.
+
+Scanning is limited to 32 MiB of metadata, 32,768 regions and 3 seconds, checked
+between reads. Cancellation and timing are cooperative: they do not interrupt a
+procfs call already in progress. Reaching a limit retains only completed regions
+and marks the sample partial. Denied access, process exit, PID reuse or malformed
+data produce explicit reasons. There is no automatic privilege elevation.
+
+Each process is identified by PID and creation time, preventing reuse of a selection
+for a new process with the same PID. Reads are sequential, not atomic; global and
+per-process totals are not artificially forced to match. UID, namespaces and procfs
+permissions may limit the data. The UI exposes missing readings without automatic
+elevation. It does not read `/proc/PID/mem`, cmdline, environment or application contents.
+
+The worker samples in the background and waits `--interval` seconds **after** each
+scan; the effective period includes `sample_ms`. Default: 2 seconds. Charts keep
+60 samples, not necessarily 60 seconds. CPU is n/a on the first reading.
+
+## A/B comparison and captures
+
+In the map, press **b** to pin A, perform the action you want to observe, then **r**
+to collect B. Press **c** to compare; `v` switches metrics and `s` switches change
+sorting. Reorganized ranges or incomplete samples do not produce invented deltas.
+A remains pinned even if B is unavailable. Reads are sequential: observed growth
+alone does not prove a memory leak.
+
+Use **Ctrl+S** to save to an explicitly chosen path; **Ctrl+O** opens a saved reading.
+Files can contain process names and paths: inspect them before sharing.
+To open from the terminal without starting live collection:
+
+```bash
+./run.sh --language en --open capture.rtm.json
+./run.sh --language en --compare before.rtm.json after.rtm.json
+```
+
+`--compare` requires one sample per file; `--open` also accepts a file containing
+A and B. Comparison requires compatible collection sessions, process identities
+and definitions. An identical range does not prove the same allocation remained.
+The format is described in the [capture schema](schema-capture.md).
+
+The optional `--max-measurements N` budget limits expensive process reads per cycle,
+rotating among processes. Deferred readings remain n/a; attempts and deferrals
+are visible. This budget does not impose a time limit on OS calls. By default,
+all processes continue to be collected.
+
+With a budget, `--measurement-backoff` temporarily defers repeatedly denied or slow
+reads (at least 250 ms). Deferral lasts at most eight cycles; reads then rejoin
+rotation and are retried when the budget allows. The row explains the deferral,
+and counters remain n/a. With `--selected-priority`, available only in the live UI,
+a selected PID gets at most one slot per cycle; with budget 1, it receives priority
+only once every three cycles, leaving room for rotation. Selecting a group does
+not prioritize a PID. Both options are disabled by default.
+
+## Structure
 
 ```text
 src/ramtaskman/
   cli.py        → Collector.sample()
-  collector.py  → selezione backend, campionamento e copertura
+  collector.py  → backend selection, sampling and coverage
   backends/     → Linux procfs; Windows/macOS psutil
   models.py     → ProcessMemory, ApplicationMemory, SystemMemory, Snapshot
-  grouping.py   → identità applicative systemd da cgroup
-  filters.py    → ricerca e filtri senza modificare gli aggregati
-  detail.py     → ripartizione granulare con copertura e spiegazioni
-  memory_bars.py → barre PSS/RSS con denominatori e ragioni esplicite
-  memory_segments.py → contabilità globale Linux senza sovrapposizioni
-  ram_bar.py    → barra RAM proporzionale a tutta larghezza e legenda
-  regions.py    → parser smaps e lettura limitata del processo selezionato
-  region_map.py → mappa RSS/virtuale con selezione delle regioni
-  region_screen.py → esploratore con ricerca, filtri, zoom e aggiornamento su richiesta
-  report.py     → tabella una tantum e JSON schema_version=1
-  app.py        → Textual, worker, tabelle, navigazione e grafici
-  app.tcss      → CSS copiato dalla UI originale
-  widgets.py    → spark e stacked_bar originali
- tests/         → contabilità, CLI e UI con fixture indipendenti dall'hardware
- tools/         → cattura di schermate sintetiche
- docs/          → architettura, provenienza e passaggio al prossimo agente
+  grouping.py   → systemd application identities from cgroups
+  filters.py    → search and filters without changing aggregates
+  detail.py     → granular breakdown with coverage and explanations
+  memory_bars.py → PSS/RSS bars with explicit denominators and reasons
+  memory_segments.py → Linux global accounting without overlap
+  ram_bar.py    → full-width proportional RAM bar and legend
+  regions.py    → smaps parser and bounded reads of the selected process
+  region_map.py → RSS/virtual map with region selection
+  region_screen.py → explorer: search, filters, zoom and on-demand refresh
+  report.py     → one-shot table and JSON schema_version=1
+  app.py        → Textual, workers, tables, navigation and charts
+  app.tcss      → CSS copied from the original UI
+  widgets.py    → original spark and stacked_bar
+ tests/         → accounting, CLI and UI with hardware-independent fixtures
+ tools/         → synthetic screenshot capture
+ docs/          → architecture, provenance and agent handoff
 ```
 
-## Verifica
+## Verification
 
 ```bash
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python -m unittest discover -s tests -v
@@ -428,36 +468,41 @@ UV_CACHE_DIR="$PWD/.uv-cache" uv build
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python tools/verify_distribution.py
 ```
 
-Le schermate SVG in `captures/` usano dati **sintetici**, non misure del PC. Sono escluse
-da Git. Il JSON live contiene nomi, UID e percorsi degli eseguibili: controllarlo prima
-di condividerlo. Non vengono salvate rilevazioni automaticamente.
+SVGs in `captures/` use **synthetic data**, not measurements of the PC, and are
+excluded from Git. Live JSON contains names, UIDs and executable paths: review it
+before sharing. Captures are not saved automatically.
 
-Checkpoint storico: verificati localmente **171 test** con Python 3.14.4, 170 passati e un test nativo
-Windows saltato su Linux. Build wheel/sdist, verifica della distribuzione installata
-e rilevazione Linux sono riuscite.
-In quel checkpoint i contratti Windows/macOS erano simulati, senza misure hardware.
-Lo stato attuale comprende la CI nativa Windows e sei job Ubuntu/Windows passati;
-le prove manuali sul PC Windows personale restano da eseguire. Il backend macOS
-rimane sperimentale, non testato né validato, fuori dalle verifiche interne.
-La UI è stata catturata e controllata con fixture sintetiche, inclusi filtri, dettaglio RAM e regioni.
-La suite include contabilità delle barre, parser e limiti smaps, identità PID, filtri,
-selezione/zoom, aggiornamento ed errori della mappa, con UI 160×48 e 80×24 e campionamento
-principale attivo mentre la mappa è aperta. I pacchetti includono i nuovi moduli e il CSS,
-escludendo cache e catture locali.
+Historical checkpoint: **171 tests** ran locally with Python 3.14.4, with 170 passing
+and one native Windows test skipped on Linux. Wheel/sdist builds, installed-distribution
+verification and Linux sampling succeeded. At that checkpoint, Windows/macOS contracts
+were simulated rather than measured on hardware. Later recorded results include
+native Windows CI and six passing Ubuntu/Windows jobs; manual checks on a personal
+Windows PC remain pending. macOS remains experimental, untested and unvalidated,
+outside internal verification.
 
-## Provenienza e prosecuzione
+The UI was captured and visually checked with synthetic fixtures, including filters,
+memory details and regions. The suite covers bar accounting, smaps parsing and limits,
+PID identity, filters, selection/zoom, map refresh and errors, UI at 160×48 and 80×24,
+and main sampling continuing while the map is open. Packages include the new modules
+and CSS, excluding caches and local captures.
 
-- [Prove manuali da eseguire sul PC Windows personale](verifica-windows.md)
-- [Procedura macOS indicativa per contributor esterni, non verificata](verifica-macos.md)
-- [Audit dei contatori delle piattaforme](audit-contatori-piattaforma.md)
-- [Benchmark locale e limiti delle misure](benchmark.md)
-- [Piano dettagliato: confronto, acquisizioni, piattaforme, prestazioni e distribuzione](piano-sviluppo.md)
-- [Provenienza, licenza e cosa è stato copiato](upstream.md)
-- [Architettura e invarianti](architecture.md)
-- [Passaggio al prossimo agente](handoff.md)
-- [Istruzioni per gli agenti](../AGENTS.md)
-- [Lezioni verificate](../lessons.md)
+## Provenance and further reading
 
-Licenza MIT; copyright originale di Scott Hanselman conservato in [LICENSE](../LICENSE).
-La cronologia originale è conservata in Git. Questo progetto è una derivazione indipendente,
-non una release ufficiale di Scott Hanselman.
+- [Documentation index](README.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Third-party notices](../THIRD_PARTY_NOTICES.md)
+- [Gallery and synthetic image reproduction](images/README.md)
+- [Manual checks pending on a personal Windows PC](verifica-windows.md)
+- [Unverified macOS guidance for external contributors](verifica-macos.md)
+- [Platform counter audit](audit-contatori-piattaforma.md)
+- [Local benchmarks and measurement limitations](benchmark.md)
+- [Detailed development plan and progress log — Italian](piano-sviluppo.md)
+- [Provenance, license and reused code](upstream.md)
+- [Architecture and invariants](architecture.md)
+- [Agent handoff — Italian](handoff.md)
+- [Agent instructions — Italian](../AGENTS.md)
+- [Verified lessons](../lessons.md)
+
+MIT license; Scott Hanselman's original copyright is retained in [LICENSE](../LICENSE).
+The original Git history is preserved. This is an independent derivative project,
+not an official Scott Hanselman release.

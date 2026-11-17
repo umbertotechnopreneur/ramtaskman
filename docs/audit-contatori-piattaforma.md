@@ -1,40 +1,40 @@
-# Audit dei contatori e del raggruppamento
+# Counter and grouping audit
 
-Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
-sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
-dell'utente, macOS è escluso dalle verifiche interne.
+We develop and test ramtaskman on Linux and Windows. The macOS backend is
+experimental: we don't have a Mac, so we haven't tested or validated it.
+Our own testing and CI cover Linux and Windows.
 
-Stato al 16 novembre 2026: analisi del sorgente psutil 7.2.2 bloccato in `uv.lock`,
-eseguita su Linux; **questa analisi storica non è una prova nativa**. In seguito
-sono passate le verifiche native Windows in CI: sei job complessivi Ubuntu/Windows
-con Python 3.11, 3.13 e 3.14. Le prove manuali sul PC Windows personale restano da
-eseguire. La colonna macOS descrive soltanto il sorgente del backend sperimentale.
+Status on November 16, 2026: source analysis of psutil 7.2.2, pinned in `uv.lock`,
+performed on Linux. **This historical analysis is not a native test.** Native
+Windows CI checks subsequently passed: six Ubuntu/Windows jobs with Python 3.11,
+3.13 and 3.14. Manual checks on a personal Windows PC remain pending. The macOS
+column describes only the experimental backend source.
 
-| Voce | Windows, backend psutil corrente | macOS, backend psutil corrente |
+| Item | Windows, current psutil backend | macOS, current psutil backend |
 |---|---|---|
-| Totale/disponibile | `virtual_memory()` usa memoria fisica totale/disponibile; free coincide con available. | `virtual_memory()` usa available = inactive + free, secondo il sorgente psutil. |
-| RSS | Working set esposto da `memory_info()`. | RSS esposto da `memory_info()`. |
-| USS | `memory_full_info()` interroga il contatore nativo psutil della memoria privata residente. | `memory_full_info()` usa il contatore nativo psutil della memoria privata. |
-| PSS | Non esposta da questo backend. | Non esposta da questo backend. |
-| Swap per processo | Non esposta; pagefile/private commit non viene usato come swap su disco. | Non esposta da questo backend. |
-| Swap globale | psutil combina commit limit, RAM fisica e performance counter pagefile; è un indicatore psutil, non il commit di un processo né un conteggio diretto di ogni pagina su disco. | psutil usa `swap_mem()`; semantica descritta dal sorgente, senza validazione su Mac. |
-| Partizione globale | Fallback in uso/disponibile. | Fallback in uso/disponibile. |
-| App | Fallback account + eseguibile/nome. | Fallback UID + eseguibile/nome. |
+| Total/available | `virtual_memory()` uses total/available physical memory; free equals available. | `virtual_memory()` uses available = inactive + free, according to psutil source. |
+| RSS | Working set exposed by `memory_info()`. | RSS exposed by `memory_info()`. |
+| USS | `memory_full_info()` queries psutil's native private-resident-memory counter. | `memory_full_info()` uses psutil's native private-memory counter. |
+| PSS | Not exposed by this backend. | Not exposed by this backend. |
+| Per-process swap | Not exposed; pagefile/private commit is not treated as disk swap. | Not exposed by this backend. |
+| System swap | psutil combines commit limit, physical RAM and pagefile performance counters; this is a psutil indicator, not process commit or a direct count of every page on disk. | psutil uses `swap_mem()`; semantics are described by source, without Mac validation. |
+| Global partition | Used/available fallback. | Used/available fallback. |
+| Applications | Account + executable/name fallback. | UID + executable/name fallback. |
 
-Riferimenti primari: [sorgente psutil Windows](https://github.com/giampaolo/psutil/blob/release-7.2.2/psutil/_pswindows.py),
-[sorgente psutil macOS](https://github.com/giampaolo/psutil/blob/release-7.2.2/psutil/_psosx.py),
-[documentazione PROCESS_MEMORY_COUNTERS_EX](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters_ex).
-Il sorgente installato e il lockfile sono il riferimento per la versione effettiva in uso;
-per Windows, completare le prove manuali della [procedura dedicata](verifica-windows.md).
-La [procedura macOS](verifica-macos.md) è soltanto indicativa per contributor esterni.
+Primary references: [psutil Windows source](https://github.com/giampaolo/psutil/blob/release-7.2.2/psutil/_pswindows.py),
+[psutil macOS source](https://github.com/giampaolo/psutil/blob/release-7.2.2/psutil/_psosx.py),
+[PROCESS_MEMORY_COUNTERS_EX documentation](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters_ex).
+The installed source and lockfile determine the version actually in use.
+For Windows, complete the manual checks in the [dedicated procedure](verifica-windows.md).
+The [macOS procedure](verifica-macos.md) is guidance for external contributors only.
 
-L'identità per nome o eseguibile è un'euristica: un interprete o launcher condiviso può
-raggruppare programmi distinti. Un bundle ID o package ID può descrivere il prodotto,
-ma non dimostra da solo l'identità di un'istanza e dei suoi helper. Finché non sono
-stati verificati metadati affidabili e i casi a più utenti/istanze su hardware reale,
-manteniamo il fallback dichiarato e non aggiungiamo aggregazioni speculative.
+Identity based on name or executable is heuristic: a shared interpreter or launcher
+can group distinct programs together. A bundle ID or package ID may describe a
+product, but alone does not establish the identity of an instance and its helpers.
+Until reliable metadata and multiple-user/instance cases are verified on real
+hardware, we retain the declared fallback without speculative aggregation.
 
-Non usare i campi di queste colonne come partizioni disgiunte senza dimostrare che
-abbiano lo stesso dominio e non si sovrappongano. Le prove native e un confronto con
-contatori equivalenti restano necessarie prima di rivendicare la parità tra piattaforme.
-Per macOS questa parità non è dichiarata e la sua verifica non rientra nel lavoro interno.
+Do not treat the fields in these columns as disjoint partitions without establishing
+that they cover the same domain and do not overlap. Native tests and comparison
+with equivalent counters remain necessary before claiming platform parity.
+No such parity is claimed for macOS, and verifying it is outside internal work.

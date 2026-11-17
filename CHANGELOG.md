@@ -1,28 +1,44 @@
-# Modifiche
+# Changelog
 
-> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
-> validato dal progetto perché non abbiamo un Mac a disposizione.
+> Development and verification: Linux and Windows. macOS is experimental,
+> untested and unvalidated by the project because we have no Mac available.
 
-## In sviluppo — 0.1.0
+## 0.1.0 — November 17, 2026
 
-- Derivazione terminale RAM da gputaskman, con contatori di sistema e processi e
-  raggruppamento applicativo; attribuzione e licenza upstream nel README.
-- Linux: barra per categorie OS, dettaglio PSS/RSS e mappa delle regioni con filtri,
-  ricerca, zoom e confronto A/B. Windows: intervalli virtuali sperimentali; macOS:
-  contatori generali, senza provider delle regioni.
-- Salvataggio e replay offline delle acquisizioni, con dati mancanti espliciti.
-- Budget opzionale di campionamento, paginazione delle tabelle e benchmark locali.
-- Procedure di verifica Windows e indicazioni macOS per contributori esterni;
-  macOS escluso dalle verifiche interne e dalla CI.
-- Verifica locale della distribuzione isolata e configurazione CI multipiattaforma;
-  nessun rilascio PyPI.
-- Nomi ed eseguibili letti dai metadati nativi, evitando i fallback impliciti di
-  psutil sulla riga di comando e sul percorso del file.
-- README e testi applicativi in dieci lingue, selezionabili con `--language`:
-  dashboard, dettagli, regioni, aiuto, footer, CLI e diagnostica dei backend e delle
-  acquisizioni. Gli identificatori, i dettagli OS e i testi già salvati restano
-  originali. Verifiche locali Linux su CLI, UI multilingua, serializzazione e
-  distribuzione; le traduzioni richiedono ancora revisione di madrelingua.
+- First native x64 portable ZIPs for Linux and Windows, plus a Debian amd64
+  package. Python/dependencies and their notices are included, with SHA-256
+  checksums. Release publication waits for the test matrix and bundle checks.
 
-Stato e limiti delle misure, della compatibilità e delle prove si trovano nel README
-e nel piano di sviluppo. La versione 0.1.0 è sperimentale.
+- README badges, VibeWare footer and manifesto link; clearer introduction to
+  per-app RAM cost estimates using a price supplied by the user.
+- English as the main README and public documentation language; the Italian
+  README remains available through the language selector.
+- Documentation reorganized with an index, contribution guide and third-party
+  notices; reuse and redistribution encouraged under MIT, retaining credits.
+- Source archive includes guides, images, tools, tests and lockfile; MIT and
+  notices are also included in the wheel, without changing runtime dependencies.
+- New cover and synthetic gallery with updated captures, A/B comparisons and
+  ten languages; optional PNG rendering reproducible through the lockfile.
+- Operational handoff separated from history; localized READMEs aligned with
+  local RAM valuation options and the F1 About screen.
+- RAM-focused terminal adaptation of gputaskman, with system and process counters
+  and application grouping; upstream attribution and license in the README.
+- Linux: OS category bar, PSS/RSS details and region map with filters, search,
+  zoom and A/B comparison. Windows: experimental virtual ranges. macOS:
+  general counters, without a region provider.
+- Offline capture saving and replay, with explicit missing data.
+- Optional sampling budget, paginated tables and local benchmarks.
+- Windows verification procedures and macOS guidance for external contributors;
+  macOS excluded from internal verification and CI.
+- Local verification of isolated distributions and cross-platform CI configuration;
+  no PyPI release.
+- Names and executables read from native metadata, avoiding psutil's implicit
+  command-line and executable-path fallbacks.
+- READMEs and app text in ten languages, selected with `--language`: dashboard,
+  details, regions, help, footer, CLI and backend/capture diagnostics. Identifiers,
+  OS details and previously saved text retain their original form. Local Linux
+  checks cover the CLI, multilingual UI, serialization and distribution;
+  translations still require native-speaker review.
+
+The README and development plan record measurement, compatibility and verification
+status and limitations. Version 0.1.0 is experimental.

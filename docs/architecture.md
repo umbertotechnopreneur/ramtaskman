@@ -1,223 +1,229 @@
-# Architettura
+# Architecture
 
-Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
-sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
-dell'utente, macOS è escluso dalle verifiche interne.
+We develop and test ramtaskman on Linux and Windows. The macOS backend is
+experimental: we don't have a Mac, so we haven't tested or validated it.
+Our own testing and CI cover Linux and Windows.
 
-## Flusso
+## Data flow
 
 ```text
 CLI ── Collector.sample() ── Snapshot ─┬─ report.to_dict() → JSON
-                                     ├─ report.table() → testo
+                                     ├─ report.table() → text
                                      └─ RamTaskManager.apply() → UI
 
-Processo selezionato ── RegionScreen ── worker ── LinuxRegionReader.read()
-                                                  └─ RegionSnapshot → mappa/tabella/inspector
+Selected process ── RegionScreen ── worker ── LinuxRegionReader.read()
+                                                └─ RegionSnapshot → map/table/inspector
 ```
 
-Il collector è indipendente da Textual. `make_backend()` sceglie `LinuxBackend` su Linux
-o `PsutilBackend` configurato per Windows/macOS. Ogni backend espone `read_system()`,
-`read_process()`, `name`, `source` e `unsupported` (metrica → motivo). `models.py` non dipende né da Textual né da psutil.
-La UI usa un worker thread cancellabile e passa il campione al thread principale.
-`worker.cancelled_event.wait()` permette di uscire senza attendere tutto l'intervallo.
+The collector is independent of Textual. `make_backend()` selects `LinuxBackend`
+on Linux or `PsutilBackend` configured for Windows/macOS. Each backend exposes
+`read_system()`, `read_process()`, `name`, `source` and `unsupported` (metric → reason).
+`models.py` depends on neither Textual nor psutil. The UI uses a cancellable worker
+thread and passes samples to the main thread. `worker.cancelled_event.wait()`
+allows shutdown without waiting for the entire sampling interval.
 
-## Fonti Linux
+## Linux sources
 
-| Dato | Fonte | Nota |
+| Data | Source | Note |
 |---|---|---|
-| Totale, disponibile, cache, slab, swap globale | /proc/meminfo | byte dopo conversione kB × 1024 |
+| Total, available, cache, slab, system swap | /proc/meminfo | Bytes after kB × 1024 conversion |
 | RSS, PSS, USS, Swap, SwapPSS | /proc/PID/smaps_rollup | USS = Private_Clean + Private_Dirty |
-| RSS quando rollup è inaccessibile | psutil.memory_info | fallback; PSS e USS restano null |
-| Nome, UID, eseguibile, creazione | psutil | nessuna lettura cmdline o environ |
-| CPU globale | psutil.cpu_percent | prima lettura null |
-| Pressione memoria | /proc/pressure/memory, some avg10 | opzionale |
-| Identità app | /proc/PID/cgroup | metadati limitati a 16 KiB, app systemd dell’UID corrente |
-| Breakdown | smaps_rollup della stessa lettura | Pss_Anon/File/Shmem, Private/Shared Clean/Dirty, Anonymous, LazyFree, AnonHugePages |
-| Regioni del processo selezionato | /proc/PID/smaps | lettura su richiesta distinta dal campionamento generale |
+| RSS when rollup is inaccessible | psutil.memory_info | Fallback; PSS and USS remain null |
+| Name, UID, executable, creation time | psutil | No cmdline or environ reads |
+| System CPU | psutil.cpu_percent | First reading null |
+| Memory pressure | /proc/pressure/memory, some avg10 | Optional |
+| Application identity | /proc/PID/cgroup | Metadata limited to 16 KiB, systemd apps for the current UID |
+| Breakdown | Same smaps_rollup read | Pss_Anon/File/Shmem, Private/Shared Clean/Dirty, Anonymous, LazyFree, AnonHugePages |
+| Selected process regions | /proc/PID/smaps | On-demand read separate from general sampling |
 
-Nome ed eseguibile passano da `process_identity.py`: le API pubbliche
-`psutil.Process.name()` e `.exe()` possono ripiegare su `cmdline()` e verifiche
-del percorso. L'adapter isola invece i getter nativi `_proc.name` / `_proc.exe`
-di psutil 7, senza usare le cache pubbliche. Se l'API interna cambia o l'accesso
-è negato, conserva il PID come etichetta e lascia il percorso a None. I nomi
-nativi Linux possono essere troncati dal kernel; non vengono espansi leggendo
-la riga di comando. PID terminati e riutilizzati restano soggetti alle verifiche
-dei chiamanti, anche durante la lettura delle regioni.
+Name and executable access go through `process_identity.py`. Public
+`psutil.Process.name()` and `.exe()` APIs may fall back to `cmdline()` and path
+checks. The adapter instead isolates psutil 7's native `_proc.name` / `_proc.exe`
+getters without using public caches. If an internal API changes or access is denied,
+it keeps the PID as a label and leaves the path as None. Linux native names may
+be truncated by the kernel; they are not expanded by reading the command line.
+Callers still check exited/reused PIDs, including during region reads.
 
-## Fonti Windows/macOS
+## Windows/macOS sources
 
-`psutil.virtual_memory()` per RAM globale, `swap_memory()` per swap/pagefile globale,
-`Process.memory_info()` per RSS, `memory_full_info().uss` per USS. PSS, Swap e SwapPSS
-per processo restano None, con ragione in `Snapshot.unsupported`. Niente conversione da
-VMS/private/pagefile: questi non rappresentano la stessa quantità. Cache/slab/PSI restano None.
-Un errore sulla swap globale conserva i dati RAM e produce una nota.
+`psutil.virtual_memory()` supplies system RAM, `swap_memory()` system swap/pagefile,
+`Process.memory_info()` RSS and `memory_full_info().uss` USS. Per-process PSS, Swap
+and SwapPSS remain None, with reasons in `Snapshot.unsupported`. There is no conversion
+from VMS/private/pagefile: these are different quantities. Generic cache/slab/PSI
+fields remain None. A system-swap error preserves RAM data and produces a note.
 
-Su Windows l'identità utente è dominio/nome, su macOS UID. I percorsi Windows vengono
-normalizzati per il confronto senza distinzione maiuscole/minuscole. Un proprietario
-sconosciuto non è un'identità condivisa: il processo rimane separato.
+Windows user identity is domain/name; macOS uses UID. Windows paths are normalized
+for case-insensitive comparison. An unknown owner is not a shared identity: that
+process remains separate.
 
-`ProcessMemory.key = PID + started_at`; si verifica `is_running()` dopo la lettura.
-PID terminati/riutilizzati vengono scartati. Gli errori sui metadati di identità contano
-in `skipped`. Gli errori su smaps conservano il processo con `reason` e valori null.
+`ProcessMemory.key = PID + started_at`; `is_running()` is checked after the read.
+Exited/reused PIDs are discarded. Identity metadata errors count towards `skipped`.
+smaps errors retain the process with a `reason` and null values.
 
-## Aggregazione
+## Aggregation
 
-`Snapshot.applications` usa prima l'identità cgroup esplicita su Linux con UID noto,
-`app_source=systemd-cgroup`, `app_id` completo e `app_name`. `grouping.py` accetta gerarchia
-unificata e legacy name=systemd, sotto il percorso utente app.slice. Le unità app seguono
-la convenzione systemd; sessioni e servizi generici non sono prove di identità applicativa.
-L'identità conserva l'istanza intera, mentre il nome è solo descrittivo. Non unire istanze
-solo perché mostrano lo stesso nome. UID non corrispondente, ambiguità fra gerarchie o
-letture mancanti producono il fallback.
+`Snapshot.applications` first uses explicit Linux cgroup identity when UID is known,
+with `app_source=systemd-cgroup`, full `app_id` and `app_name`. `grouping.py` accepts
+the unified and legacy name=systemd hierarchies under the user's app.slice path.
+Application units follow the systemd convention; sessions and generic services
+are not evidence of application identity. Identity retains the complete instance,
+while the name is descriptive only. Do not merge instances just because their
+names match. UID mismatch, ambiguous hierarchies or missing readings trigger fallback.
 
-Altrimenti si raggruppa per `(utente, executable)` o `(utente, name)` quando il percorso
-manca. Il gruppo espone `grouping`, `grouping_id`; se i membri hanno eseguibili diversi,
-`executable=None`. `ApplicationMemory.total()` restituisce None se anche un solo membro
-non espone la metrica. `Snapshot.visible_sum()` somma solo letture disponibili e restituisce
-None quando non ne esiste nessuna. La copertura va sempre mostrata accanto ai totali.
+Otherwise, grouping uses `(user, executable)`, or `(user, name)` when the path is
+missing. Groups expose `grouping` and `grouping_id`; if members have different
+executables, `executable=None`. `ApplicationMemory.total()` returns None if even
+one member lacks the metric. `Snapshot.visible_sum()` sums available readings only
+and returns None if there are none. Always show coverage alongside totals.
 
-Per raggruppamenti futuri non sommare aggregati e figli contemporaneamente. Non unire utenti
-diversi. Non sostituire lo stato PSS mancante con RSS, né dedurre i byte condivisi da somme
-incompatibili. Le pagine possono cambiare tra due letture; non imporre identità contabili
-fra campioni sequenziali e totale globale.
+Future grouping must not sum aggregates and their children together or combine
+different users. Do not replace missing PSS with RSS or infer shared bytes from
+incompatible sums. Pages can change between reads; do not force accounting identities
+between sequential samples and system totals.
 
-## Contratto UI
+## UI contract
 
-Mantieni gli ID `dashboard`, `device`, `system`, `history`, `chart-controls`, `chart-mode`,
-`charts`, `chart-note`, `procs`, `inspector` e le classi/stili del sorgente originale.
-Il titolo dell'app non occupa una riga extra; il pannello inspector mostra modalità e sort.
-I grafici usano 60 campioni e scala percentuale fissa. PSS/USS visible sono percentuali
-della RAM totale, swap della swap totale, cache della RAM totale. PSI è già percentuale.
+Preserve IDs `dashboard`, `device`, `system`, `history`, `chart-controls`, `chart-mode`,
+`charts`, `chart-note`, `procs`, `inspector` and the original source's classes/styles.
+The app title does not take an extra row; the inspector shows mode and sort order.
+Charts use 60 samples and a fixed percentage scale. Visible PSS/USS are percentages
+of total RAM, swap of total swap, and cache of total RAM. PSI is already a percentage.
 
-## Barra globale OS
+## OS memory bar
 
-`memory_segments.partition_meminfo()` costruisce una partizione contabile di `MemTotal`:
-AnonPages, Cached−Shmem, Shmem, Buffers, SReclaimable, SUnreclaim, residuo Other, MemFree.
-`SystemMemory.segments` contiene byte interi; `segments_reason` spiega l'assenza della
-partizione. Sono nuovi campi opzionali compatibili con i vecchi costruttori e col JSON.
-Mancanti, negativi, Cached<Shmem, totale nullo o somma superiore a MemTotal producono
-segments vuoto con ragione; non si tronca o normalizza il campione. Other è calcolato,
-non è una misura diretta del kernel né riserva hardware esterna a MemTotal.
+`memory_segments.partition_meminfo()` builds an accounting partition of `MemTotal`:
+AnonPages, Cached−Shmem, Shmem, Buffers, SReclaimable, SUnreclaim, residual Other,
+and MemFree. `SystemMemory.segments` contains integer byte values; `segments_reason`
+explains a missing partition. These optional fields remain compatible with older
+constructors and JSON. Missing or negative fields, Cached<Shmem, a zero total or a
+sum above MemTotal produce empty segments with a reason; values are neither clipped
+nor normalized. Other is calculated, not a direct kernel measurement or a hardware
+reservation outside MemTotal.
 
-`SystemRamBar` è un renderable Rich: riceve la larghezza effettiva dal pannello a ogni
-render, senza limite fisso. Il metodo dei resti maggiori assegna tutti i caratteri della
-riga ai segmenti, preservando la lunghezza totale; l'arrotondamento è solo visivo, i byte
-restano invariati. Le categorie piccole rimangono in legenda anche senza una cella.
-La barra non ordina per indirizzo fisico. Il fallback mostra used/available in due colori
-con etichetta esplicita; non si possono derivare le categorie Linux da RSS/PSS.
+`SystemRamBar` is a Rich renderable that receives the actual panel width on every
+render, without a fixed cap. The largest-remainder method assigns all row cells
+to segments while preserving total length; rounding is visual only and byte values
+stay unchanged. Small categories remain in the legend even without a cell.
+The bar is not ordered by physical address. The fallback shows used/available in
+two colors with an explicit label; Linux categories cannot be derived from RSS/PSS.
 
-## Filtri e dettaglio
+## Filters and details
 
-`RowFilter` in filters.py seleziona righe senza modificare Snapshot né i membri di un
-ApplicationMemory. Le app si costruiscono prima del filtraggio: una corrispondenza di
-helper conserva l'aggregato completo. Una query numerica è PID esatto; altrimenti
-sottostringa casefold su nomi ed eseguibili. Utente, testo e stato memoria sono AND.
-Swap richiede una misura positiva; partial considera solo metriche supportate.
-I filtri precedono ordinamento/Top30 e si conservano nel drilldown. Il selettore utente
-mantiene un account selezionato anche se scompare dal campione successivo.
+`RowFilter` in filters.py selects rows without changing Snapshot or ApplicationMemory
+members. Applications are built before filtering: a helper match preserves the
+complete aggregate. A numeric query is an exact PID; otherwise it is a casefolded
+substring on names and executables. User, text and memory-state conditions use AND.
+Swap requires a positive measurement; partial considers only supported metrics.
+Filters precede sorting/Top30 and survive drilldown. The user selector retains a
+selected account even if it disappears from the next sample.
 
-La barra è nascosta normalmente. `/` o `f` la apre. CSS riduce lo spazio del dashboard
-quando la barra è aperta per mantenere tabella e inspector accessibili a 80x24.
-Le chiavi DataTable includono una generazione del rendering: eventi accodati di una
-vecchia tabella non devono cambiare la selezione dopo un aggiornamento.
+The bar is hidden by default; `/` or `f` opens it. CSS reduces dashboard space when
+it is open, keeping table and inspector accessible at 80×24. DataTable keys include
+a render generation so queued events from an old table cannot change selection
+after a refresh.
 
-`detail.py` aggrega breakdown solo se tutti i membri espongono il campo; mostra la
-copertura per campo. `MemoryDetailScreen` congela un renderable del campione selezionato,
-mentre il worker prosegue. `detail_bars()` costruisce due `MemoryBreakdownBar`:
-PSS anon/file/shmem e RSS private/shared clean/dirty. Ogni barra dichiara il proprio
-denominatore; swap e SwapPSS restano separate. `MemoryPart` conserva byte, etichette e
-colori; `cell_widths()` assegna tutti i caratteri disponibili senza cambiare i valori.
-La legenda conserva le componenti inferiori a una cella. Un totale zero è noto; campi
-mancanti e incoerenti producono n/a con copertura o motivo.
+`detail.py` aggregates a breakdown field only when every member supplies it and
+shows coverage per field. `MemoryDetailScreen` freezes a renderable of the selected
+sample while the worker continues. `detail_bars()` builds two `MemoryBreakdownBar`
+objects: anonymous/file/shmem PSS and private/shared clean/dirty RSS. Each bar declares
+its denominator; Swap and SwapPSS remain separate. `MemoryPart` retains bytes,
+labels and colors; `cell_widths()` assigns all available cells without changing
+values. The legend retains sub-cell components. A zero total is known; missing or
+inconsistent fields produce n/a with coverage or a reason.
 
-La coerenza si verifica per processo prima dell'aggregazione. RSS deve coincidere con
-la somma delle quattro componenti. Per PSS, procfs tronca separatamente a kB totale e
-tre componenti: viene ammesso soltanto un residuo non negativo di 0/1/2 KiB per processo,
-con valori allineati ai KiB. Il residuo è un segmento esplicito, mai una normalizzazione.
-Fonte: [Linux __show_smap](https://github.com/torvalds/linux/blob/v6.17/fs/proc/task_mmu.c).
-Gli altri contatori restano viste sovrapposte; non si sommano alle barre. Nessuna lettura
-di smaps completo è necessaria per questa finestra.
+Consistency is checked per process before aggregation. RSS must equal the sum of
+its four components. procfs truncates PSS total and its three components separately
+to kB: only a nonnegative remainder of 0/1/2 KiB per process is allowed, with
+KiB-aligned values. This remainder is an explicit segment, never normalization.
+Source: [Linux __show_smap](https://github.com/torvalds/linux/blob/v6.17/fs/proc/task_mmu.c).
+Other counters remain overlapping views and are not added to the bars.
+This window does not require reading full smaps.
 
-## Regioni e mappa del processo
+## Process regions and map
 
-`regions.py` è indipendente da Textual. `MemoryRegion` contiene intervallo virtuale,
-permessi, offset, device/inode, pathname, categoria euristica, RSS/PSS/USS/swap/SwapPSS,
-breakdown e VmFlags. `size` deriva da end−start; `key` dall'intervallo. Il parser verifica
-ordine/intersezioni, contatori duplicati o negativi, unità kB e coerenza di Size se presente.
-Campi assenti restano None. USS deriva solo da Private_Clean+Private_Dirty; HugeTLB è
-conservato separatamente. I path con spazi e file cancellati restano metadati: non si aprono.
+`regions.py` is independent of Textual. `MemoryRegion` contains virtual range,
+permissions, offset, device/inode, pathname, heuristic category, RSS/PSS/USS/swap/SwapPSS,
+breakdown and VmFlags. `size` is end−start; `key` comes from the range. The parser
+checks ordering/overlap, duplicate or negative counters, kB units and Size consistency
+when present. Missing fields remain None. USS comes only from Private_Clean+Private_Dirty;
+HugeTLB is kept separate. Paths containing spaces and deleted files remain metadata:
+they are not opened.
 
-`LinuxRegionReader.read(process, cancelled=...)` legge soltanto smaps del PID scelto.
-Controlla PID+create_time prima e dopo tramite nuove istanze psutil, evitando create_time
-in cache. `RegionSnapshot` conserva identità, orario, durata monotona, regioni, completezza
-e motivo. Il metodo `total()` restituisce None per scansioni incomplete o metriche mancanti.
-Permessi, fine processo, identità cambiata ed errori di parsing cancellano i dati raccolti.
+`LinuxRegionReader.read(process, cancelled=...)` reads only the selected PID's smaps.
+It checks PID+create_time before and after using fresh psutil instances, avoiding
+cached create_time. `RegionSnapshot` retains identity, timestamp, monotonic duration,
+regions, completeness and reason. `total()` returns None for incomplete scans or
+missing metrics. Permission errors, process exit, changed identity and parsing
+errors clear collected data.
 
-Limiti predefiniti: 32 MiB, 32.768 regioni, 3 secondi; una singola riga è limitata a 64 KiB.
-Al raggiungimento di un limite rimangono solo le regioni completate, con `complete=False`.
-Tempo e cancellazione si controllano fra le letture: non sono timeout rigidi delle syscall.
-Nessun uso di pagemap/PFN, mem, cmdline, environ o contenuti dei file mappati.
+Default limits: 32 MiB, 32,768 regions and 3 seconds; an individual line is limited
+to 64 KiB. Reaching a limit preserves only completed regions, with `complete=False`.
+Time and cancellation are checked between reads; these are not hard syscall timeouts.
+No pagemap/PFN, mem, cmdline, environ or mapped-file contents are used.
 
-`RegionScreen` apre un worker cancellabile all'ingresso e con `r`, senza cambiare il
-normale Collector. A ogni richiesta svuota i dati precedenti; `request_id` scarta risposte
-superate e l'identità del risultato è verificata anche in UI. Chiudere la vista annulla
-il worker e invalida le risposte. Windows usa il provider virtuale sperimentale;
-macOS mostra un motivo di indisponibilità senza avviare letture Linux.
-Timestamp, età, durata e stato completo/parziale restano visibili; non c'è refresh periodico
-dei dati delle regioni. L'età mostrata si aggiorna ogni secondo.
+`RegionScreen` starts a cancellable worker on entry and with `r`, without changing
+the normal Collector. Each request clears previous data; `request_id` rejects stale
+responses, and result identity is also checked in the UI. Closing the view cancels
+the worker and invalidates responses. Windows uses the experimental virtual provider;
+macOS displays an unavailable reason without starting Linux reads. Timestamp, age,
+duration and complete/partial status remain visible. Region data is not periodically
+refreshed; only displayed age updates every second.
 
-`RegionMap` ordina sempre per indirizzo, con area proporzionale a RSS oppure dimensione
-virtuale. Nel secondo caso i buchi non hanno area: `│` segnala una transizione visibile
-attraverso un buco o una regione filtrata. È una mappa virtuale, non una disposizione
-fisica. RSS mancante impedisce di disegnare una barra completa fittizia. Le regioni sotto
-una cella restano nella tabella. Il tipo descrive l'origine della mappatura: file-backed
-non esclude pagine private anonime CoW, e anonima non implica heap o stack.
+`RegionMap` always orders by address, with area proportional to RSS or virtual size.
+In the latter mode, holes take no area: `│` marks a visible transition across a hole
+or filtered-out region. This is a virtual map, not a physical layout. Missing RSS
+prevents drawing a falsely complete bar. Sub-cell regions remain in the table.
+Type describes mapping origin: file-backed does not rule out private anonymous
+CoW pages, and anonymous does not imply heap or stack.
 
-Ricerca e selettori filtrano nome, tipo, permessi o indirizzo 0x contenuto nell'intervallo;
-stati residente/swap richiedono un valore positivo misurato, condivisa richiede entrambi
-i contatori shared clean/dirty e somma positiva. La tabella può ordinare RSS/PSS/size/start;
-selezione e clic sulla barra sono sincronizzati. `z` o Invio limita la mappa a fino a due
-vicini per lato nell'insieme filtrato. Totali e titoli dichiarano sempre le regioni mostrate.
-Esc azzera prima i filtri aperti, poi lo zoom, poi chiude. Le chiavi tabella includono una
-generazione contro gli eventi obsoleti. Dashboard e inspector scorrono nel terminale stretto.
+Search and selectors filter name, type, permissions or a 0x address inside the range.
+Resident/swap states require positive measurements; shared requires both shared
+clean/dirty counters and a positive sum. Table sorting supports RSS/PSS/size/start;
+table selection and bar clicks are synchronized. `z` or Enter limits the map to
+up to two neighbors on each side within the filtered set. Totals and titles always
+identify the displayed regions. Esc clears open filters, then zoom, then closes.
+Table keys include a generation to reject stale events. Dashboard and inspector
+scroll in narrow terminals.
 
-## Contratto CLI
+## CLI contract
 
-Il confronto A/B usa `capture_models.py` per copie immutabili e `comparison.py` per
-intervalli, identità, cambiamenti di origine e delta; una lettura parziale non prova
-una sparizione. `capture_io.py` e `capture_dialog.py` salvano e aprono acquisizioni
-versionate, distinte dal JSON generale, con limiti e validazione descritti in
-[schema capture](schema-capture.md). `replay.py` apre la stessa vista senza creare un
-collector o un provider; refresh live disabilitato. La sessione di acquisizione è
-condivisa tra viste dello stesso avvio, non tra avvii distinti.
+A/B comparison uses `capture_models.py` for immutable copies and `comparison.py`
+for ranges, identity, origin changes and deltas; a partial reading does not prove
+disappearance. `capture_io.py` and `capture_dialog.py` save and open versioned
+captures, separate from general JSON, with limits and validation described in the
+[capture schema](schema-capture.md). `replay.py` opens the same view without creating
+a collector or provider; live refresh is disabled. Collection sessions are shared
+between views in one app run, not across separate runs.
 
-`region_provider.py` sceglie il provider: Linux smaps, Windows VirtualQueryEx
-sperimentale (solo virtuale, test simulati e verifiche native in CI Windows), oppure
-un motivo esplicito su macOS. Le prove manuali sul PC Windows personale restano da
-eseguire; il backend macOS non è validato.
-L'immagine dell'eseguibile viene verificata prima e dopo la raccolta; se non è
-disponibile il confronto dell'identità non è verificabile.
+`region_provider.py` selects Linux smaps, experimental Windows VirtualQueryEx
+(virtual ranges only; simulated tests and native Windows CI checks), or an explicit
+reason on macOS. Manual checks on a personal Windows PC remain pending; the macOS
+backend is unvalidated. Executable image identity is checked before and after
+collection; if unavailable, identity comparison cannot be verified.
 
-Il budget opzionale `Collector(max_measurements=N)` ruota le letture costose fra PID,
-senza riutilizzare valori vecchi. Enumerazione incompleta rende i totali di gruppo n/a;
-il JSON espone tentate/rinviate, `enumeration_complete` e `membership_complete`.
-Il budget limita il numero di letture e non impone un timeout di sistema. Il collector
-accetta cancellazione cooperativa. `tools/benchmark_memory.py` produce misure sintetiche.
+The optional `Collector(max_measurements=N)` budget rotates expensive reads across
+PIDs without reusing old values. Incomplete enumeration makes group totals n/a.
+JSON exposes attempted/deferred counts, `enumeration_complete` and `membership_complete`.
+The budget limits read count, not OS call duration. The collector accepts cooperative
+cancellation. `tools/benchmark_memory.py` produces synthetic measurements.
 
-`--once`, `--json`, `--processes`, `--interval`, `--version`; alias `rtm`.
-JSON `schema_version=1`, `platform`, `source`, `unsupported`, copertura per metrica; tutte le quantità di memoria in byte, `taken` Unix time in secondi,
-`processes[].breakdown` contiene byte/null per contatore; `applications[].grouping` e
-`grouping_id` espongono la provenienza; le aggiunte sono compatibili con schema_version=1.
-`sample_ms` durata monotona della scansione. Gli eseguibili possono avere percorsi personali:
-nessuna esportazione automatica, fixture sintetiche per screenshot e test.
-Le regioni sono una vista interattiva separata: non sono aggiunte al JSON o al percorso `--once`.
+Core options: `--once`, `--json`, `--processes`, `--interval`, `--version`; alias `rtm`.
+JSON uses `schema_version=1`, `platform`, `source`, `unsupported` and per-metric
+coverage. Memory quantities are bytes; `taken` is Unix time in seconds.
+`processes[].breakdown` contains bytes/null per counter; `applications[].grouping`
+and `grouping_id` expose provenance. Additions are compatible with schema_version=1.
+`sample_ms` is the monotonic scan duration. Executable paths may be personal:
+there is no automatic export, and screenshots/tests use synthetic fixtures.
+Regions are a separate interactive view; they are not added to general JSON or `--once`.
 
-## Prestazioni e limiti
+## Performance and limits
 
-La v0.1 legge tutti gli smaps_rollup visibili (Linux) o memory_full_info (Windows/macOS)
-in modo sequenziale a ogni campione.
-Nel campionamento generale non ci sono cache di misure, budget o stime dei contatori. Questo rende la
-semantica semplice ma richiede attenzione con migliaia di processi o tabelle delle pagine
-molto grandi. Una futura scansione a budget dovrà aggiungere età e copertura dei dati:
-non riutilizzare silenziosamente valori vecchi. La scansione delle regioni ha già limiti
-e stato di completezza propri; non legge lo smaps completo di tutti i processi.
+By default, v0.1 reads every visible smaps_rollup (Linux) or memory_full_info
+(Windows/macOS) sequentially for each sample. It does not cache measurements or
+estimate counters. The optional read-count budget described above defers reads
+and leaves their counters unavailable rather than silently reusing old values.
+
+This keeps data semantics explicit but requires care with thousands of processes
+or very large page tables. Any future measurement cache must expose age and
+coverage. Region scans already have their own limits and completeness state;
+the app does not read full smaps for every process during general sampling.

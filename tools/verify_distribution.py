@@ -24,6 +24,10 @@ REQUIRED = ('app.tcss', 'capture_io.py', 'capture_models.py', 'comparison.py',
             *(f'locales/help.{language}.md' for language in
                 ('it', 'en', 'zh', 'ko', 'fr', 'vi', 'es', 'pt', 'de', 'ja')))
 FORBIDDEN = {'.uv-cache', '.venv', 'captures', 'recordings', '__pycache__'}
+SOURCE_REQUIRED = ('CONTRIBUTING.md', 'docs/README.md', 'docs/upstream.md',
+                   'docs/images/README.md', 'docs/images/cover.png',
+                   'tools/capture_screenshots.py', 'tools/render_readme_images.py',
+                   'tests/test_distribution.py', 'uv.lock', 'run.sh', 'run.cmd')
 
 
 def _check_names(names, *, wheel: bool) -> None:
@@ -36,8 +40,13 @@ def _check_names(names, *, wheel: bool) -> None:
         suffix = ('ramtaskman/' if wheel else '/src/ramtaskman/') + file
         if not any(name.endswith(suffix) for name in clean):
             raise ValueError(f'File richiesto mancante: {file}')
-    if not any(name.endswith('/LICENSE') or name.endswith('/licenses/LICENSE') for name in clean):
-        raise ValueError('Licenza mancante nel pacchetto')
+    for notice in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
+        if not any(name.endswith('/' + notice) for name in clean):
+            raise ValueError(f'Avviso di licenza mancante nel pacchetto: {notice}')
+    if not wheel:
+        for file in SOURCE_REQUIRED:
+            if not any(name.endswith('/' + file) for name in clean):
+                raise ValueError(f'Sorgente o documentazione mancante: {file}')
 
 
 def _run(command, *, cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess:

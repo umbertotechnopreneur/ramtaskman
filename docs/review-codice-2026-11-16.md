@@ -1,99 +1,97 @@
-# Revisione del codice — 16 novembre 2026
+# Code review — November 16, 2026
 
-> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
-> validato dal progetto perché non abbiamo un Mac a disposizione. I tentativi
-> macOS storici non cambiano questa politica.
+> Development and verification cover Linux and Windows. macOS is experimental,
+> untested and unvalidated by the project because we do not have a Mac.
+> Historical macOS attempts do not change this policy.
 
-Revisione locale dei collector, modelli, aggregazione, contatori di piattaforma,
-lettore regioni, confronto, acquisizioni e replay, interfaccia Textual, launcher,
-verifiche di distribuzione e CI. Le prove native eseguite sono Linux; la lettura del
-codice e i mock non sostituiscono prove hardware Windows/macOS.
+Local review of collectors, models, aggregation, platform counters, region reading,
+comparison, captures and replay, the Textual interface, launchers, distribution
+checks and CI. Native checks performed during this review were on Linux; code
+inspection and mocks do not replace Windows/macOS hardware checks.
 
-## Correzioni apportate
+## Fixes made
 
-- La verifica di distribuzione ora riusa la cache indicata dal chiamante e prepara
-  le dipendenze dal lockfile con `uv sync --offline --no-install-project`, prima
-  di installare e verificare il wheel. Il precedente `uv pip install --offline`
-  falliva su una cache appena popolata perché mancavano metadati dell'indice.
-  Il caso è stato riprodotto e verificato con cache e ambiente isolati nel progetto.
-- La CI non annulla più gli altri sistemi al primo errore della matrice.
-- Il salvataggio delle acquisizioni applica il limite durante la codifica JSON,
-  prima di creare o sostituire file, evitando un'allocazione proporzionale a un
-  documento molto oltre il limite consentito.
-- Su Windows/macOS una lettura `memory_full_info` riuscita elimina un precedente
-  errore RSS non più attuale; se entrambe le letture falliscono conserva entrambe
-  le ragioni. Gli equivalenti su hardware restano da verificare.
-- I nomi di eseguibili Unix conservano i backslash validi nel nome del file;
-  quelli Windows continuano a usare le regole Windows, anche nei test simulati.
-- Le barre e la mappa calcolano i margini usando le celle terminale, così caratteri
-  a larghezza doppia non allargano il disegno oltre la dimensione disponibile.
-- La mappa delle regioni elimina subito il contesto RAM vecchio dopo un errore
-  del campionamento principale e lo aggiorna quando arriva un nuovo campione.
-- Ricerca e legenda delle categorie usano le etichette della lingua scelta. I nomi
-  di categoria sconosciuti provenienti da acquisizioni restano letterali.
-- Cataloghi UTF-8 separati per lingua sostituiscono righe posizionali molto lunghe;
-  i test verificano chiavi e segnaposto, e la verifica del wheel controlla che i
-  cataloghi siano inclusi. Ripuliti import inutilizzati e chiariti alcuni contratti
-  e passaggi delle funzioni di campionamento e salvataggio.
+- Distribution verification now reuses the caller's cache and prepares dependencies
+  from the lockfile with `uv sync --offline --no-install-project` before installing
+  and checking the wheel. The previous `uv pip install --offline` failed with a
+  freshly populated cache because index metadata was missing. The case was reproduced
+  and verified with an isolated cache and environment inside the project.
+- CI no longer cancels the other systems after the first matrix failure.
+- Capture saving enforces the limit during JSON encoding, before creating or
+  replacing files, avoiding an allocation proportional to a document far beyond
+  the permitted limit.
+- On Windows/macOS, a successful `memory_full_info` reading clears a previous RSS
+  error that no longer applies; if both readings fail, it preserves both reasons.
+  The hardware equivalents remained to be verified at this checkpoint.
+- Unix executable names preserve valid backslashes in filenames; Windows names
+  continue to follow Windows rules, including in mocked tests.
+- Bars and maps calculate margins in terminal cells, so double-width characters
+  do not expand the drawing beyond the available width.
+- The region map immediately clears stale RAM context after a main-sampling error
+  and updates it when a new sample arrives.
+- Search and category legends use labels in the selected language. Unknown category
+  names from captures remain literal.
+- Separate UTF-8 catalogs for each language replace very long positional rows.
+  Tests check keys and placeholders, and wheel verification checks that catalogs
+  are included. Unused imports were removed and several contracts and steps in
+  sampling and saving functions were clarified.
 
-## Da completare
+## Remaining work
 
-1. **Verifica della localizzazione.** I checkpoint successivi estendono i cataloghi
-   alle schermate e ai messaggi applicativi, inclusi footer, CLI e diagnostica.
-   Il contratto separa chiavi e parametri dalla presentazione, conservando i dati
-   arbitrari e i dettagli del sistema operativo. La verifica locale successiva
-   copre layout, binding, errori CLI, serializzazione e inclusione delle risorse
-   su Linux con Python 3.14.4. Le lingue devono essere riviste da madrelingua.
-2. **Prestazioni con carichi molto grandi.** Il confronto viene calcolato in worker,
-   ma filtro, ordinamento e parte del rendering della tabella regioni sono ancora
-   sincroni. Le misure e i limiti sono in [benchmark.md](benchmark.md); un eventuale
-   spostamento in worker richiede gestione di annullamento e risultati obsoleti.
-3. **Responsabilità delle schermate.** `RegionScreen` riunisce lettura asincrona,
-   filtri, paginazione, confronto, rendering e salvataggio. Conviene separare in
-   incrementi piccoli le funzioni pure di presentazione e le operazioni asincrone,
-   preservando i test su selezione, generazioni e chiusura dei worker.
-4. **Validazione sui sistemi seguiti.** Sono passati tutti i sei job Linux e Windows
-   con Python 3.11, 3.13 e 3.14, incluse le prove native Windows sui runner.
-   Le prove manuali su PC Windows restano distinte dalla CI. macOS è escluso
-   dalle verifiche interne per scelta dell'utente e assenza di hardware disponibile.
+1. **Localization verification.** Later checkpoints extend the catalogs to screens
+   and application messages, including footers, CLI and diagnostics. The contract
+   separates keys and parameters from presentation while preserving arbitrary
+   data and operating-system details. Subsequent local verification covers layout,
+   bindings, CLI errors, serialization and resource inclusion on Linux with
+   Python 3.14.4. Translations still need native-speaker review.
+2. **Performance with very large workloads.** Comparison runs in a worker, but
+   filtering, sorting and parts of region-table rendering are still synchronous.
+   Measurements and limits are in [benchmark.md](benchmark.md); moving more work
+   to workers would require cancellation and stale-result handling.
+3. **Screen responsibilities.** `RegionScreen` combines asynchronous reading,
+   filtering, pagination, comparison, rendering and saving. Pure presentation
+   functions and asynchronous operations should be separated in small increments,
+   preserving tests for selection, generations and worker shutdown.
+4. **Validation on maintained systems.** All six Linux and Windows jobs with Python
+   3.11, 3.13 and 3.14 passed, including native Windows checks on the runners.
+   Manual checks on a Windows PC remain separate from CI. macOS is excluded from
+   internal verification at the user's request and because no hardware is available.
 
-La verifica Ruff isolata per errori di sintassi e nomi/import (`F,E9`) è passata.
-Una scansione con la configurazione Ruff dell'host segnala anche numerose regole
-stilistiche e permessi eseguibili del filesystem portatile: non sono state applicate
-correzioni automatiche indiscriminate o trattate quelle segnalazioni come bug.
+The isolated Ruff check for syntax and name/import errors (`F,E9`) passed.
+A scan using the host's Ruff configuration also reported many style rules and
+executable permissions on the portable filesystem. No indiscriminate automatic
+fixes were applied, and those findings were not treated as bugs.
 
-La suite Linux ha eseguito 193 test con tre test nativi Windows saltati; i controlli
-aggiuntivi su dettaglio localizzato e larghezza delle barre sono poi passati
-separatamente. Sono state rigenerate catture sintetiche e verificati `--once`,
-`--json`, build, installazione del wheel e replay in un ambiente isolato alimentato
-da una cache nuova. Nessun nuovo risultato GitHub Actions è stato ottenuto per queste
-modifiche locali.
+The Linux suite ran 193 tests with three native Windows tests skipped; additional
+checks for localized details and bar widths then passed separately. Synthetic
+captures were regenerated; `--once`, `--json`, build, wheel installation and replay
+were checked in an isolated environment backed by a fresh cache. No new GitHub
+Actions result was obtained for these local changes.
 
-## Checkpoint successivo senza test
+## Subsequent checkpoint without tests
 
-Su richiesta dell'utente, l'incremento successivo è stato preparato e pubblicato
-come checkpoint senza eseguire nuovi test, lint, build, catture o avvii dell'app.
-I risultati sopra riguardano il lavoro precedente. I file di aiuto sono ora risorse
-Markdown per le dieci lingue; la diagnostica OS e ulteriori testi del dettaglio e
-del confronto usano i cataloghi. L'helper dei contatori di piattaforma riduce il
-metodo principale del dashboard; le righe della tabella usano variabili esplicite
-per valori, copertura e identità. La correttezza di queste ultime modifiche dovrà
-essere verificata successivamente. I commit contengono `[skip ci]`.
+At the user's request, the next increment was prepared and published as a checkpoint
+without running new tests, lint, builds, captures or application launches. The
+results above apply to the earlier work. Help files became Markdown resources
+for all ten languages; OS diagnostics and further detail/comparison text use
+the catalogs. The platform-counter helper reduces the main dashboard method;
+table rows use explicit variables for values, coverage and identity. Those latest
+changes still needed subsequent verification. The commits contain `[skip ci]`.
 
-L'ultimo incremento completa le descrizioni del footer e i testi applicativi di
-CLI, rapporto `--once`, inspector, collector, provider, confronto e acquisizioni
-nelle dieci lingue. I messaggi strutturati mantengono un testo italiano compatibile
-con modello e JSON e vengono tradotti al confine della UI; i dettagli OS e i motivi
-già registrati nei file rimangono originali. Non sono stati eseguiti nuovi test,
-lint, build, catture o avvii dell'app neppure per questo incremento.
+The last increment completes footer descriptions and application text for the
+CLI, `--once` report, inspector, collectors, providers, comparison and captures
+in all ten languages. Structured messages retain Italian text compatible with
+the model and JSON, and are translated at the UI boundary; OS details and reasons
+already recorded in files remain unchanged. No new tests, lint, builds, captures
+or application launches were run for that increment either.
 
-## Verifica successiva autorizzata
+## Subsequently authorized verification
 
-L'utente ha poi chiesto di eseguire i test. Aggiunti 22 test dedicati a CLI,
-diagnostica strutturata e UI nelle dieci lingue. Due asserzioni della suite
-precedente cercavano vecchie diciture: sono state aggiornate ai messaggi del
-catalogo, conservando le verifiche sui dati scartati e sui campioni parziali.
-Le esecuzioni mirate sono passate senza richiedere modifiche al codice applicativo.
-Sono riusciti anche launcher Linux, catture sintetiche, build, installazione isolata,
-replay e controllo Ruff `F,E9`. Dettagli e risultato complessivo sono nel
-[passaggio di consegne](handoff.md#verifica-richiesta-dopo-il-checkpoint-multilingua).
+The user then requested tests. Twenty-two tests were added for the CLI, structured
+diagnostics and UI in all ten languages. Two assertions in the previous suite
+expected old wording: they were updated to catalog messages while preserving
+checks for discarded data and partial samples. Targeted runs passed without
+requiring application-code changes. The Linux launcher, synthetic captures,
+build, isolated installation, replay and Ruff `F,E9` check also succeeded.
+Details and the overall result are in the
+[archived handoff](history/2026-11-16.md#verifica-richiesta-dopo-il-checkpoint-multilingua) (Italian).

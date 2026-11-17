@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Cross-platform RAM task manager: application memory, PSS, USS and swap, with the gputaskman terminal UI"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -17,6 +17,16 @@ classifiers = [
 ]
 dependencies = ["psutil>=7.2.2,<8", "textual>=8.2.8,<9"]
 
+[dependency-groups]
+images = ["resvg-py==0.5.0"]
+release = [
+    "pyinstaller==6.22.3",
+]
+
+[project.urls]
+Repository = "https://github.com/umbertotechnopreneur/ramtaskman"
+Issues = "https://github.com/umbertotechnopreneur/ramtaskman/issues"
+
 [project.scripts]
 ramtaskman = "ramtaskman.cli:main"
 rtm = "ramtaskman.cli:main"
@@ -24,3 +34,12 @@ rtm = "ramtaskman.cli:main"
 [build-system]
 requires = ["uv_build>=0.9.26,<0.14.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-include = [
+    "docs/**/*.md", "docs/images/*.png", "tests/*.py", "tools/*.py", "tools/*.c",
+    "docs/images/VIBEWARE_LICENSE.txt",
+    "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "lessons.md",
+    "run.sh", "run.cmd", "uv.lock", ".gitattributes", ".gitignore",
+    ".github/workflows/*.yml", "packaging/*.md",
+]

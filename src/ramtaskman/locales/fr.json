@@ -394,5 +394,10 @@
   "tech_executable_mismatch": "Image exécutable modifiée ou invérifiable",
   "name_label": "Nom",
   "top_thirty": "30 premiers",
-  "invalid_language": "Langue non prise en charge : {code}"
+  "invalid_language": "Langue non prise en charge : {code}",
+  "ram_value": "Valeur RAM",
+  "ram_monthly": "RAM/mois",
+  "ram_value_note": "Part du matériel, pas une facture. PSS répartit la mémoire partagée ; USS l’exclut.",
+  "about_title": "À propos",
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nMerci à **Scott Hanselman** pour GPU Taskman et l’inspiration. Ram Taskman adapte des éléments de son interface et de ses fonctions au suivi de la RAM. Projet indépendant ; licence MIT et attribution originales conservées.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
 }

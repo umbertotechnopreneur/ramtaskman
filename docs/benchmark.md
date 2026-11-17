@@ -1,124 +1,126 @@
-# Benchmark locale della memoria
+# Local memory benchmark
 
-Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
-sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
-dell'utente, macOS è escluso dalle verifiche interne.
+We develop and test ramtaskman on Linux and Windows. The macOS backend is
+experimental: we don't have a Mac, so we haven't tested or validated it.
+Our own testing and CI cover Linux and Windows.
 
-Questo documento descrive misure riproducibili, non requisiti di prestazione garantiti.
-Lo strumento usa solo la libreria standard e dipendenze già installate nel progetto.
+This document describes reproducible measurements, not guaranteed performance
+requirements. The tool uses only the standard library and dependencies already
+installed in the project.
 
-## Esecuzione
+## Running the benchmark
 
-Dalla root, per le trasformazioni sintetiche:
+From the repository root, for synthetic transformations:
 
 ```bash
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python tools/benchmark_memory.py --sizes 100 1000 10000 32768 --repeat 5
 ```
 
-Per includere la UI Textual 160×48 e le letture Linux **solo del processo del benchmark**:
+To include the 160×48 Textual UI and Linux readings **of the benchmark process only**:
 
 ```bash
 UV_CACHE_DIR="$PWD/.uv-cache" uv run --locked python tools/benchmark_memory.py --sizes 100 1000 10000 32768 --repeat 5 --self-linux --ui
 ```
 
-`--self-linux` non enumera gli altri processi e non stampa PID, nome, percorsi o dati
-del computer: misura sul processo del benchmark i metadati di identità, `smaps_rollup`
-e `smaps`, senza leggere memoria o i file mappati. Su altri sistemi la sezione è
-dichiarata non disponibile. `--ui` usa esclusivamente processi, percorsi e regioni
-sintetici e l'harness Textual; non scrive acquisizioni o screenshot. Le dipendenze
-e la cache restano nel progetto secondo i launcher.
+`--self-linux` does not enumerate other processes or print PIDs, names, paths or
+computer details. It measures identity metadata, `smaps_rollup` and `smaps` for
+the benchmark process without reading memory contents or mapped files. On other
+systems, this section is reported as unavailable. `--ui` uses only synthetic
+processes, paths and regions with the Textual harness; it writes no captures or
+screenshots. Dependencies and cache remain in the project, following the launchers.
 
-Ogni operazione viene eseguita una volta per riscaldamento e poi `--repeat` volte.
-Le tabelle mostrano mediana, percentile alto e numero di misure quando disponibili.
-Il calcolo del percentile con pochi campioni è molto sensibile a un singolo valore:
-cinque osservazioni non sono sufficienti per stimare una coda statisticamente robusta.
-Rilevare separatamente CPU, sistema, Python e versioni dell'app prima dei confronti;
-non aggiungere percorsi o nomi dei processi privati a un rapporto condiviso.
+Each operation runs once for warm-up, then `--repeat` times. Tables show the median,
+high percentile and sample count when available. Percentiles from small samples
+are very sensitive to a single value: five observations are not enough to estimate
+a statistically robust tail. Record CPU, operating system, Python and application
+versions separately before comparisons; do not include private paths or process
+names in a shared report.
 
-Le misure dei singoli metodi della UI includono l'elaborazione Python e la creazione
-delle righe; **escludono il paint effettivo del terminale**. Le misure con `pilot`
-includono pause e attese dell'harness, quindi non equivalgono alla latenza di tastiera
-reale. Per conoscere la latenza percepita servono anche prove manuali sul terminale reale.
+Individual UI method timings include Python processing and row creation; they
+**exclude actual terminal painting**. Measurements using `pilot` include harness
+pauses and waits, so they are not equivalent to real keyboard latency. Measuring
+perceived latency also requires manual checks in a real terminal.
 
-## Risultati del 16 novembre 2026
+## Results from November 16, 2026
 
-Linux x86_64, Python 3.14.4, psutil 7.2.2, Textual 8.2.8; cinque ripetizioni dopo il
-riscaldamento, terminale simulato 160×48. Sono osservazioni puntuali sulla macchina
-usata in quel momento, non una previsione per altri sistemi.
+Linux x86_64, Python 3.14.4, psutil 7.2.2, Textual 8.2.8; five repetitions after
+warm-up, simulated 160×48 terminal. These are observations on the machine used
+at that time, not predictions for other systems.
 
-### Letture reali del solo processo di prova
+### Native readings of the test process only
 
-Il processo aveva 138 regioni al primo campione. I tempi sono mediana / percentile alto:
+The process had 138 regions in the first sample. Times are median / high percentile:
 
-| Fase | Tempo |
+| Stage | Time |
 |---|---:|
-| Identità e metadati cgroup | 0,25 / 0,26 ms |
-| Contatori `smaps_rollup` | 0,71 / 0,72 ms |
-| Lettura delle regioni `smaps` | 7,81 / 7,93 ms |
+| Identity and cgroup metadata | 0.25 / 0.26 ms |
+| `smaps_rollup` counters | 0.71 / 0.72 ms |
+| Reading `smaps` regions | 7.81 / 7.93 ms |
 
-RSS del benchmark prima/dopo la sequenza: 39,11 / 39,32 MiB; CPU consumata
-complessivamente 50 ms con risoluzione del sistema; file descriptor prima/dopo: 4/4.
-Le operazioni includono controlli d'identità propri dei metodi misurati: non sono
-contatori kernel indipendenti. La scansione `smaps` è sequenziale e può mutare durante
-la lettura. Non moltiplicare questi tempi per il numero di processi del PC per stimare
-la scansione generale: permessi, numero di pagine e dimensione dei processi variano.
+Benchmark RSS before/after the sequence: 39.11 / 39.32 MiB; total CPU consumed:
+50 ms at the system's timing resolution; file descriptors before/after: 4/4.
+Operations include the measured methods' identity checks: they are not independent
+kernel counters. The `smaps` scan is sequential and may change while being read.
+Do not multiply these times by the computer's process count to estimate a full
+scan: permissions, page counts and process sizes vary.
 
-### Modello e UI con dati sintetici
+### Model and UI with synthetic data
 
-| Processi / regioni | RAM Python fixture | Gruppi mediana | Filtro mediana | Diff A/B mediana / p95 | `render_regions` mediana / massimo |
+| Processes / regions | Python fixture memory | Grouping median | Filter median | A/B diff median / p95 | `render_regions` median / maximum |
 |---:|---:|---:|---:|---:|---:|
-| 100 | 0,09 MiB | 0,27 ms | 0,05 ms | 0,34 / 0,36 ms | 4,92 / 5,75 ms |
-| 1.000 | 1,10 MiB | 1,56 ms | 0,56 ms | 3,26 / 3,26 ms | 11,93 / 15,03 ms |
-| 10.000 | 11,29 MiB | 15,71 ms | 5,98 ms | 43,36 / 89,11 ms | 29,35 / 34,68 ms |
-| 32.768 | 37,15 MiB | 51,76 ms | 19,46 ms | 171,47 / 242,03 ms | 70,88 / 73,82 ms |
+| 100 | 0.09 MiB | 0.27 ms | 0.05 ms | 0.34 / 0.36 ms | 4.92 / 5.75 ms |
+| 1,000 | 1.10 MiB | 1.56 ms | 0.56 ms | 3.26 / 3.26 ms | 11.93 / 15.03 ms |
+| 10,000 | 11.29 MiB | 15.71 ms | 5.98 ms | 43.36 / 89.11 ms | 29.35 / 34.68 ms |
+| 32,768 | 37.15 MiB | 51.76 ms | 19.46 ms | 171.47 / 242.03 ms | 70.88 / 73.82 ms |
 
-L'ultima colonna misura `render_regions` sincrono dopo una ricerca, con tabella a
-pagine di 250 righe; non include il paint. Con 32.768 regioni supera l'obiettivo
-iniziale indicativo di 50 ms. Il diff viene mantenuto in cache per A/B immutati;
-la prima elaborazione è stata successivamente spostata su un worker cancellabile.
-I tempi di apertura UI completi di `pilot` erano 488 / 528 / 570 / 868 ms nelle
-quattro dimensioni. Tre variazioni rapide del testo hanno prodotto un solo ridisegno
-per ripetizione; l'attesa totale comprende debounce e pause imposte dal test.
+The last column measures synchronous `render_regions` after a search, with a
+250-row paginated table; it excludes painting. At 32,768 regions it exceeds the
+initial indicative 50 ms target. The diff is cached while A/B remain unchanged;
+the initial computation was subsequently moved to a cancellable worker.
+Full UI opening times with `pilot` were 488 / 528 / 570 / 868 ms for the four sizes.
+Three rapid text changes produced one redraw per repetition; the total wait
+includes debounce and test-imposed pauses.
 
-### Avvio del confronto in background
+### Starting the background comparison
 
-Una seconda prova sintetica, tre ripetizioni con 32.768 regioni, ha confrontato due
-varianti **entrambe con il calcolo nel worker**. Prima di specificare una descrizione
-fissa a Textual, l'avvio dell'azione aveva mediana 153,17 ms: il decorator costruiva
-nel thread UI una rappresentazione testuale delle due acquisizioni complete. Con la
-descrizione fissa, la mediana è stata 1,61 ms, massimo 1,80 ms. Il tempo fino al
-risultato visibile con harness e pause è stato rispettivamente 563,48 e 359,60 ms.
-Sono poche ripetizioni; non dimostrano la latenza di un terminale reale né garantiscono
-che la UI sia sempre reattiva durante codice Python nel worker. La GIL è condivisa.
+A second synthetic test, with three repetitions and 32,768 regions, compared two
+variants **both computing in a worker**. Before a fixed description was supplied
+to Textual, starting the action took a median of 153.17 ms: the decorator built a
+text representation of both complete captures on the UI thread. With the fixed
+description, the median was 1.61 ms and the maximum 1.80 ms. Time until the result
+became visible, including the harness and pauses, was 563.48 and 359.60 ms respectively.
+These few repetitions do not establish real terminal latency or guarantee that
+the UI always stays responsive while Python code runs in the worker. The GIL is shared.
 
-Il motore di confronto controlla l'annullamento durante la validazione, l'elaborazione
-delle regioni e i totali; la costruzione/ordinamento in memoria non è interrompibile
-nel mezzo dell'operazione. Se l'utente chiude la vista o cambia campione, il worker
-può finire un'operazione in corso ma il risultato vecchio viene scartato tramite
-generazione e identità degli snapshot. Un risultato parziale non viene mostrato.
+The comparison engine checks cancellation during validation, region processing
+and totals; in-memory construction/sorting cannot be interrupted mid-operation.
+If the user closes the view or changes the sample, the worker may finish an operation
+already in progress, but its stale result is discarded using generations and
+snapshot identities. Partial results are not displayed.
 
-## Ricerca localizzata, verifica puntuale
+## Localized search: a focused check
 
-16 novembre 2026, Linux x86_64, Python 3.14.4: con `tools/benchmark_memory.py`,
-fixture sintetiche da 1.000 regioni e tre ripetizioni, la mediana della ricerca
-è stata 0,76 ms prima e 0,52 ms dopo aver preparato le etichette tradotte una
-volta per filtro. Sono poche misure locali, soggette a rumore; non dimostrano un
-miglioramento generale né misurano il paint del terminale.
+November 16, 2026, Linux x86_64, Python 3.14.4: using `tools/benchmark_memory.py`,
+synthetic fixtures with 1,000 regions and three repetitions, median search time
+was 0.76 ms before and 0.52 ms after preparing translated labels once per filter.
+These are a few local measurements subject to noise; they do not demonstrate a
+general improvement or measure terminal painting.
 
-## Limiti e lavoro ancora aperto
+## Limits and remaining work
 
-- Non è stata eseguita una misura realistica su tutti i processi del PC: la prova
-  reale riguarda esclusivamente il processo di benchmark.
-- RSS prima/dopo e numero di fd indicano solo due punti; non dimostrano l'assenza di
-  crescita in una lunga sessione. Servono molti cicli controllati, con serie temporali.
-- I carichi sintetici non ricostruiscono la distribuzione, permessi, pagine grandi o
-  tempi di un browser reale. Le latenze su un terminale Windows personale restano da
-  misurare; le misure macOS non rientrano nelle verifiche interne.
-- Oltre al diff, filtro, ordinamento e `render_regions` a 32.768 regioni possono ancora
-  occupare il thread UI; spostarli in elaborazioni cancellabili richiede test di
-  generazione e selezione, e ulteriori misure. La paginazione da sola non garantisce
-  il completamento entro 50 ms.
-- Cancellazione cooperativa non interrompe una syscall o un ordinamento già in corso.
-- Il progetto non ha ancora misure di paint, latenza percepita, resize e chiusura su
-  sistemi Linux/Windows sotto carico variabile; F4 rimane aperta. I risultati della
-  CI Ubuntu/Windows non sostituiscono queste misure interattive.
+- No realistic measurement across all processes on the computer was performed:
+  the native test covers only the benchmark process.
+- RSS before/after and file descriptor counts provide only two points; they do
+  not establish the absence of growth in a long session. That requires many
+  controlled cycles with time series.
+- Synthetic workloads do not reproduce a real browser's distribution, permissions,
+  large pages or timings. Latencies on the owner's Windows terminal remain
+  unmeasured; macOS measurements are outside internal verification.
+- Besides the diff, filtering, sorting and `render_regions` at 32,768 regions can
+  still occupy the UI thread. Moving them into cancellable work requires generation
+  and selection tests, plus further measurements. Pagination alone does not
+  guarantee completion within 50 ms.
+- Cooperative cancellation does not interrupt a syscall or sort already in progress.
+- The project still lacks measurements of painting, perceived latency, resizing
+  and closing on Linux/Windows under varying load; F4 remains open. Ubuntu/Windows
+  CI results do not replace these interactive measurements.

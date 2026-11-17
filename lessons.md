@@ -1,66 +1,68 @@
-# Lezioni verificate
+# Verified lessons
 
-> Sviluppo e verifiche: Linux e Windows. macOS è sperimentale, non testato né
-> validato dal progetto perché non abbiamo un Mac a disposizione. Gli esperimenti
-> storici riportati altrove non costituiscono una validazione della piattaforma.
+> Development and verification cover Linux and Windows. macOS is experimental,
+> untested and unvalidated by the project because we do not have a Mac. Historical
+> experiments documented elsewhere do not validate the platform.
 
-## Memoria non leggibile non significa zero
+## Unreadable memory does not mean zero
 
-La scansione locale senza elevazione ha rilevato molti processi senza accesso a smaps_rollup.
-La UI deve mantenere n/a e mostrare la copertura. Un totale di gruppo con un membro mancante
-non è un totale completo: il test `test_incomplete_group_does_not_claim_complete_total` lo verifica.
+The local scan without elevated privileges found many processes whose smaps_rollup
+could not be accessed. The UI must preserve n/a and display coverage. A group total
+with a missing member is not complete: `test_incomplete_group_does_not_claim_complete_total`
+checks this contract.
 
-## Cache e disponibile si sovrappongono
+## Cache and available memory overlap
 
-MemAvailable include memoria recuperabile. Nella barra per categorie OS non è un segmento:
-si usa MemFree per la RAM libera e Cached − Shmem per separare cache dei file e shmem.
-Slab non va sommato ai suoi figli SReclaimable/SUnreclaim. La somma delle categorie più il
-residuo deve coincidere con MemTotal; campioni incoerenti hanno un motivo esplicito e
-fallback in uso/disponibile. Verifiche in test_system_segments.py e test_memory.py.
+MemAvailable includes reclaimable memory. It is not a segment in the OS category bar:
+use MemFree for free RAM and Cached − Shmem to separate file cache from shmem.
+Do not add Slab to its SReclaimable/SUnreclaim children. Categories plus the residual
+must add up to MemTotal; inconsistent samples carry an explicit reason and fall
+back to used/available. Checks are in test_system_segments.py and test_memory.py.
 
-## Windows: commit non significa swap né RAM privata residente
+## Windows commit is neither swap nor private resident RAM
 
-Il sorgente psutil 7.2.2 distingue RSS/working set e USS da private/pagefile/commit.
-Il backend Windows usa memory_full_info().uss e lascia PSS/swap per processo a None;
-il test test_windows_uss_is_not_commit_and_swap_is_not_pagefile protegge questa distinzione.
-Riferimento: documentazione Microsoft PROCESS_MEMORY_COUNTERS_EX, collegata dal README.
+The psutil 7.2.2 source distinguishes RSS/working set and USS from private/pagefile/commit.
+The Windows backend uses memory_full_info().uss and leaves per-process PSS/swap
+as None; test_windows_uss_is_not_commit_and_swap_is_not_pagefile protects this distinction.
+Reference: Microsoft's PROCESS_MEMORY_COUNTERS_EX documentation, linked from the
+[counter audit](docs/audit-contatori-piattaforma.md).
 
-## Una ricerca su un helper deve conservare il totale dell’app
+## Searching for a helper must preserve the application's total
 
-Costruire gli aggregati prima di filtrare evita che cercare un PID o un helper trasformi
-il suo consumo nel totale apparente dell’applicazione. I filtri selezionano gruppi interi;
-nel drilldown selezionano i processi. I test di filters e UI verificano questa distinzione.
+Building aggregates before filtering prevents a search for a PID or helper from
+making its usage appear to be the application's total. Filters select whole groups;
+in the drilldown, they select processes. Filter and UI tests check this distinction.
 
-## L’identità dell’istanza è più precisa del nome del programma
+## Instance identity is more precise than the program name
 
-Un cgroup applicativo systemd esplicito può contenere helper con eseguibili diversi.
-Il percorso completo identifica l’istanza; il nome visualizzato può essere uguale a quello
-di altre istanze. Non aggregare per la sola etichetta, per l’intera sessione o per UID diverso.
-Parser e test in grouping.py/test_grouping.py verificano questi limiti.
+An explicit systemd application cgroup may contain helpers with different executables.
+The full path identifies the instance; its display name may match other instances.
+Do not aggregate solely by label, across the whole session or across different UIDs.
+The parser and tests in grouping.py/test_grouping.py check these boundaries.
 
-## I worker Textual appartengono al manager dell'app
+## Textual workers belong to the application's manager
 
-`screen.workers` è il manager globale, non un manager isolato della schermata.
-Per chiudere una lettura su richiesta usare `cancel_node(screen)`: `cancel_all()`
-interromperebbe anche il monitoraggio principale. Il test di chiusura in
-test_region_ui.py verifica che il worker dell'app resti attivo mentre quello delle
-regioni riceve l'annullamento. Per dettagli scorrevoli da tastiera usare un
-VerticalScroll: rendere focusabile un semplice Static non lo rende scorrevole.
+`screen.workers` is the global manager, not a manager isolated to the screen.
+To stop an on-demand read, use `cancel_node(screen)`: `cancel_all()` would also
+interrupt the main monitor. The closing test in test_region_ui.py checks that
+the application's worker stays active while the region worker receives cancellation.
+For keyboard-scrollable details, use a VerticalScroll: making a plain Static
+focusable does not make it scrollable.
 
-## Localizzare la presentazione senza riscrivere i dati
+## Localize presentation without rewriting data
 
-I messaggi prodotti dall'app conservano chiave e parametri fino alla UI. I test
-verificano annidamento, copia profonda di `dataclasses.asdict` e JSON canonico;
-nomi, percorsi, dettagli OS e testi riaperti da acquisizioni restano letterali.
-Le prove Textual nelle dieci lingue controllano il footer renderizzato e che
-un'app successiva non modifichi i binding di quelle precedenti. Le asserzioni
-sullo stato devono seguire il catalogo scelto, continuando a verificare lo scarto
-dei dati obsoleti e la copertura parziale quando cambiano le diciture.
+Application messages preserve their keys and parameters until they reach the UI.
+Tests check nesting, deep copying through `dataclasses.asdict` and canonical JSON;
+names, paths, OS details and text reopened from captures remain literal.
+Textual checks in all ten languages verify the rendered footer and ensure that
+a later application does not change previous applications' bindings. State assertions
+must follow the selected catalog while continuing to verify stale-data rejection
+and partial coverage when wording changes.
 
-## Verificare anche i fallback delle dipendenze
+## Check dependency fallbacks too
 
-L'assenza di chiamate esplicite a `cmdline()` nel progetto non basta: in psutil 7
-le API pubbliche per nome ed eseguibile possono usarla come fallback. L'adapter
-dei metadati nativi isola questa dipendenza interna, con valori mancanti espliciti
-quando non è disponibile. I test vietano i getter pubblici e i probe sul file
-eseguibile; le cache pubbliche non vengono usate come nuova prova d'identità.
+The absence of explicit `cmdline()` calls in the project is not enough: psutil 7's
+public name and executable APIs may use it as a fallback. The native metadata
+adapter isolates this internal dependency, with explicit missing values when
+it is unavailable. Tests forbid public getters and executable-file probes;
+public caches are not used as fresh proof of identity.

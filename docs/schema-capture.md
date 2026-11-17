@@ -1,122 +1,120 @@
-# Formato acquisizioni ramtaskman v1
+# ramtaskman capture format v1
 
-Il progetto è sviluppato e verificato su Linux e Windows. Il backend macOS è
-sperimentale, non testato né validato: non disponiamo di un Mac e, su richiesta
-dell'utente, macOS è escluso dalle verifiche interne.
+We develop and test ramtaskman on Linux and Windows. The macOS backend is
+experimental: we don't have a Mac, so we haven't tested or validated it.
+Our own testing and CI cover Linux and Windows.
 
-Il formato `.rtm.json` salva **metadati** delle regioni di un processo per la
-consultazione locale offline. È indipendente da `--json`, che mantiene il suo contratto
-precedente. Il file non contiene i byte della memoria delle applicazioni, ma può
-contenere nomi di processi, percorsi, indirizzi, PID e orari: trattarlo come dato
-potenzialmente personale. Nessuna acquisizione viene inviata automaticamente.
+The `.rtm.json` format saves process-region **metadata** for local offline viewing.
+It is independent of `--json`, which retains its previous contract. Files do not
+contain application memory bytes, but can contain process names, paths, addresses,
+PIDs and timestamps: treat them as potentially personal data. Captures are never
+sent automatically.
 
-## Contenitore
+## Container
 
-Il file è JSON UTF-8. La radice contiene esattamente questi campi obbligatori:
+The file is UTF-8 JSON. The root contains exactly these required fields:
 
-| Campo | Tipo | Significato |
+| Field | Type | Meaning |
 |---|---|---|
-| `format` | stringa | `ramtaskman.capture` |
-| `schema_version` | intero | `1` |
-| `producer_version` | stringa | Versione dell'app che ha scritto il file |
-| `current_capture_id` | stringa | Identificativo del campione corrente B |
-| `baseline_capture_id` | stringa o null | Identificativo del campione fissato A |
-| `captures` | array | Uno o due record di acquisizione |
+| `format` | string | `ramtaskman.capture` |
+| `schema_version` | integer | `1` |
+| `producer_version` | string | App version that wrote the file |
+| `current_capture_id` | string | Identifier of current sample B |
+| `baseline_capture_id` | string or null | Identifier of pinned sample A |
+| `captures` | array | One or two capture records |
 
-Con un solo record, `baseline_capture_id` è null e `current_capture_id` punta al
-record. Con due, i due ID devono essere distinti e puntare ciascuno a un record.
-L'ordine dei record e gli orari non determinano i ruoli. Versioni o campi sconosciuti
-sono rifiutati dal lettore v1: non si ignorano estensioni che potrebbero cambiare
-la semantica dei numeri.
+With one record, `baseline_capture_id` is null and `current_capture_id` refers to
+that record. With two records, the two IDs must differ and each refer to a record.
+Record order and timestamps do not determine roles. The v1 reader rejects unknown
+versions or fields: it does not ignore extensions that could change number semantics.
 
-## Record acquisizione
+## Capture record
 
-Tutti i campi seguenti sono obbligatori anche quando il valore è null:
+All fields below are required, including when their value is null:
 
-| Campo | Tipo | Significato |
+| Field | Type | Meaning |
 |---|---|---|
-| `capture_id`, `collection_session_id` | stringhe non vuote | Identità acquisizione e sessione di raccolta |
-| `sequence` | intero >= 0 | Ordine della richiesta nella sessione |
-| `platform`, `backend_id`, `backend_version` | stringhe non vuote | Origine e contratto del provider |
-| `pid` | intero positivo | PID al momento della raccolta |
-| `started_at` | numero finito >= 0 | Tempo di creazione del processo, secondi Unix |
-| `name` | stringa non vuota | Nome del processo rilevato |
-| `executable_identity` | stringa o null | Identità eseguibile disponibile, non aperta al replay |
-| `taken` | numero finito >= 0 | Tempo Unix del campione |
-| `sample_ms` | numero finito >= 0 | Durata in millisecondi della raccolta |
-| `complete` | booleano | Enumerazione regioni completa oppure parziale/fallita |
-| `reason` | stringa o null | Motivo principale di incompletezza o errore |
-| `metric_definitions` | oggetto stringa→stringa | Identificativi delle definizioni dei contatori |
-| `capabilities` | oggetto stringa→booleano | Capacità dichiarate del provider |
-| `metric_coverage` | oggetto stringa→coppia di interi | Numero misurato e numero delle regioni osservate |
-| `issues` | array di stringhe | Motivi o note associati al campione |
-| `regions` | array | Elenco ordinato delle regioni osservate |
+| `capture_id`, `collection_session_id` | nonempty strings | Capture and collection-session identities |
+| `sequence` | integer >= 0 | Request order within the session |
+| `platform`, `backend_id`, `backend_version` | nonempty strings | Provider origin and contract |
+| `pid` | positive integer | PID at collection time |
+| `started_at` | finite number >= 0 | Process creation time, Unix seconds |
+| `name` | nonempty string | Observed process name |
+| `executable_identity` | string or null | Available executable identity; not opened during replay |
+| `taken` | finite number >= 0 | Sample time, Unix seconds |
+| `sample_ms` | finite number >= 0 | Collection duration in milliseconds |
+| `complete` | boolean | Complete versus partial/failed region enumeration |
+| `reason` | string or null | Main reason for incompleteness or failure |
+| `metric_definitions` | string→string object | Counter definition identifiers |
+| `capabilities` | string→boolean object | Declared provider capabilities |
+| `metric_coverage` | string→integer-pair object | Measured count and observed region count |
+| `issues` | array of strings | Reasons or notes associated with the sample |
+| `regions` | array | Ordered list of observed regions |
 
-La copertura usa come denominatore le regioni **osservate**, anche in un campione
-parziale. `complete=false` non permette di dedurre che le regioni assenti siano
-scomparse. `started_at` e `taken` sono secondi Unix; `sample_ms` è una durata,
-non una garanzia che la lettura sia atomica.
+Coverage uses **observed** regions as the denominator, even in a partial sample.
+`complete=false` does not imply missing regions disappeared. `started_at` and
+`taken` are Unix seconds; `sample_ms` is a duration, not a guarantee of atomicity.
 
-Due acquisizioni sono confrontabili temporalmente soltanto quando sessione,
-identità del processo, piattaforma e semantiche richieste sono compatibili. Il fatto
-che due file contengano lo stesso PID non prova che provengano dallo stesso processo.
+Two captures can be compared over time only when session, process identity,
+platform and required semantics are compatible. The same PID in two files does
+not prove that they came from the same process.
 
-## Regione
+## Region
 
-Tutti i campi sono obbligatori:
+Every field is required:
 
-| Campo | Tipo | Significato |
+| Field | Type | Meaning |
 |---|---|---|
-| `start`, `end`, `offset` | stringhe | Esadecimale canonico minuscolo con prefisso `0x`, senza zeri iniziali superflui |
-| `permissions`, `device`, `path`, `category` | stringhe | Metadati dell'intervallo e categoria descrittiva |
-| `inode` | intero >= 0 | Identificativo file riportato dal provider quando applicabile |
-| `rss`, `pss`, `uss`, `swap`, `swap_pss` | intero >= 0 o null | Contatori in byte; null significa non disponibile |
-| `breakdown` | oggetto stringa→intero o null | Contatori aggiuntivi in byte |
-| `vm_flags` | array di stringhe | Attributi di regione riportati dal provider |
+| `start`, `end`, `offset` | strings | Canonical lowercase hexadecimal with `0x` prefix, no redundant leading zeros |
+| `permissions`, `device`, `path`, `category` | strings | Range metadata and descriptive category |
+| `inode` | integer >= 0 | File identifier reported by the provider where applicable |
+| `rss`, `pss`, `uss`, `swap`, `swap_pss` | integer >= 0 or null | Byte counters; null means unavailable |
+| `breakdown` | object mapping strings to integers or null | Additional counters in bytes |
+| `vm_flags` | array of strings | Region attributes reported by the provider |
 
-Gli intervalli `[start, end)` sono crescenti, non vuoti e non sovrapposti. `end` e
-`start` descrivono spazio virtuale; la dimensione virtuale è `end - start` e non
-rappresenta necessariamente RAM residente. Il tipo di regione descrive l'origine
-individuata dal provider e non dimostra il contenuto di ogni pagina.
+Ranges `[start, end)` are ascending, nonempty and non-overlapping. `end` and
+`start` describe virtual space; virtual size is `end - start`, not necessarily
+resident RAM. Region type describes the origin identified by the provider; it
+does not prove what every page contains.
 
-`0` è una misura pari a zero; `null` è un valore sconosciuto o non supportato.
-PSS, USS, RSS e swap sono viste differenti e non vanno sommate indiscriminatamente.
+`0` is a measured zero; `null` is unknown or unsupported. PSS, USS, RSS and swap
+are different views and must not be added indiscriminately.
 
-## Validazione e limiti
+## Validation and limits
 
-Il lettore limita il file a 64 MiB, le acquisizioni a due e le regioni a 32.768 per
-acquisizione. La lettura applica il limite ai byte effettivamente letti. Sono rifiutati
-JSON non valido, chiavi duplicate, NaN/Infinity, booleani nelle posizioni numeriche,
-interi negativi o superiori a 64 bit senza segno, indirizzi non canonici o fuori
-intervallo, stringhe superiori a 65.536 caratteri, caratteri di controllo C0/C1 e surrogate isolati,
-array/oggetti oltre i limiti interni, regioni sovrapposte, ID incoerenti e coperture
-incompatibili con le regioni osservate. La data del campione deve essere rappresentabile
-sul sistema che visualizza il file. I testi sono dati e non vengono usati come comandi.
+The reader limits files to 64 MiB, captures to two, and regions to 32,768 per
+capture. The read limit applies to actual bytes read. It rejects invalid JSON,
+duplicate keys, NaN/Infinity, booleans in numeric positions, negative integers or
+integers above unsigned 64-bit range, noncanonical/out-of-range addresses, strings
+longer than 65,536 characters, C0/C1 control characters, isolated surrogates,
+arrays/objects beyond internal limits, overlapping regions, inconsistent IDs and
+coverage incompatible with observed regions. The sample timestamp must be
+representable on the system displaying the file. Text is data and is never used as commands.
 
-La scrittura usa un temporaneo nella stessa directory, flush e fsync; il percorso
-esistente non viene sostituito senza una scelta esplicita. Se fallisce la scrittura,
-il file precedente resta intatto e viene rimosso il temporaneo creato dalla richiesta.
-Su filesystem che non supportano i collegamenti fisici, la creazione senza sostituzione
-può fallire con il relativo errore: scegliere una destinazione supportata.
+Writing uses a temporary file in the same directory, flush and fsync. An existing
+path is not replaced without an explicit choice. If writing fails, the previous
+file stays intact and the request's temporary file is removed. On filesystems
+without hard-link support, creating without replacement can fail with the
+corresponding error; choose a supported destination.
 
-## Replay e confronto
+## Replay and comparison
 
 ```text
-ramtaskman --open acquisizione.rtm.json
-ramtaskman --compare prima.rtm.json dopo.rtm.json
+ramtaskman --language en --open capture.rtm.json
+ramtaskman --language en --compare before.rtm.json after.rtm.json
 ```
 
-`--open` apre uno o due campioni con i ruoli indicati nel file. `--compare` accetta
-un solo campione per ciascun file: il primo è A e il secondo B. Un file con due
-acquisizioni va invece aperto con `--open`. Il replay non costruisce un collector o
-un provider e il tasto `r` non riattiva letture live sul PID salvato.
+`--open` opens one or two samples with the roles recorded in the file. `--compare`
+accepts one sample per file: the first is A, the second B. Open files containing
+two captures with `--open` instead. Replay creates neither a collector nor a
+provider; pressing `r` does not resume live reads against the saved PID.
 
-Per riprodurre un confronto: fissare A nella vista regioni, aggiornare il processo
-per ottenere B, salvare il file esplicitamente, chiudere la vista e aprire il file.
-I valori e la semantica A/B sono gli stessi; i risultati restano osservazioni
-sequenziali e la crescita non dimostra da sola un memory leak. Se A e B sono lo
-stesso campione, il codec rifiuta due record con lo stesso ID: aggiornare B o
-salvare solo il campione corrente dopo aver rimosso la baseline.
+To reproduce a comparison, pin A in the region view, refresh the process to obtain
+B, explicitly save the file, close the view and reopen the file. Values and A/B
+semantics are the same; results remain sequential observations, and growth alone
+does not prove a memory leak. If A and B are the same sample, the codec rejects
+two records with the same ID: refresh B or remove the baseline and save only the
+current sample.
 
-Il file contiene l'intero campione disponibile e non solo le righe selezionate dai
-filtri. La vista (ricerca, ordinamento e zoom) non viene salvata nella versione 1.
+The file contains the entire available sample, not just rows selected by filters.
+View state (search, sorting and zoom) is not saved in version 1.

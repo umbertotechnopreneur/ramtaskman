@@ -399,5 +399,11 @@
   "ram_monthly": "RAM/tháng",
   "ram_value_note": "Phân bổ phần cứng, không phải hóa đơn. PSS chia bộ nhớ chung; USS loại trừ.",
   "about_title": "Giới thiệu",
-  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nCảm ơn **Scott Hanselman** vì GPU Taskman và nguồn cảm hứng. Ram Taskman điều chỉnh một phần giao diện và hàm hỗ trợ để theo dõi RAM. Dự án độc lập; giữ nguyên giấy phép MIT và ghi nhận tác giả gốc.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nCảm ơn **Scott Hanselman** vì GPU Taskman và nguồn cảm hứng. Ram Taskman điều chỉnh một phần giao diện và hàm hỗ trợ để theo dõi RAM. Dự án độc lập; giữ nguyên giấy phép MIT và ghi nhận tác giả gốc.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)",
+  "support_email": "Gửi chẩn đoán qua email…",
+  "support_preparing": "Đang chuẩn bị tệp ZIP chẩn đoán…",
+  "support_saved": "Đã lưu tệp ZIP chẩn đoán tại {path}",
+  "support_attach": "Đính kèm tệp ZIP này vào bản nháp: {path}",
+  "support_no_mail": "Không mở được email. Tệp ZIP chẩn đoán: {path}",
+  "support_failed": "Không tạo được tệp ZIP chẩn đoán."
 }

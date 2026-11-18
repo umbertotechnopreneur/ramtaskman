@@ -399,5 +399,11 @@
   "ram_monthly": "RAM/Monat",
   "ram_value_note": "Hardwareanteil, keine Rechnung. PSS verteilt gemeinsamen Speicher; USS schließt ihn aus.",
   "about_title": "Über",
-  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nDanke an **Scott Hanselman** für GPU Taskman und die Inspiration. Ram Taskman passt Teile seiner Oberfläche und Hilfsfunktionen zur RAM-Überwachung an. Unabhängiges Projekt; ursprüngliche MIT-Lizenz und Namensnennung bleiben erhalten.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nDanke an **Scott Hanselman** für GPU Taskman und die Inspiration. Ram Taskman passt Teile seiner Oberfläche und Hilfsfunktionen zur RAM-Überwachung an. Unabhängiges Projekt; ursprüngliche MIT-Lizenz und Namensnennung bleiben erhalten.\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)",
+  "support_email": "Diagnose per E-Mail…",
+  "support_preparing": "Diagnose-ZIP wird vorbereitet…",
+  "support_saved": "Diagnose-ZIP gespeichert unter {path}",
+  "support_attach": "Diese ZIP-Datei an den Entwurf anhängen: {path}",
+  "support_no_mail": "E-Mail konnte nicht geöffnet werden. Diagnose-ZIP: {path}",
+  "support_failed": "Diagnose-ZIP konnte nicht erstellt werden."
 }

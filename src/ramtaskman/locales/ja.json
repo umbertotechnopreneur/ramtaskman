@@ -399,5 +399,11 @@
   "ram_monthly": "RAM/月",
   "ram_value_note": "ハードウェア費用の配分であり請求ではありません。PSSは共有メモリを按分し、USSは除外します。",
   "about_title": "このアプリについて",
-  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nGPU Taskmanと着想を提供してくださった **Scott Hanselman** に感謝します。Ram TaskmanはUIと補助関数の一部をRAM監視向けに改変しています。独立したプロジェクトであり、元のMITライセンスと著作者表示を保持しています。\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)"
+  "about_body": "**Umberto Giacobbi · VibeWare**\n\nHuman Intent, AI Execution, Plenty of Token\n\n[umbertogiacobbi.biz](https://umbertogiacobbi.biz) · [VibeWare](https://umbertogiacobbi.biz/vibeware/manifesto)\n\nGPU Taskmanと着想を提供してくださった **Scott Hanselman** に感謝します。Ram TaskmanはUIと補助関数の一部をRAM監視向けに改変しています。独立したプロジェクトであり、元のMITライセンスと著作者表示を保持しています。\n\n[Scott Hanselman](https://www.hanselman.com) · [GPU Taskman](https://github.com/shanselman/gputaskman) · [MIT / source credits](https://github.com/umbertotechnopreneur/VibeKit/blob/main/Apps/RamTaskman/docs/upstream.md)\n\n[Source](https://github.com/umbertotechnopreneur/VibeKit/tree/main/Apps/RamTaskman)",
+  "support_email": "診断をメールで送る…",
+  "support_preparing": "診断 ZIP を準備中…",
+  "support_saved": "診断 ZIP の保存先: {path}",
+  "support_attach": "この ZIP を下書きに添付してください: {path}",
+  "support_no_mail": "メールを開けませんでした。診断 ZIP: {path}",
+  "support_failed": "診断 ZIP を作成できませんでした。"
 }

@@ -1,6 +1,8 @@
 """Textual layout adapted from Scott Hanselman's gputaskman (MIT)."""
 from __future__ import annotations
 
+import asyncio
+import os
 from collections import deque
 
 from rich.console import Group
@@ -14,6 +16,7 @@ from textual.widgets import Button, DataTable, Footer, Input, Markdown, Select, 
 from textual.worker import get_current_worker
 
 from .collector import Collector
+from . import support_diagnostics
 from .valuation import RamPrice, value_text
 from .models import ApplicationMemory, ProcessMemory, Snapshot, SystemMemory
 from .filters import RowFilter, owner_options
@@ -51,11 +54,31 @@ class AboutScreen(LocalizedModalScreen):
         with VerticalScroll():
             yield Static("┌─────────┐\n│ ▄▄▄▄▄▄▄ │\n│ V W   ▣ │\n│ ▄▄▄▄▄▄▄ │\n└─────────┘  VibeWare", markup=False)
             yield Markdown(f"# Ram Taskman {__version__}\n\n" + self.app.tr('about_body'))
+            if os.name == 'nt':
+                yield Button(self.app.tr('support_email'), id='email-diagnostics')
+                yield Static('', id='support-status', markup=False)
             yield Button(self.app.tr('footer_close'), id='close-about')
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == 'close-about':
             self.app.pop_screen()
+        elif event.button.id == 'email-diagnostics':
+            await self._email_diagnostics(event.button)
+
+    async def _email_diagnostics(self, button: Button) -> None:
+        status = self.query_one('#support-status', Static)
+        button.disabled = True
+        status.update(self.app.tr('support_preparing'))
+        archive = None
+        try:
+            archive = await asyncio.to_thread(support_diagnostics.create_archive)
+            result = await asyncio.to_thread(support_diagnostics.open_email_draft, archive)
+            status.update(self.app.tr(result, path=str(archive)))
+        except (OSError, KeyError):
+            key = 'support_no_mail' if archive else 'support_failed'
+            status.update(self.app.tr(key, path=str(archive or '')))
+        finally:
+            button.disabled = False
 
 
 class MemoryDetailScreen(LocalizedModalScreen):
@@ -177,6 +200,8 @@ class RamTaskManager(App):
     def poll(self) -> None:
         worker = get_current_worker()
         collector = self.collector or Collector()
+        support_diagnostics.record('Memory monitor started.')
+        last_error_type = None
         while not worker.is_cancelled:
             if not self.paused:
                 try:
@@ -186,10 +211,17 @@ class RamTaskManager(App):
                     # A collector failure must clear stale values, not kill the
                     # worker: the next sampling cycle may recover on its own.
                     if not worker.is_cancelled:
+                        error_type = type(error).__name__
+                        if error_type != last_error_type:
+                            support_diagnostics.record('Memory sampling failed.', error_type)
+                            last_error_type = error_type
                         reason = message('error_with_type', type=type(error).__name__, reason=error_text(error))
                         self.call_from_thread(self.show_error, reason)
                 else:
                     if not worker.is_cancelled:
+                        if last_error_type is not None:
+                            support_diagnostics.record('Memory sampling recovered.')
+                            last_error_type = None
                         self.call_from_thread(self.apply, snap)
             worker.cancelled_event.wait(self.interval)
 

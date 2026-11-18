@@ -37,6 +37,7 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 source-include = [
+    "assets/*.png", "assets/*.ico", "packaging/*.desktop",
     "docs/**/*.md", "docs/images/*.png", "tests/*.py", "tools/*.py", "tools/*.c",
     "docs/images/VIBEWARE_LICENSE.txt",
     "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "lessons.md",

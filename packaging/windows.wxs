@@ -7,6 +7,8 @@
     <!-- Keep the built-in progress UI; /qn still permits unattended installs. -->
     <Property Id="LIMITUI" Value="1" />
     <Property Id="ARPNOMODIFY" Value="1" />
+    <Icon Id="RamTaskman.ico" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="RamTaskman.ico" />
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Ram Taskman" />
     </StandardDirectory>
@@ -15,7 +17,7 @@
       <Files Include="$(BundleDir)\**" Directory="INSTALLFOLDER" />
       <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="*">
         <Shortcut Id="RamTaskmanShortcut" Name="Ram Taskman"
-                  Target="[INSTALLFOLDER]ramtaskman.exe" WorkingDirectory="INSTALLFOLDER" />
+                  Target="[INSTALLFOLDER]ramtaskman.exe" WorkingDirectory="INSTALLFOLDER" Icon="RamTaskman.ico" />
         <RegistryValue Root="HKLM" Key="Software\RamTaskman" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </Feature>

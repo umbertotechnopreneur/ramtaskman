@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Ram Taskman
+Comment=Monitor system and application memory
+Exec=ramtaskman
+Icon=ramtaskman
+Terminal=true
+Categories=System;Monitor;

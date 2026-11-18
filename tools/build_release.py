@@ -82,7 +82,8 @@ def build():
     work.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
     env = os.environ | {'PYINSTALLER_CONFIG_DIR': str(work / 'cache')}
-    run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onedir', '--noupx',
+    icon_args = ['--icon', ROOT / 'assets/ramtaskman.ico'] if system == 'windows' else []
+    run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onedir', '--noupx', *icon_args,
          '--name', 'ramtaskman', '--distpath', work / 'dist', '--workpath', work / 'work',
          '--specpath', work, '--collect-all', 'ramtaskman', '--collect-all', 'textual',
          '--recursive-copy-metadata', 'ramtaskman', ROOT / 'tools/release_entry.py'], cwd=ROOT, env=env)
@@ -92,6 +93,7 @@ def build():
         shutil.copyfile(ROOT / name, bundle / name)
     shutil.copyfile(ROOT / 'packaging/PORTABLE.md', bundle / 'START_HERE.md')
     collect_licenses(bundle)
+    shutil.copyfile(ROOT / 'assets/ramtaskman.png', bundle / 'ramtaskman.png')
     archive = output / f'ramtaskman-{version}-{system}-x64-portable.zip'
     with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as target:
         for path in sorted(bundle.rglob('*')):
@@ -111,7 +113,8 @@ def build():
     if args.msi:
         msi = output / f'ramtaskman-{version}-windows-x64.msi'
         run(['wix', 'build', '-arch', 'x64', '-d', f'Version={version}',
-             '-d', f'BundleDir={bundle.resolve()}', '-o', msi,
+             '-d', f'BundleDir={bundle.resolve()}',
+             '-d', f'IconFile={(ROOT / "assets/ramtaskman.ico").resolve()}', '-o', msi,
              ROOT / 'packaging/windows.wxs'], cwd=ROOT)
     if args.deb:
         debian_temp = tempfile.TemporaryDirectory(prefix='ramtaskman deb stage ')
@@ -121,6 +124,12 @@ def build():
         binaries.mkdir(parents=True)
         (binaries / 'ramtaskman').symlink_to('/opt/ramtaskman/ramtaskman')
         (binaries / 'rtm').symlink_to('/opt/ramtaskman/ramtaskman')
+        icons = stage / 'usr/share/icons/hicolor/256x256/apps'
+        icons.mkdir(parents=True)
+        shutil.copyfile(ROOT / 'assets/ramtaskman-256.png', icons / 'ramtaskman.png')
+        desktop = stage / 'usr/share/applications'
+        desktop.mkdir(parents=True)
+        shutil.copyfile(ROOT / 'packaging/ramtaskman.desktop', desktop / 'ramtaskman.desktop')
         control = stage / 'DEBIAN'
         control.mkdir()
         installed_size = sum(p.stat().st_size for p in stage.rglob('*') if p.is_file() and not p.is_symlink()) // 1024

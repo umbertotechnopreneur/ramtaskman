@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="Ram Taskman" Manufacturer="Umberto Giacobbi" Version="$(Version)"
+  <Package Name="Ram Taskman $(Version) (per-machine)" Manufacturer="Umberto Giacobbi" Version="$(Version)"
            UpgradeCode="E131F8A0-2686-48EE-964D-E84F520D84A1" Scope="perMachine">
     <MajorUpgrade DowngradeErrorMessage="A newer version of Ram Taskman is already installed." />
     <MediaTemplate EmbedCab="yes" />
+    <!-- Keep the built-in progress UI; /qn still permits unattended installs. -->
+    <Property Id="LIMITUI" Value="1" />
+    <Property Id="ARPNOMODIFY" Value="1" />
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Ram Taskman" />
     </StandardDirectory>

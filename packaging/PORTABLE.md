@@ -1,3 +1,7 @@
+> **File:** `PORTABLE.md`<br>
+> **Repository copy:** [GitHub](https://github.com/umbertotechnopreneur/ramtaskman/blob/main/packaging/PORTABLE.md)<br>
+> **Relative path** (repository root): `packaging/PORTABLE.md`
+
 # Start ramtaskman
 
 These x64 packages include Python and the application dependencies. No Python,
@@ -15,6 +19,21 @@ Windows Terminal or PowerShell in the extracted `ramtaskman` folder:
 
 Built on Windows x64. Use Windows 10 or later. The executable is unsigned;
 Windows may ask whether you want to run it.
+
+## Windows MSI
+
+CI produces an unsigned x64 MSI from the current source. It installs for all
+users under Program Files and adds a Start menu shortcut; administrator rights
+are required. The installer has no custom graphical interface. To install
+silently from an elevated PowerShell session, run:
+
+```powershell
+msiexec /i .\ramtaskman-<version>-windows-x64.msi /qn /norestart
+```
+
+Uninstall it from Windows installed apps or with `msiexec /x <msi-path> /qn`.
+Windows may warn that the package is unsigned. MSI upgrades require a higher
+three-part product version.
 
 ## Linux ZIP
 
@@ -52,9 +71,17 @@ months. Prices are not fetched automatically.
 `--verify-bundle` checks the bundled interface and offline replay using synthetic
 data; it does not read the computer's process list.
 
-This first release is experimental. Automated tests cover Linux and Windows;
+CI builds the Windows MSI, both portable ZIPs and the Debian package on branch
+pushes and pull requests; they are retained as workflow artifacts. A matching
+version tag publishes verified assets. Local package builds are optional.
+
+This release is experimental. Automated tests cover Linux and Windows;
 manual checks on the owner's Windows PC are still pending. macOS is experimental,
 untested and unvalidated by this project and has no release package.
 
 MIT and original Scott Hanselman credits are preserved in `LICENSE` and
 `THIRD_PARTY_NOTICES.md`. Bundled components retain their own notices in `licenses/`.
+
+> **File:** `PORTABLE.md`<br>
+> **Repository copy:** [GitHub](https://github.com/umbertotechnopreneur/ramtaskman/blob/main/packaging/PORTABLE.md)<br>
+> **Relative path** (repository root): `packaging/PORTABLE.md`

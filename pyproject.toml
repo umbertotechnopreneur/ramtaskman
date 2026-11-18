@@ -41,5 +41,5 @@ source-include = [
     "docs/images/VIBEWARE_LICENSE.txt",
     "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "lessons.md",
     "run.sh", "run.cmd", "uv.lock", ".gitattributes", ".gitignore",
-    ".github/workflows/*.yml", "packaging/*.md",
+    ".github/workflows/*.yml", "packaging/*.md", "packaging/*.wxs",
 ]

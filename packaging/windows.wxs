@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Ram Taskman" Manufacturer="Umberto Giacobbi" Version="$(Version)"
+           UpgradeCode="E131F8A0-2686-48EE-964D-E84F520D84A1" Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Ram Taskman is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Ram Taskman" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <Feature Id="Main" Title="Ram Taskman">
+      <Files Include="$(BundleDir)\**" Directory="INSTALLFOLDER" />
+      <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="*">
+        <Shortcut Id="RamTaskmanShortcut" Name="Ram Taskman"
+                  Target="[INSTALLFOLDER]ramtaskman.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="Software\RamTaskman" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </Feature>
+  </Package>
+</Wix>

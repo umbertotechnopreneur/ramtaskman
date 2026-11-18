@@ -1,4 +1,4 @@
-"""Build and verify native x64 bundles, ZIPs and a Debian package. No publication."""
+"""Build and verify native x64 bundles, ZIPs, an MSI and a Debian package. No publication."""
 from __future__ import annotations
 
 import argparse
@@ -66,12 +66,15 @@ def collect_licenses(bundle):
 
 def build():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--msi', action='store_true', help='also build an unsigned Windows MSI with WiX 5')
     parser.add_argument('--deb', action='store_true', help='also build Debian amd64 package on Linux')
     args = parser.parse_args()
     if platform.machine().lower() not in ('amd64', 'x86_64') or sys.platform not in ('linux', 'win32'):
         raise RuntimeError('Release builds currently require native x64 Linux or Windows')
     if args.deb and sys.platform != 'linux':
         parser.error('--deb requires Linux')
+    if args.msi and sys.platform != 'win32':
+        parser.error('--msi requires Windows')
     version = tomllib.loads((ROOT / 'pyproject.toml').read_text())['project']['version']
     system = 'windows' if os.name == 'nt' else 'linux'
     work = ROOT / 'build/release' / system
@@ -79,7 +82,7 @@ def build():
     work.mkdir(parents=True, exist_ok=True)
     output.mkdir(parents=True, exist_ok=True)
     env = os.environ | {'PYINSTALLER_CONFIG_DIR': str(work / 'cache')}
-    run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onedir', '--noupx',
+    run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--onedir', '--noupx',
          '--name', 'ramtaskman', '--distpath', work / 'dist', '--workpath', work / 'work',
          '--specpath', work, '--collect-all', 'ramtaskman', '--collect-all', 'textual',
          '--recursive-copy-metadata', 'ramtaskman', ROOT / 'tools/release_entry.py'], cwd=ROOT, env=env)
@@ -105,6 +108,11 @@ def build():
                 for info in source.infolist():
                     Path(directory, info.filename).chmod(info.external_attr >> 16 & 0o777)
         smoke(Path(directory) / 'ramtaskman' / executable.name, version)
+    if args.msi:
+        msi = output / f'ramtaskman-{version}-windows-x64.msi'
+        run(['wix', 'build', '-arch', 'x64', '-d', f'Version={version}',
+             '-d', f'BundleDir={bundle.resolve()}', '-o', msi,
+             ROOT / 'packaging/windows.wxs'], cwd=ROOT)
     if args.deb:
         debian_temp = tempfile.TemporaryDirectory(prefix='ramtaskman deb stage ')
         stage = Path(debian_temp.name) / 'package'
@@ -136,7 +144,7 @@ def build():
         run(['dpkg-deb', '--root-owner-group', '--build', stage, output / f'ramtaskman_{version}_amd64.deb'])
         debian_temp.cleanup()
     for path in sorted(output.iterdir()):
-        if path.suffix in ('.zip', '.deb'):
+        if path.suffix in ('.zip', '.deb', '.msi'):
             path.with_name(path.name + '.sha256').write_text(
                 hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name + '\n', encoding='ascii')
     print(f'Native {system} release built and verified: {output.relative_to(ROOT)}')

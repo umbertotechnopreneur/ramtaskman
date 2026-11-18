@@ -1,8 +1,11 @@
-name: Release portable packages
+name: Build native packages and releases
 
 on:
   push:
     tags: ['v*']
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,7 +31,7 @@ jobs:
             extra: --deb
           - os: windows-latest
             platform: windows-x64
-            extra: ''
+            extra: --msi
     env:
       UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
     steps:
@@ -37,10 +40,18 @@ jobs:
         with:
           python-version: '3.13'
       - name: Verify tag matches source version
+        if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           uv run --locked python -c "import os, tomllib; from ramtaskman import __version__; v = tomllib.load(open('pyproject.toml', 'rb'))['project']['version']; assert os.environ['GITHUB_REF_NAME'] == 'v' + v and v == __version__"
       - run: uv sync --locked --group release
+      - name: Install WiX 5
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet tool install --tool-path "$env:RUNNER_TEMP/wix5" wix --version 5.0.2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "$env:RUNNER_TEMP/wix5" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Build and verify extracted native bundle
         run: uv run --locked --group release python tools/build_release.py ${{ matrix.extra }}
       - name: Install and verify Debian package
@@ -50,6 +61,20 @@ jobs:
           uv run --locked python -c "from pathlib import Path; from tools.build_release import smoke; from ramtaskman import __version__; smoke(Path('/usr/bin/ramtaskman'), __version__)"
           dpkg-query -W ramtaskman
           sudo apt-get remove -y ramtaskman
+      - name: Install and verify unsigned MSI
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $msi = (Get-Item dist/release/*.msi).FullName
+          $install = Start-Process msiexec.exe -ArgumentList @('/i', ('"' + $msi + '"'), '/qn', '/norestart') -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "MSI install failed: $($install.ExitCode)" }
+          try {
+            uv run --locked python -c "from pathlib import Path; import os; from tools.build_release import smoke; from ramtaskman import __version__; smoke(Path(os.environ['ProgramFiles']) / 'Ram Taskman' / 'ramtaskman.exe', __version__)"
+            if ($LASTEXITCODE -ne 0) { throw 'Installed MSI smoke check failed' }
+          } finally {
+            $remove = Start-Process msiexec.exe -ArgumentList @('/x', ('"' + $msi + '"'), '/qn', '/norestart') -Wait -PassThru
+            if ($remove.ExitCode -ne 0) { throw "MSI removal failed: $($remove.ExitCode)" }
+          }
       - name: Build source distributions
         if: runner.os == 'Linux'
         run: uv build
@@ -70,6 +95,7 @@ jobs:
   publish:
     name: Publish verified release
     needs: [checks, package]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -85,5 +111,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" release-assets/* --verify-tag \
-            --title "ramtaskman $GITHUB_REF_NAME — first portable release" \
+            --title "ramtaskman $GITHUB_REF_NAME" \
             --notes-file packaging/RELEASE_NOTES.md

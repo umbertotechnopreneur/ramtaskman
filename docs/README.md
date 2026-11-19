@@ -1,3 +1,7 @@
+> **File name** `README.md`<br>
+> **Full path** `E:\ramtaskman\docs\README.md`<br>
+> **Relative to the repository root** `docs/README.md`
+
 # Documentation
 
 We develop and test ramtaskman on Linux and Windows. The macOS backend is
@@ -11,6 +15,7 @@ other languages, including [Italian](i18n/README.it.md).
 ## Use the app
 
 - [Introduction and quick start](../README.md)
+- [Portable ZIPs and Windows MSI](../packaging/PORTABLE.md)
 - [User guide: controls, metrics and limitations](guida.md)
 - [Gallery and image reproduction](images/README.md)
 - [Capture format and replay](schema-capture.md)
@@ -30,7 +35,7 @@ other languages, including [Italian](i18n/README.it.md).
 - [Verified lessons](../lessons.md)
 - [Platform counter audit](audit-contatori-piattaforma.md)
 - [Benchmarks and measurement limitations](benchmark.md)
-- [Windows verification](verifica-windows.md)
+- [Native Windows verification procedure](verifica-windows.md)
 - [Unvalidated macOS guidance for external contributors](verifica-macos.md)
 - [Code review of November 16, 2026](review-codice-2026-11-16.md)
 
@@ -40,6 +45,10 @@ These documents record agent instructions, current handoff state and project
 history. Historical plans and authorizations do not grant permission for new work.
 
 - [Agent instructions](../AGENTS.md)
-- [Current state and handoff](handoff.md)
+- [Current checkout and Linux-to-Windows handoff](handoff.md)
 - [Development plan and progress log](piano-sviluppo.md)
 - [Initial handoff history](history/2026-11-16.md)
+
+> **File name** `README.md`<br>
+> **Full path** `E:\ramtaskman\docs\README.md`<br>
+> **Relative to the repository root** `docs/README.md`

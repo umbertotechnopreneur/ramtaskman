@@ -405,5 +405,15 @@
   "support_saved": "Đã lưu tệp ZIP chẩn đoán tại {path}",
   "support_attach": "Đính kèm tệp ZIP này vào bản nháp: {path}",
   "support_no_mail": "Không mở được email. Tệp ZIP chẩn đoán: {path}",
-  "support_failed": "Không tạo được tệp ZIP chẩn đoán."
+  "support_failed": "Không tạo được tệp ZIP chẩn đoán.",
+  "cli_help_ram_price": "Tổng giá RAM đã lắp (không tự động tra giá)",
+  "cli_help_ram_currency": "Mã tiền tệ gồm ba chữ cái viết hoa",
+  "cli_help_ram_months": "Số tháng tùy chọn để phân bổ giá trị phần cứng",
+  "cli_help_ram_capacity": "Dung lượng danh định tùy chọn; mặc định: RAM hệ điều hành nhìn thấy",
+  "ram_invalid_price": "Giá RAM phải hữu hạn và dương",
+  "ram_invalid_currency": "Mã tiền tệ phải gồm ba chữ cái viết hoa",
+  "ram_invalid_months": "Số tháng phân bổ phải là số nguyên dương",
+  "ram_invalid_capacity": "Dung lượng RAM phải hữu hạn, dương và không quá 2^30 GiB",
+  "cli_ram_price_required": "Các tùy chọn định giá RAM yêu cầu --ram-price",
+  "cli_ram_live_required": "Định giá RAM yêu cầu mẫu hệ thống trực tiếp, không phải bản chụp vùng nhớ"
 }

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import math
 import re
 
+from .messages import message
 from .models import ApplicationMemory, ProcessMemory, Snapshot
 
 
@@ -15,13 +16,13 @@ class RamPrice:
 
     def __post_init__(self):
         if not math.isfinite(self.amount) or self.amount <= 0:
-            raise ValueError('RAM price must be finite and positive')
+            raise ValueError(message('ram_invalid_price'))
         if not re.fullmatch(r'[A-Z]{3}', self.currency):
-            raise ValueError('Currency must be a three-letter uppercase code')
+            raise ValueError(message('ram_invalid_currency'))
         if self.months is not None and (type(self.months) is not int or self.months < 1):
-            raise ValueError('Allocation months must be a positive integer')
+            raise ValueError(message('ram_invalid_months'))
         if self.capacity_gib is not None and (not math.isfinite(self.capacity_gib) or not 0 < self.capacity_gib <= 2**30):
-            raise ValueError('RAM capacity must be finite, positive and at most 2^30 GiB')
+            raise ValueError(message('ram_invalid_capacity'))
 
 
 def value_row(row: ApplicationMemory | ProcessMemory, snap: Snapshot, price: RamPrice) -> dict:

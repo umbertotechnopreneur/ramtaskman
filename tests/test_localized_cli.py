@@ -69,6 +69,33 @@ class LocalizedCLITests(unittest.TestCase):
                         self.assertIn(' '.join(translate(language, key).split()), unwrapped)
                     collector.assert_not_called()
 
+    def test_ram_valuation_help_and_errors_follow_selected_language(self):
+        cases = (
+            (['--ram-price=-1'], 'ram_invalid_price'),
+            (['--ram-price=nan'], 'ram_invalid_price'),
+            (['--ram-price=100', '--ram-currency=eur'], 'ram_invalid_currency'),
+            (['--ram-price=100', '--ram-months=0'], 'ram_invalid_months'),
+            (['--ram-price=100', '--ram-capacity-gib=inf'], 'ram_invalid_capacity'),
+            (['--ram-months=12'], 'cli_ram_price_required'),
+            (['--ram-price=100', '--open=synthetic.rtm.json'], 'cli_ram_live_required'),
+            (['--ram-price=100', '--compare', 'a', 'b'], 'cli_ram_live_required'),
+        )
+        for language in LANGUAGES:
+            with self.subTest(language=language):
+                code, stdout, stderr, collector = self.invoke(['--language', language, '--help'])
+                self.assertEqual(code, 0)
+                for key in ('cli_help_ram_price', 'cli_help_ram_currency',
+                            'cli_help_ram_months', 'cli_help_ram_capacity'):
+                    self.assertIn(''.join(translate(language, key).split()), ''.join(stdout.split()))
+                collector.assert_not_called()
+            for arguments, key in cases:
+                with self.subTest(language=language, arguments=arguments):
+                    code, stdout, stderr, collector = self.invoke(['--language', language, *arguments])
+                    self.assertEqual(code, 2)
+                    self.assertEqual(stdout, '')
+                    self.assertIn(translate(language, key), stderr)
+                    collector.assert_not_called()
+
     def test_invalid_intervals_are_localized_before_collection(self):
         for language in LANGUAGES:
             with self.subTest(language=language):

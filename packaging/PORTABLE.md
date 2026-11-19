@@ -1,6 +1,6 @@
-> **File:** `PORTABLE.md`<br>
-> **Repository copy:** [GitHub](https://github.com/umbertotechnopreneur/ramtaskman/blob/main/packaging/PORTABLE.md)<br>
-> **Relative path** (repository root): `packaging/PORTABLE.md`
+> **File name** `PORTABLE.md`<br>
+> **Full path** `E:\ramtaskman\packaging\PORTABLE.md`<br>
+> **Relative to the repository root** `packaging/PORTABLE.md`
 
 # Start ramtaskman
 
@@ -23,9 +23,9 @@ Windows may ask whether you want to run it.
 ## Windows MSI
 
 CI produces an unsigned x64 MSI from the current source. It installs for all
-users under Program Files and adds a Start menu shortcut; administrator rights
-are required. The installer has no custom graphical interface. To install
-silently from an elevated PowerShell session, run:
+users under Program Files and adds a Start menu shortcut. An interactive install
+uses the basic Windows Installer progress window and requires administrator
+rights. To install silently from an elevated PowerShell session, run:
 
 ```powershell
 msiexec /i .\ramtaskman-<version>-windows-x64.msi /qn /norestart
@@ -82,6 +82,6 @@ untested and unvalidated by this project and has no release package.
 MIT and original Scott Hanselman credits are preserved in `LICENSE` and
 `THIRD_PARTY_NOTICES.md`. Bundled components retain their own notices in `licenses/`.
 
-> **File:** `PORTABLE.md`<br>
-> **Repository copy:** [GitHub](https://github.com/umbertotechnopreneur/ramtaskman/blob/main/packaging/PORTABLE.md)<br>
-> **Relative path** (repository root): `packaging/PORTABLE.md`
+> **File name** `PORTABLE.md`<br>
+> **Full path** `E:\ramtaskman\packaging\PORTABLE.md`<br>
+> **Relative to the repository root** `packaging/PORTABLE.md`

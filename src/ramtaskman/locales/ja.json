@@ -405,5 +405,15 @@
   "support_saved": "診断 ZIP の保存先: {path}",
   "support_attach": "この ZIP を下書きに添付してください: {path}",
   "support_no_mail": "メールを開けませんでした。診断 ZIP: {path}",
-  "support_failed": "診断 ZIP を作成できませんでした。"
+  "support_failed": "診断 ZIP を作成できませんでした。",
+  "cli_help_ram_price": "搭載RAMの合計価格（自動価格取得なし）",
+  "cli_help_ram_currency": "大文字3文字の通貨コード",
+  "cli_help_ram_months": "ハードウェア価値を配分する月数（任意）",
+  "cli_help_ram_capacity": "搭載公称容量（任意）。既定値はOSが認識するRAM容量",
+  "ram_invalid_price": "RAM価格は有限の正数で指定してください",
+  "ram_invalid_currency": "通貨は大文字3文字のコードで指定してください",
+  "ram_invalid_months": "配分月数は正の整数で指定してください",
+  "ram_invalid_capacity": "RAM容量は有限の正数で、2^30 GiB以下にしてください",
+  "cli_ram_price_required": "RAM評価オプションには --ram-price が必要です",
+  "cli_ram_live_required": "RAM評価には領域キャプチャではなく、システムのライブサンプルが必要です"
 }

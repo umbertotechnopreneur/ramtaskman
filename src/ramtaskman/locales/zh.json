@@ -405,5 +405,15 @@
   "support_saved": "诊断 ZIP 已保存至 {path}",
   "support_attach": "请将此 ZIP 附加到邮件草稿：{path}",
   "support_no_mail": "无法打开邮件。诊断 ZIP：{path}",
-  "support_failed": "无法创建诊断 ZIP。"
+  "support_failed": "无法创建诊断 ZIP。",
+  "cli_help_ram_price": "已安装内存的总价（不自动查询报价）",
+  "cli_help_ram_currency": "三个大写字母的货币代码",
+  "cli_help_ram_months": "可选的硬件价值分摊月数",
+  "cli_help_ram_capacity": "可选的已安装标称容量；默认为操作系统可见内存",
+  "ram_invalid_price": "内存价格必须为有限正数",
+  "ram_invalid_currency": "货币代码必须由三个大写字母组成",
+  "ram_invalid_months": "分摊月数必须为正整数",
+  "ram_invalid_capacity": "内存容量必须为有限正数，且不超过 2^30 GiB",
+  "cli_ram_price_required": "内存估值选项需要 --ram-price",
+  "cli_ram_live_required": "内存估值需要实时系统采样，而非内存区域快照"
 }

@@ -405,5 +405,15 @@
   "support_saved": "Diagnostics ZIP saved to {path}",
   "support_attach": "Attach this ZIP to the draft: {path}",
   "support_no_mail": "Email could not be opened. Diagnostics ZIP saved to {path}",
-  "support_failed": "Could not create the diagnostics ZIP."
+  "support_failed": "Could not create the diagnostics ZIP.",
+  "cli_help_ram_price": "Total price of installed RAM (not a live quote)",
+  "cli_help_ram_currency": "Three-letter uppercase currency code",
+  "cli_help_ram_months": "Optional months over which to allocate hardware value",
+  "cli_help_ram_capacity": "Optional nominal installed capacity; defaults to OS-visible RAM",
+  "ram_invalid_price": "RAM price must be finite and positive",
+  "ram_invalid_currency": "Currency must be a three-letter uppercase code",
+  "ram_invalid_months": "Allocation months must be a positive integer",
+  "ram_invalid_capacity": "RAM capacity must be finite, positive and at most 2^30 GiB",
+  "cli_ram_price_required": "--ram-price is required for RAM valuation options",
+  "cli_ram_live_required": "RAM valuation requires a live system sample, not a region capture"
 }

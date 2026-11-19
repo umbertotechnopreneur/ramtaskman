@@ -1,11 +1,15 @@
-# Native Windows region verification
+> **File name** `verifica-windows.md`<br>
+> **Full path** `E:\ramtaskman\docs\verifica-windows.md`<br>
+> **Relative to the repository root** `docs/verifica-windows.md`
+
+# Native Windows verification
 
 We develop and test ramtaskman on Linux and Windows. The macOS backend is
 experimental: we don't have a Mac, so we haven't tested or validated it.
 Our own testing and CI cover Linux and Windows.
 
-Automated native Windows checks have passed in CI; the latest Ubuntu/Windows matrix
-with Python 3.11, 3.13 and 3.14 has six passing jobs. The manual procedure on the
+Automated native Windows checks passed in CI at the checkpoint recorded in the
+[handoff](handoff.md#evidenze-e-riferimenti). The manual procedure on the
 owner's Windows PC is **still pending**. The `VirtualQueryEx` provider is experimental:
 it displays virtual ranges, not per-region RSS. The test uses only a controlled
 allocation created by its own Python process. It does not require elevated privileges,
@@ -16,30 +20,36 @@ read other processes' memory bytes, or change system settings or the desktop ses
 - Windows 10 or later, 64-bit Python >=3.11, `uv` and a copy of the project.
 - PowerShell or Windows Terminal. UI checks require a terminal with color and
   resizing support.
-- Do not share `.venv` between Linux and Windows: recreate the project environment
-  as described in the [README](../README.md). The launchers keep the cache in the project.
+- On a checkout shared with Linux, set `UV_PROJECT_ENVIRONMENT` to `.venv-windows`.
+  The Windows launcher and the direct `uv run` commands then use the same
+  Windows environment within the repository.
 - The test process requires no restart, disabled protections, driver installation
   or administrator privileges.
 
-Check that Python, uv and the project directory are available. From the repository root:
+Set the environment and cache in each PowerShell terminal used for source checks.
+From the repository root, run:
 
 ```powershell
+$env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location) '.venv-windows'
+$env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
+$env:UV_PYTHON_DOWNLOADS = 'never'
+uv run --locked python -m unittest discover -s tests -p test_localized_cli.py -v
+uv run --locked python -m unittest discover -s tests -v
 .\run.cmd --version
 .\run.cmd --once --language en
 .\run.cmd --json
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 Record the Windows version/build, system and interpreter architecture, and Python,
 psutil and Textual versions. Do not copy private names or paths into public reports.
-Mocked tests do not replace the native readings in the next step.
+Check that RSS represents the working set and USS counts private resident memory.
+Per-process PSS and swap should appear as `n/a` in the UI and `null` in JSON.
 
 ## Controlled allocation test
 
-Run from the repository root in PowerShell:
+Use the PowerShell environment configured above and run from the repository root:
 
 ```powershell
-$env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 uv run --locked python tools\verify_windows_regions.py
 ```
 
@@ -51,7 +61,8 @@ allocation in the UI during the test:
 uv run --locked python tools\verify_windows_regions.py --hold-seconds 60
 ```
 
-The temporary PID is printed before the wait. In a second terminal, run
+The temporary PID is printed before the wait. In a second terminal with the same
+project environment, run
 `.\run.cmd --processes --language en`, search for that PID with `/`, select it and
 press Enter to open the map. Return to the first terminal's output when the test
 ends. The maximum selectable duration is 300 seconds; the test frees its allocation
@@ -127,3 +138,7 @@ Windows PC; it neither replaces nor summarizes automated CI results.
 
 If the test exposes an error, report the stage, exception and version. Do not
 claim RSS/working-set equivalence or cross-bitness support until demonstrated.
+
+> **File name** `verifica-windows.md`<br>
+> **Full path** `E:\ramtaskman\docs\verifica-windows.md`<br>
+> **Relative to the repository root** `docs/verifica-windows.md`

@@ -405,5 +405,15 @@
   "support_saved": "진단 ZIP 저장 위치: {path}",
   "support_attach": "이 ZIP을 초안에 첨부하세요: {path}",
   "support_no_mail": "이메일을 열 수 없습니다. 진단 ZIP: {path}",
-  "support_failed": "진단 ZIP을 만들 수 없습니다."
+  "support_failed": "진단 ZIP을 만들 수 없습니다.",
+  "cli_help_ram_price": "설치된 RAM의 총 가격 (자동 시세 조회 없음)",
+  "cli_help_ram_currency": "대문자 세 글자로 된 통화 코드",
+  "cli_help_ram_months": "하드웨어 가치를 배분할 개월 수 (선택 사항)",
+  "cli_help_ram_capacity": "설치된 공칭 용량 (선택 사항); 기본값: 운영 체제에 표시되는 RAM",
+  "ram_invalid_price": "RAM 가격은 유한한 양수여야 합니다",
+  "ram_invalid_currency": "통화 코드는 대문자 세 글자여야 합니다",
+  "ram_invalid_months": "배분 개월 수는 양의 정수여야 합니다",
+  "ram_invalid_capacity": "RAM 용량은 유한한 양수이며 2^30 GiB 이하여야 합니다",
+  "cli_ram_price_required": "RAM 가치 평가 옵션에는 --ram-price가 필요합니다",
+  "cli_ram_live_required": "RAM 가치 평가에는 영역 캡처가 아닌 실시간 시스템 샘플이 필요합니다"
 }

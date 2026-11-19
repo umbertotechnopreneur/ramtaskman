@@ -405,5 +405,15 @@
   "support_saved": "ZIP diagnostico salvato in {path}",
   "support_attach": "Allega questo ZIP alla bozza: {path}",
   "support_no_mail": "Impossibile aprire la posta. ZIP diagnostico salvato in {path}",
-  "support_failed": "Impossibile creare lo ZIP diagnostico."
+  "support_failed": "Impossibile creare lo ZIP diagnostico.",
+  "cli_help_ram_price": "Prezzo totale della RAM installata (nessuna quotazione automatica)",
+  "cli_help_ram_currency": "Codice valuta di tre lettere maiuscole",
+  "cli_help_ram_months": "Numero opzionale di mesi su cui ripartire il valore hardware",
+  "cli_help_ram_capacity": "Capacità nominale installata opzionale; predefinita: RAM visibile al sistema operativo",
+  "ram_invalid_price": "Il prezzo della RAM deve essere finito e positivo",
+  "ram_invalid_currency": "La valuta deve essere un codice di tre lettere maiuscole",
+  "ram_invalid_months": "I mesi di ripartizione devono essere un numero intero positivo",
+  "ram_invalid_capacity": "La capacità RAM deve essere finita, positiva e al massimo 2^30 GiB",
+  "cli_ram_price_required": "Le opzioni di valutazione RAM richiedono --ram-price",
+  "cli_ram_live_required": "La valutazione RAM richiede un campione live del sistema, non una cattura delle regioni"
 }

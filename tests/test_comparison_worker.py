@@ -114,11 +114,14 @@ class ComparisonWorkerTests(unittest.IsolatedAsyncioTestCase):
         b = freeze_snapshot(region_fixture(proc), collection_session_id='session', sequence=2,
                             executable_identity=proc.executable)
         started, release = threading.Event(), threading.Event()
+        finished = threading.Event()
 
         def slow_uninterruptible(left, right, cancelled=None):
             started.set()
-            release.wait(2)  # models a call that cannot be interrupted in flight
-            return compare_captures(left, right)
+            release.wait()  # The test controls when this non-cancellable call returns.
+            result = compare_captures(left, right)
+            finished.set()
+            return result
 
         app = RamTaskManager(live=False)
         with patch('ramtaskman.region_screen.compare_captures', side_effect=slow_uninterruptible):
@@ -128,10 +131,13 @@ class ComparisonWorkerTests(unittest.IsolatedAsyncioTestCase):
                 app.push_screen(screen)
                 try:
                     await pilot.pause()
-                    self.assertTrue(started.is_set())
+                    self.assertTrue(await asyncio.to_thread(started.wait, 10), 'Comparison did not start')
                     await pilot.press('escape')
+                    await pilot.pause()
+                    self.assertIsNot(app.screen, screen)
                     release.set()
-                    await pilot.pause(.3)
+                    self.assertTrue(await asyncio.to_thread(finished.wait, 10), 'Comparison did not finish')
+                    await pilot.pause()
                     self.assertIsNot(app.screen, screen)
                     self.assertIsNone(screen._comparison_result)
                     self.assertTrue(app.is_running)

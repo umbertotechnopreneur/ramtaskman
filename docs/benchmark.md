@@ -1,3 +1,7 @@
+> **File name** `benchmark.md`<br>
+> **Full path** `E:\ramtaskman\docs\benchmark.md`<br>
+> **Path relative to the ramtaskman repository** `docs/benchmark.md`
+
 # Local memory benchmark
 
 We develop and test ramtaskman on Linux and Windows. The macOS backend is
@@ -56,6 +60,17 @@ The process had 138 regions in the first sample. Times are median / high percent
 | Identity and cgroup metadata | 0.25 / 0.26 ms |
 | `smaps_rollup` counters | 0.71 / 0.72 ms |
 | Reading `smaps` regions | 7.81 / 7.93 ms |
+
+```mermaid
+xychart-beta
+    title "Median read time on Linux · 16 Nov 2026"
+    x-axis ["Identity and cgroup", "Rollup counters", "Region scan"]
+    y-axis "Median duration (ms)" 0 --> 9
+    bar [0.25, 0.71, 7.81]
+```
+
+The bars use the medians in the table above, measured on the benchmark process
+with five repetitions after warm-up.
 
 Benchmark RSS before/after the sequence: 39.11 / 39.32 MiB; total CPU consumed:
 50 ms at the system's timing resolution; file descriptors before/after: 4/4.
@@ -124,3 +139,7 @@ general improvement or measure terminal painting.
 - The project still lacks measurements of painting, perceived latency, resizing
   and closing on Linux/Windows under varying load; F4 remains open. Ubuntu/Windows
   CI results do not replace these interactive measurements.
+
+> **File name** `benchmark.md`<br>
+> **Full path** `E:\ramtaskman\docs\benchmark.md`<br>
+> **Path relative to the ramtaskman repository** `docs/benchmark.md`

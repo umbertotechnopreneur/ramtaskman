@@ -1,3 +1,7 @@
+> **File name** `upstream.md`<br>
+> **Full path** `E:\ramtaskman\docs\upstream.md`<br>
+> **Relative to the repository root** `docs/upstream.md`
+
 # Provenance
 
 We develop and test ramtaskman on Linux and Windows. The macOS backend is
@@ -14,9 +18,9 @@ Our own testing and CI cover Linux and Windows.
 Dependencies and image tools are listed in the [third-party notices](../THIRD_PARTY_NOTICES.md).
 See [CONTRIBUTING](../CONTRIBUTING.md) for how to propose changes.
 
-The repository was cloned with its complete history. RAM development is on the
-`codex/ramtaskman-foundation` branch. The `upstream` remote identifies only the
-public source; pushing to it is disabled.
+The repository was cloned with its complete history. The ramtaskman branches
+are `main` and `dev`. The `upstream` remote points to the public source
+repository and is configured for read-only access.
 
 ## What was reused
 
@@ -41,3 +45,7 @@ git show 7486bfa0a35e032298534d9c408ff8ad96d9768a:src/gputaskman/app.py
 The UI retains the structure and styling with adapted content. A pixel-for-pixel
 replica of every GPU view has neither been verified nor planned for the different
 RAM metrics.
+
+> **File name** `upstream.md`<br>
+> **Full path** `E:\ramtaskman\docs\upstream.md`<br>
+> **Relative to the repository root** `docs/upstream.md`

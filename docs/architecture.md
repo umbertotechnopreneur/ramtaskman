@@ -1,3 +1,7 @@
+> **File name** `architecture.md`<br>
+> **Full path** `E:\ramtaskman\docs\architecture.md`<br>
+> **Path relative to the ramtaskman repository** `docs/architecture.md`
+
 # Architecture
 
 We develop and test ramtaskman on Linux and Windows. The macOS backend is
@@ -6,13 +10,39 @@ Our own testing and CI cover Linux and Windows.
 
 ## Data flow
 
-```text
-CLI ── Collector.sample() ── Snapshot ─┬─ report.to_dict() → JSON
-                                     ├─ report.table() → text
-                                     └─ RamTaskManager.apply() → UI
+```mermaid
+flowchart TB
+    accTitle: ramtaskman sampling and display boundaries
+    accDescr: Platform backends supply counters to the collector. The same immutable snapshot serves the CLI and Textual. Process regions use a separate on-demand read.
+    subgraph COUNTERS["Platform counters"]
+        LINUX["Linux backend<br/>procfs and psutil"]
+        PSUTIL["Windows backend<br/>psutil"]
+    end
+    subgraph MODEL["Sampling and model"]
+        COLLECTOR["Collector<br/>Sample system and processes"]
+        SNAPSHOT["Snapshot<br/>Measured bytes, coverage and missing values"]
+    end
+    subgraph OUTPUT["Presentation and output"]
+        CLI["CLI report<br/>JSON or text"]
+        UI["Textual main thread<br/>Dashboard, history and table"]
+        REGIONS["Region screen<br/>Selected process map and inspector"]
+    end
+    READER["On-demand region worker<br/>Validate process identity and build RegionSnapshot"]
+    LINUX -->|"Memory and identity counters"| COLLECTOR
+    PSUTIL -->|"Memory and identity counters"| COLLECTOR
+    COLLECTOR -->|"Publish one sample"| SNAPSHOT
+    SNAPSHOT --> CLI
+    SNAPSHOT -->|"Pass worker result to the UI thread"| UI
+    UI -->|"Open regions for selected process"| REGIONS
+    REGIONS -->|"PID and creation time"| READER
+    READER -->|"Region snapshot or unavailable reason"| REGIONS
 
-Selected process ── RegionScreen ── worker ── LinuxRegionReader.read()
-                                                └─ RegionSnapshot → map/table/inspector
+    classDef native fill:#ece8f7,stroke:#69518f,color:#302347
+    classDef model fill:#dcf0e9,stroke:#20766a,color:#143e38
+    classDef ui fill:#e6effb,stroke:#315a92,color:#18334f
+    class LINUX,PSUTIL native
+    class COLLECTOR,SNAPSHOT,READER model
+    class CLI,UI,REGIONS ui
 ```
 
 The collector is independent of Textual. `make_backend()` selects `LinuxBackend`
@@ -227,3 +257,7 @@ This keeps data semantics explicit but requires care with thousands of processes
 or very large page tables. Any future measurement cache must expose age and
 coverage. Region scans already have their own limits and completeness state;
 the app does not read full smaps for every process during general sampling.
+
+> **File name** `architecture.md`<br>
+> **Full path** `E:\ramtaskman\docs\architecture.md`<br>
+> **Path relative to the ramtaskman repository** `docs/architecture.md`

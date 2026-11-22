@@ -9,8 +9,7 @@ experimental: we don't have a Mac, so we haven't tested or validated it.
 Our own testing and CI cover Linux and Windows.
 
 Automated native Windows checks passed in CI at the checkpoint recorded in the
-[handoff](handoff.md#evidenze-e-riferimenti). The manual procedure on the
-owner's Windows PC is **still pending**. The `VirtualQueryEx` provider is experimental:
+[handoff](handoff.md#evidenze-e-riferimenti). The `VirtualQueryEx` provider is experimental:
 it displays virtual ranges, not per-region RSS. The test uses only a controlled
 allocation created by its own Python process. It does not require elevated privileges,
 read other processes' memory bytes, or change system settings or the desktop session.
@@ -25,6 +24,24 @@ read other processes' memory bytes, or change system settings or the desktop ses
   Windows environment within the repository.
 - The test process requires no restart, disabled protections, driver installation
   or administrator privileges.
+
+## Verify the per-user MSI
+
+Use a Windows x64 test account with no Ram Taskman installation. The script runs
+the installer silently and removes it after verifying the installed command,
+Start menu shortcut and user `PATH`. It also checks that other `PATH` entries
+and the machine `PATH` are preserved.
+
+```powershell
+./tools/verify_windows_msi.ps1 -Msi ./dist/release/ramtaskman-0.1.1-windows-x64.msi -Version 0.1.1
+```
+
+For an upgrade test, pass `-PreviousMsi` with a separately built lower-version
+per-user MSI and `-PreviousVersion` with its version. This repeats the checks
+after Windows Installer replaces the previous product. A previous per-machine
+CI installation should be removed before installing the per-user package.
+
+## Verify from source
 
 Set the environment and cache in each PowerShell terminal used for source checks.
 From the repository root, run:

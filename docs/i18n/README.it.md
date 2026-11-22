@@ -1,3 +1,7 @@
+> **Nome file** `README.it.md`<br>
+> **Percorso completo** `E:\ramtaskman\docs\i18n\README.it.md`<br>
+> **Percorso relativo** alla radice del repository `docs/i18n/README.it.md`
+
 # ramtaskman
 
 [![CI](https://github.com/umbertotechnopreneur/ramtaskman/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/umbertotechnopreneur/ramtaskman/actions/workflows/ci.yml)
@@ -30,12 +34,16 @@ La cornice è una composizione grafica; macOS resta sperimentale e non validato.
 
 ## Provalo
 
-[ZIP portabile Windows](https://github.com/umbertotechnopreneur/ramtaskman/releases/download/v0.1.0/ramtaskman-0.1.0-windows-x64-portable.zip) · [ZIP portabile Linux](https://github.com/umbertotechnopreneur/ramtaskman/releases/download/v0.1.0/ramtaskman-0.1.0-linux-x64-portable.zip) · [Debian .deb](https://github.com/umbertotechnopreneur/ramtaskman/releases/download/v0.1.0/ramtaskman_0.1.0_amd64.deb) · [Ultima release](https://github.com/umbertotechnopreneur/ramtaskman/releases/latest)
+[Ultima release e download](https://github.com/umbertotechnopreneur/ramtaskman/releases/latest)
 
-**I pacchetti portabili includono Python e dipendenze.** Estrai tutto lo ZIP e
+**I pacchetti x64 includono Python e dipendenze.** Non richiedono .NET.
+Estrai tutto lo ZIP portabile e
 avvia `ramtaskman.exe` su Windows o `./ramtaskman` su Linux. I pacchetti Linux x64
 richiedono glibc 2.35+ (Debian 12+ / Ubuntu 22.04+). Per Debian usa
-`sudo apt install ./ramtaskman_0.1.0_amd64.deb`. L'eseguibile Windows non è firmato.
+`sudo apt install ./ramtaskman_<versione>_amd64.deb` con il nome del file scaricato.
+Dalla versione 0.1.1, l’MSI per Windows x64 installa per l’utente corrente e rende
+`ramtaskman` disponibile nei terminali aperti dopo l’installazione. L’MSI e
+l’eseguibile Windows sono privi di firma. I pacchetti ARM64 non sono disponibili.
 Le [istruzioni dei pacchetti](../../packaging/PORTABLE.md) spiegano i dettagli;
 i checksum sono disponibili nella release.
 
@@ -211,3 +219,7 @@ i crediti originali: il mio contributo alla comunità degli sviluppatori.*
   <strong>VibeWare</strong><br>
   <em>Human intent, AI execution, and plenty of tokens</em>
 </p>
+
+> **Nome file** `README.it.md`<br>
+> **Percorso completo** `E:\ramtaskman\docs\i18n\README.it.md`<br>
+> **Percorso relativo** alla radice del repository `docs/i18n/README.it.md`

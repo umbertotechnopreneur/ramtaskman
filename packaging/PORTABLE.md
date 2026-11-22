@@ -4,8 +4,8 @@
 
 # Start ramtaskman
 
-These x64 packages include Python and the application dependencies. No Python,
-uv or dependency download is needed to run them.
+These x64 packages include Python and the application dependencies. They need
+no separate Python, uv or .NET installation. ARM64 packages are unavailable.
 
 ## Windows ZIP
 
@@ -22,18 +22,21 @@ Windows may ask whether you want to run it.
 
 ## Windows MSI
 
-CI produces an unsigned x64 MSI from the current source. It installs for all
-users under Program Files and adds a Start menu shortcut. An interactive install
-uses the basic Windows Installer progress window and requires administrator
-rights. To install silently from an elevated PowerShell session, run:
+The unsigned x64 MSI installs for the current user under
+`%LOCALAPPDATA%\Ram Taskman`. It adds a Start menu shortcut and updates the user
+`PATH`. Open a new terminal from the Start menu after installation. Double-click
+the MSI to use the basic Windows Installer progress window. To install silently,
+run this from a regular PowerShell session:
 
 ```powershell
 msiexec /i .\ramtaskman-<version>-windows-x64.msi /qn /norestart
 ```
 
-Uninstall it from Windows installed apps or with `msiexec /x <msi-path> /qn`.
-Windows may warn that the package is unsigned. MSI upgrades require a higher
-three-part product version.
+Uninstall it from Installed apps or with `msiexec /x <msi-path> /qn /norestart`.
+Removal deletes the shortcut and the installer’s entry in the user `PATH`.
+Windows may warn that the package is unsigned. An MSI with a higher three-part
+version upgrades an existing per-user installation. If you installed an older
+per-machine MSI from CI, uninstall that build before installing the per-user MSI.
 
 ## Linux ZIP
 
@@ -53,7 +56,7 @@ The executable directory must allow execution. No administrator access is needed
 On Debian 12+ or Ubuntu 22.04+ amd64:
 
 ```bash
-sudo apt install ./ramtaskman_0.1.0_amd64.deb
+sudo apt install ./ramtaskman_0.1.1_amd64.deb
 ramtaskman --language en
 ```
 
@@ -75,8 +78,7 @@ CI builds the Windows MSI, both portable ZIPs and the Debian package on branch
 pushes and pull requests; they are retained as workflow artifacts. A matching
 version tag publishes verified assets. Local package builds are optional.
 
-This release is experimental. Automated tests cover Linux and Windows;
-manual checks on the owner's Windows PC are still pending. macOS is experimental,
+This release is experimental. Automated tests cover Linux and Windows. macOS is experimental,
 untested and unvalidated by this project and has no release package.
 
 MIT and original Scott Hanselman credits are preserved in `LICENSE` and

@@ -1,3 +1,7 @@
+> **File name** `README.md`<br>
+> **Full path** `E:\ramtaskman\README.md`<br>
+> **Relative to the repository root** `README.md`
+
 # ramtaskman
 
 [![CI](https://github.com/umbertotechnopreneur/ramtaskman/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/umbertotechnopreneur/ramtaskman/actions/workflows/ci.yml)
@@ -29,12 +33,15 @@ and unvalidated.*
 
 ## Get started
 
-[Windows portable ZIP](https://github.com/umbertotechnopreneur/ramtaskman/releases/download/v0.1.0/ramtaskman-0.1.0-windows-x64-portable.zip) · [Linux portable ZIP](https://github.com/umbertotechnopreneur/ramtaskman/releases/download/v0.1.0/ramtaskman-0.1.0-linux-x64-portable.zip) · [Debian .deb](https://github.com/umbertotechnopreneur/ramtaskman/releases/download/v0.1.0/ramtaskman_0.1.0_amd64.deb) · [Latest release](https://github.com/umbertotechnopreneur/ramtaskman/releases/latest)
+[Latest release and downloads](https://github.com/umbertotechnopreneur/ramtaskman/releases/latest)
 
-**Portable packages include Python and dependencies.** Extract the full ZIP and
+**The x64 packages include Python and dependencies.** They do not require .NET.
+Extract the full portable ZIP and
 run `ramtaskman.exe --language en` on Windows or `./ramtaskman --language en` on
 Linux. The x64 Linux packages require glibc 2.35+ (Debian 12+ / Ubuntu 22.04+).
-For Debian, use `sudo apt install ./ramtaskman_0.1.0_amd64.deb`.
+For Debian, use `sudo apt install ./ramtaskman_<version>_amd64.deb` with the downloaded filename.
+Starting with v0.1.1, the Windows x64 MSI installs for the current user and makes
+`ramtaskman` available in newly opened terminals. ARM64 packages are unavailable.
 See the [package instructions](packaging/PORTABLE.md) for details and checksums in
 the release downloads. The Windows executable is unsigned.
 
@@ -73,7 +80,8 @@ captures retain their original language.
 
 Local verification covers Linux with Python 3.14.4: synthetic UI at 160×48 and
 80×24, CLI, builds, isolated installation and replay. Native Windows checks run
-in CI; manual testing on a personal Windows PC is still pending. macOS is excluded
+locally and in CI. See the [Windows verification guide](docs/verifica-windows.md).
+macOS is excluded
 from project verification. Translations still need native-speaker review.
 
 **Useful keys:** `m` switches modes, `g` toggles applications/processes, `/` searches,
@@ -212,3 +220,7 @@ keeping the original credits — my contribution to the developer community.*
   <strong>VibeWare</strong><br>
   <em>Human intent, AI execution, and plenty of tokens</em>
 </p>
+
+> **File name** `README.md`<br>
+> **Full path** `E:\ramtaskman\README.md`<br>
+> **Relative to the repository root** `README.md`

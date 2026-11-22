@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="Ram Taskman $(Version) (per-machine)" Manufacturer="Umberto Giacobbi" Version="$(Version)"
-           UpgradeCode="E131F8A0-2686-48EE-964D-E84F520D84A1" Scope="perMachine">
+  <Package Name="Ram Taskman $(Version) (per-user)" Manufacturer="Umberto Giacobbi" Version="$(Version)"
+           UpgradeCode="E131F8A0-2686-48EE-964D-E84F520D84A1" Scope="perUser">
     <MajorUpgrade DowngradeErrorMessage="A newer version of Ram Taskman is already installed." />
     <MediaTemplate EmbedCab="yes" />
     <!-- Keep the built-in progress UI; /qn still permits unattended installs. -->
@@ -9,7 +9,7 @@
     <Property Id="ARPNOMODIFY" Value="1" />
     <Icon Id="RamTaskman.ico" SourceFile="$(IconFile)" />
     <Property Id="ARPPRODUCTICON" Value="RamTaskman.ico" />
-    <StandardDirectory Id="ProgramFiles64Folder">
+    <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="INSTALLFOLDER" Name="Ram Taskman" />
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
@@ -18,7 +18,11 @@
       <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="*">
         <Shortcut Id="RamTaskmanShortcut" Name="Ram Taskman"
                   Target="[INSTALLFOLDER]ramtaskman.exe" WorkingDirectory="INSTALLFOLDER" Icon="RamTaskman.ico" />
-        <RegistryValue Root="HKLM" Key="Software\RamTaskman" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\RamTaskman" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="CommandPath" Directory="INSTALLFOLDER" Guid="*">
+        <Environment Id="RamTaskmanPath" Name="PATH" Action="set" Part="last" Value="[INSTALLFOLDER]" System="no" />
+        <RegistryValue Root="HKCU" Key="Software\RamTaskman" Name="CommandPath" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </Feature>
   </Package>

@@ -1,6 +1,6 @@
 [project]
 name = "ramtaskman"
-version = "0.1.0"
+version = "0.1.1"
 description = "Cross-platform RAM task manager: application memory, PSS, USS and swap, with the gputaskman terminal UI"
 readme = "README.md"
 license = "MIT"
@@ -38,7 +38,7 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 source-include = [
     "assets/*.png", "assets/*.ico", "packaging/*.desktop",
-    "docs/**/*.md", "docs/images/*.png", "tests/*.py", "tools/*.py", "tools/*.c",
+    "docs/**/*.md", "docs/images/*.png", "tests/*.py", "tools/*.py", "tools/*.ps1", "tools/*.c",
     "docs/images/VIBEWARE_LICENSE.txt",
     "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "lessons.md",
     "run.sh", "run.cmd", "uv.lock", ".gitattributes", ".gitignore",

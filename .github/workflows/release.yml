@@ -61,20 +61,13 @@ jobs:
           uv run --locked python -c "from pathlib import Path; from tools.build_release import smoke; from ramtaskman import __version__; smoke(Path('/usr/bin/ramtaskman'), __version__)"
           dpkg-query -W ramtaskman
           sudo apt-get remove -y ramtaskman
-      - name: Install and verify unsigned MSI
+      - name: Verify per-user MSI installation, PATH and removal
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $msi = (Get-Item dist/release/*.msi).FullName
-          $install = Start-Process msiexec.exe -ArgumentList @('/i', ('"' + $msi + '"'), '/qn', '/norestart') -Wait -PassThru
-          if ($install.ExitCode -ne 0) { throw "MSI install failed: $($install.ExitCode)" }
-          try {
-            uv run --locked python -c "from pathlib import Path; import os; from tools.build_release import smoke; from ramtaskman import __version__; smoke(Path(os.environ['ProgramFiles']) / 'Ram Taskman' / 'ramtaskman.exe', __version__)"
-            if ($LASTEXITCODE -ne 0) { throw 'Installed MSI smoke check failed' }
-          } finally {
-            $remove = Start-Process msiexec.exe -ArgumentList @('/x', ('"' + $msi + '"'), '/qn', '/norestart') -Wait -PassThru
-            if ($remove.ExitCode -ne 0) { throw "MSI removal failed: $($remove.ExitCode)" }
-          }
+          $version = uv run --locked python -c 'from ramtaskman import __version__; print(__version__)'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not read the source version.' }
+          ./tools/verify_windows_msi.ps1 -Msi "dist/release/ramtaskman-$version-windows-x64.msi" -Version $version
       - name: Build source distributions
         if: runner.os == 'Linux'
         run: uv build

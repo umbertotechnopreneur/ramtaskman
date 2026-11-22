@@ -1,7 +1,20 @@
+> **File name** `CHANGELOG.md`<br>
+> **Full path** `E:\ramtaskman\CHANGELOG.md`<br>
+> **Relative to the repository root** `CHANGELOG.md`
+
 # Changelog
 
 > Development and verification: Linux and Windows. macOS is experimental,
 > untested and unvalidated by the project because we have no Mac available.
+
+## 0.1.1
+
+- Added a Windows x64 MSI for the current user, with a Start menu shortcut and
+  `ramtaskman` on the user `PATH`. Uninstall removes the shortcut and `PATH` entry.
+- Kept the Windows and Linux x64 portable ZIPs and Debian amd64 package.
+- Added seven-day support diagnostics in About and localized the RAM valuation
+  options and error messages.
+- Stabilized the A/B comparison close test on Windows.
 
 ## 0.1.0 — November 17, 2026
 
@@ -42,3 +55,7 @@
 
 The README and development plan record measurement, compatibility and verification
 status and limitations. Version 0.1.0 is experimental.
+
+> **File name** `CHANGELOG.md`<br>
+> **Full path** `E:\ramtaskman\CHANGELOG.md`<br>
+> **Relative to the repository root** `CHANGELOG.md`

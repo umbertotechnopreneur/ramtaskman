@@ -114,7 +114,8 @@ def build():
         msi = output / f'ramtaskman-{version}-windows-x64.msi'
         run(['wix', 'build', '-arch', 'x64', '-d', f'Version={version}',
              '-d', f'BundleDir={bundle.resolve()}',
-             '-d', f'IconFile={(ROOT / "assets/ramtaskman.ico").resolve()}', '-o', msi,
+             '-d', f'IconFile={(ROOT / "assets/ramtaskman.ico").resolve()}',
+             '-pdb', work / msi.with_suffix('.wixpdb').name, '-o', msi,
              ROOT / 'packaging/windows.wxs'], cwd=ROOT)
     if args.deb:
         debian_temp = tempfile.TemporaryDirectory(prefix='ramtaskman deb stage ')

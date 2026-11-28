@@ -1,5 +1,11 @@
 # Istruzioni per ramtaskman
 
+## Virtual machines, test runs, and bulk reads
+
+- Before starting, opening, connecting to, or using any virtual machine on Umberto Giacobbi's computer, tell him which VM and why, ask for permission, and wait for his explicit approval. This includes Windows Sandbox.
+- Tell Umberto before starting any test or test suite, including tests triggered by scripts or CI. Say what will run and where. Follow any additional approval requirements in this repository.
+- Tell Umberto before reading ten or more files in a task. Count files across all reads and batches. If the scope grows during the task, notify him before reading the tenth file.
+
 Scrivi in italiano. Leggi README.md, lessons.md e docs/handoff.md prima di modificare.
 README principale e documentazione pubblica sono in inglese; conserva i README localizzati.
 Controlla `git status` e preserva il lavoro esistente. Non pubblicare, creare remote di
